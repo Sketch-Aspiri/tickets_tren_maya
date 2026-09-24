@@ -62,7 +62,7 @@
     @if ($managedUser->isPending())
         @can('reject', $managedUser)
             <x-card :title="__('users.show.reject_title')">
-                <x-danger-button type="button" x-data x-on:click.prevent="$dispatch('open-modal', 'reject-user')">{{ __('users.show.reject_submit') }}</x-danger-button>
+                <x-danger-button type="button" x-data="modalTrigger" data-modal="reject-user" x-on:click.prevent="open">{{ __('users.show.reject_submit') }}</x-danger-button>
 
                 <x-modal name="reject-user" maxWidth="md" focusable>
                     <form method="POST" action="{{ route('users.reject', $managedUser) }}" class="p-6">
@@ -71,7 +71,7 @@
                         <x-input-label for="reject_reason" class="mt-4" :value="__('users.show.reason')" />
                         <x-text-input id="reject_reason" name="reason" type="text" class="mt-1 block w-full" maxlength="500" />
                         <div class="mt-6 flex justify-end gap-3">
-                            <x-secondary-button x-on:click="$dispatch('close')">{{ __('common.actions.cancel') }}</x-secondary-button>
+                            <x-secondary-button x-on:click="close">{{ __('common.actions.cancel') }}</x-secondary-button>
                             <x-danger-button>{{ __('users.show.reject_submit') }}</x-danger-button>
                         </div>
                     </form>
@@ -131,7 +131,7 @@
 
         @if ($managedUser->isActive() && ! $isSelf)
             @can('deactivate', $managedUser)
-                <x-danger-button type="button" x-data x-on:click.prevent="$dispatch('open-modal', 'deactivate-user')">{{ __('users.show.deactivate') }}</x-danger-button>
+                <x-danger-button type="button" x-data="modalTrigger" data-modal="deactivate-user" x-on:click.prevent="open">{{ __('users.show.deactivate') }}</x-danger-button>
 
                 <x-modal name="deactivate-user" maxWidth="md" focusable>
                     <form method="POST" action="{{ route('users.deactivate', $managedUser) }}" class="p-6">
@@ -140,7 +140,7 @@
                         <x-input-label for="deactivate_reason" class="mt-4" :value="__('users.show.reason')" />
                         <x-text-input id="deactivate_reason" name="reason" type="text" class="mt-1 block w-full" maxlength="500" />
                         <div class="mt-6 flex justify-end gap-3">
-                            <x-secondary-button x-on:click="$dispatch('close')">{{ __('common.actions.cancel') }}</x-secondary-button>
+                            <x-secondary-button x-on:click="close">{{ __('common.actions.cancel') }}</x-secondary-button>
                             <x-danger-button>{{ __('users.show.deactivate') }}</x-danger-button>
                         </div>
                     </form>

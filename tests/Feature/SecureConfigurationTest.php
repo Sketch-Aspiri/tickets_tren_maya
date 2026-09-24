@@ -287,11 +287,12 @@ class SecureConfigurationTest extends DatabaseTestCase
         }
     }
 
-    public function test_csp_still_keeps_its_current_directives(): void
+    public function test_csp_no_longer_allows_unsafe_eval(): void
     {
         $csp = (string) $this->get('/login')->headers->get('Content-Security-Policy');
 
-        $this->assertStringContainsString("script-src 'self' 'unsafe-eval'", $csp);
+        $this->assertStringContainsString("script-src 'self'", $csp);
+        $this->assertStringNotContainsString('unsafe-eval', $csp);
     }
 
     // --- .env.example -----------------------------------------------------------

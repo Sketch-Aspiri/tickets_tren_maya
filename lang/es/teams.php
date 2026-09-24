@@ -21,6 +21,7 @@ return [
     'delete_confirm' => '¿Eliminar este equipo?',
     'errors' => [
         'has_members' => 'No se puede eliminar un equipo que aún tiene integrantes. Reasígnalos primero.',
+        'has_tickets' => 'No se puede eliminar un equipo que tiene tickets registrados.',
     ],
     'validation' => [
         'coordinator_invalid' => 'El coordinador debe ser un usuario activo con rol de coordinador que pertenezca a este equipo.',

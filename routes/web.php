@@ -1,10 +1,18 @@
 <?php
 
 use App\Http\Controllers\AccountStatusController;
+use App\Http\Controllers\Attachments\AttachmentController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
+use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Teams\TeamController;
+use App\Http\Controllers\Tickets\TicketAssignmentController;
+use App\Http\Controllers\Tickets\TicketAttachmentController;
+use App\Http\Controllers\Tickets\TicketCommentController;
+use App\Http\Controllers\Tickets\TicketController;
+use App\Http\Controllers\Tickets\TicketPendingController;
+use App\Http\Controllers\Tickets\TicketTransitionController;
 use App\Http\Controllers\Users\UserApprovalController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Controllers\Users\UserStatusController;
@@ -44,6 +52,37 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     });
 
     Route::resource('teams', TeamController::class)->except('show');
+
+    // Categorias: solo jefe de zona (CategoryPolicy).
+    Route::resource('categories', CategoryController::class)->except('show');
+
+    // Tickets (TicketPolicy: permiso Spatie + alcance por rol; fuera de alcance responde 404).
+    // `tickets/pending` va antes de `tickets/{ticket}` para que no lo capture el parametro.
+    Route::get('tickets/pending', TicketPendingController::class)->name('tickets.pending');
+    Route::post('tickets', [TicketController::class, 'store'])->middleware('throttle:ticket-create')->name('tickets.store');
+    Route::resource('tickets', TicketController::class)->except('store')->middlewareFor(['update', 'destroy'], 'throttle:ticket-write');
+
+    Route::middleware('throttle:ticket-write')->prefix('tickets/{ticket}')->name('tickets.')->group(function () {
+        Route::post('transition', [TicketTransitionController::class, 'store'])->name('transition');
+        Route::put('assignments', [TicketAssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('assignments', [TicketAssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::post('take', [TicketAssignmentController::class, 'take'])->name('take');
+    });
+
+    Route::post('tickets/{ticket}/comments', [TicketCommentController::class, 'store'])
+        ->middleware('throttle:ticket-comment')
+        ->name('tickets.comments.store');
+    Route::post('tickets/{ticket}/attachments', [TicketAttachmentController::class, 'store'])
+        ->middleware('throttle:ticket-upload')
+        ->name('tickets.attachments.store');
+
+    // Los adjuntos solo se sirven por aqui (disco privado); nunca hay URL publica.
+    Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])
+        ->middleware('throttle:attachment-download')
+        ->name('attachments.download');
+    Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])
+        ->middleware('throttle:ticket-write')
+        ->name('attachments.destroy');
 });
 
 require __DIR__.'/auth.php';

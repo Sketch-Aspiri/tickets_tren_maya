@@ -32,16 +32,39 @@ class RolesAndPermissionsSeeder extends Seeder
     }
 
     /**
-     * Matriz de CLAUDE.md seccion 5 (solo lo que existe hasta el Sprint 1).
+     * Matriz de CLAUDE.md seccion 5 (solo lo que existe hasta el Sprint 2). El permiso habilita la
+     * accion; las Policies limitan el alcance (jefe: todo, coordinador: su equipo, empleado: lo suyo).
      *
      * @return array<string, list<string>>
      */
     private function permissionsByRole(): array
     {
+        $operational = [
+            PermissionName::TicketsView,
+            PermissionName::TicketsCreate,
+            PermissionName::TicketsWork,
+        ];
+
+        $managerial = [
+            ...$operational,
+            PermissionName::TicketsAssign,
+            PermissionName::TicketsReview,
+            PermissionName::TicketsManage,
+        ];
+
         return [
             UserRole::JefeZona->value => array_column(PermissionName::cases(), 'value'),
-            UserRole::Coordinador->value => [],
-            UserRole::Empleado->value => [],
+            UserRole::Coordinador->value => $this->values($managerial),
+            UserRole::Empleado->value => $this->values($operational),
         ];
+    }
+
+    /**
+     * @param  list<PermissionName>  $permissions
+     * @return list<string>
+     */
+    private function values(array $permissions): array
+    {
+        return array_map(fn (PermissionName $permission): string => $permission->value, $permissions);
     }
 }

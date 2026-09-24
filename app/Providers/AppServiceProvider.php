@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Listeners\LogAuthenticationActivity;
 use App\Support\EnvironmentSecurityCheck;
+use App\Support\MorphMap;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         // Antes que nada: en staging/produccion una configuracion insegura impide arrancar.
         (new EnvironmentSecurityCheck($this->app))->assertSecure();
 
+        MorphMap::register();
         $this->configureTransportSecurity();
         $this->configurePasswordPolicy();
         $this->configureRateLimiters();
@@ -83,5 +85,26 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('two-factor', fn (Request $request): Limit => Limit::perMinute((int) config('tickets.rate_limits.two_factor_per_minute'))
             ->by('2fa|'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
+        $this->configureTicketRateLimiters();
+    }
+
+    /**
+     * Limites por usuario autenticado (o IP si no hay sesion) para acciones de escritura y descargas.
+     */
+    private function configureTicketRateLimiters(): void
+    {
+        $limits = [
+            'ticket-create' => ['ticket_create_per_hour', 'perHour'],
+            'ticket-write' => ['ticket_write_per_minute', 'perMinute'],
+            'ticket-comment' => ['ticket_comment_per_minute', 'perMinute'],
+            'ticket-upload' => ['ticket_upload_per_minute', 'perMinute'],
+            'attachment-download' => ['attachment_download_per_minute', 'perMinute'],
+        ];
+
+        foreach ($limits as $name => [$configKey, $window]) {
+            RateLimiter::for($name, fn (Request $request): Limit => Limit::{$window}((int) config("tickets.rate_limits.{$configKey}"))
+                ->by($name.'|'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+        }
     }
 }

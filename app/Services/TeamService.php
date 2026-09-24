@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Exceptions\BusinessRuleException;
 use App\Models\Team;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -61,6 +62,11 @@ final class TeamService
     {
         if ($team->members()->exists()) {
             throw BusinessRuleException::because('teams.errors.has_members');
+        }
+
+        // Los tickets (incluso los eliminados) conservan su equipo: no se puede borrar un equipo con historial.
+        if (Ticket::withTrashed()->where('team_id', $team->getKey())->exists()) {
+            throw BusinessRuleException::because('teams.errors.has_tickets');
         }
 
         $team->delete();

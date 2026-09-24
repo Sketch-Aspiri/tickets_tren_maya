@@ -12,8 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Cabeceras de seguridad basicas. HSTS solo sobre HTTPS real fuera de local/testing
  * (detras de un proxy requiere TRUSTED_PROXIES para que isSecure() vea X-Forwarded-Proto).
  *
- * CSP: Alpine.js (build estandar) evalua expresiones con `new Function`, por eso
- * `script-src` incluye 'unsafe-eval'. No hay scripts en linea; todo sale de /build.
+ * CSP: sin 'unsafe-eval' ni scripts en linea. Alpine se carga con su build compatible con CSP
+ * (@alpinejs/csp, ver resources/js/app.js); todo el JavaScript sale de /build.
  */
 final class SecurityHeaders
 {
@@ -48,7 +48,7 @@ final class SecurityHeaders
 
         $directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-eval'".$viteDev,
+            "script-src 'self'".$viteDev,
             "style-src 'self' 'unsafe-inline'".$viteDev,
             "img-src 'self' data:",
             "font-src 'self'".$viteDev,

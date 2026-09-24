@@ -34,7 +34,7 @@
                             <a href="{{ route('teams.edit', $team) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}</a>
                         @endcan
                         @can('delete', $team)
-                            <form method="POST" action="{{ route('teams.destroy', $team) }}" class="ms-3 inline" x-data x-on:submit="if (! confirm(@js(__('teams.delete_confirm')))) $event.preventDefault()">
+                            <form method="POST" action="{{ route('teams.destroy', $team) }}" class="ms-3 inline" x-data="confirmSubmit" data-confirm="{{ __('teams.delete_confirm') }}" x-on:submit="onSubmit">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>

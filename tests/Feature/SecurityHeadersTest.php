@@ -18,12 +18,14 @@ class SecurityHeadersTest extends DatabaseTestCase
         $response->assertHeader('Permissions-Policy');
     }
 
-    public function test_content_security_policy_is_restrictive_but_allows_alpine(): void
+    public function test_content_security_policy_is_restrictive_and_has_no_unsafe_eval(): void
     {
         $csp = $this->get('/login')->headers->get('Content-Security-Policy');
 
         $this->assertStringContainsString("default-src 'self'", $csp);
-        $this->assertStringContainsString("script-src 'self' 'unsafe-eval'", $csp);
+        $this->assertStringContainsString("script-src 'self';", $csp);
+        $this->assertStringNotContainsString('unsafe-eval', $csp);
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $csp);
         $this->assertStringContainsString("object-src 'none'", $csp);
         $this->assertStringContainsString("frame-ancestors 'none'", $csp);
         $this->assertStringContainsString("form-action 'self'", $csp);

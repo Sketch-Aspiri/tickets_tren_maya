@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\Priority;
+use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Category;
 use App\Models\Team;
+use App\Models\Ticket;
 use App\Models\User;
+use App\Services\AssignmentService;
+use App\Services\TicketService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -27,6 +33,11 @@ class DemoDataSeeder extends Seeder
     private const TEAM_NAMES = ['Operaciones', 'Mantenimiento', 'Administracion'];
 
     private const EMPLOYEES_PER_TEAM = 3;
+
+    private const CATEGORY_NAMES = ['Soporte técnico', 'Mantenimiento', 'Administrativo', 'Otros'];
+
+    /** Prefijo que identifica los tickets demo (el bloque de tickets solo se crea si no existe ninguno). */
+    private const DEMO_TICKET_PREFIX = '[Demo] ';
 
     private int $createdUsers = 0;
 
@@ -60,7 +71,92 @@ class DemoDataSeeder extends Seeder
             }
         }
 
+        $this->seedCategories();
+        $this->seedTickets();
+
         $this->report($password, $isGenerated);
+    }
+
+    private function seedCategories(): void
+    {
+        foreach (self::CATEGORY_NAMES as $name) {
+            Category::query()->firstOrCreate(['name' => $name], ['active' => true]);
+        }
+    }
+
+    /**
+     * Tickets de ejemplo en distintos estados y equipos, creados con los mismos servicios que usa la
+     * aplicación (folio, historial y bitácora reales). Idempotente: si ya hay tickets demo no crea más.
+     */
+    private function seedTickets(): void
+    {
+        if (Ticket::query()->where('title', 'like', self::DEMO_TICKET_PREFIX.'%')->exists()) {
+            return;
+        }
+
+        $categories = Category::query()->orderBy('id')->pluck('id')->all();
+
+        foreach (self::TEAM_NAMES as $index => $teamName) {
+            $slug = Str::slug($teamName);
+            $coordinator = User::query()->where('email', "coordinador.{$slug}@demo.test")->first();
+            $employees = User::query()
+                ->whereIn('email', array_map(fn (int $n): string => "empleado{$n}.{$slug}@demo.test", range(1, self::EMPLOYEES_PER_TEAM)))
+                ->orderBy('email')
+                ->get()
+                ->values();
+
+            if ($coordinator === null || $employees->count() < self::EMPLOYEES_PER_TEAM) {
+                continue;
+            }
+
+            $this->seedTeamTickets($teamName, $coordinator, $employees->all(), $categories[$index % max(count($categories), 1)] ?? null, $index === 0);
+        }
+    }
+
+    /**
+     * @param  list<User>  $employees
+     */
+    private function seedTeamTickets(string $teamName, User $coordinator, array $employees, ?int $categoryId, bool $withCancelled): void
+    {
+        $tickets = app(TicketService::class);
+        $assignments = app(AssignmentService::class);
+        [$first, $second, $third] = $employees;
+
+        $make = fn (User $creator, string $title, Priority $priority, int $dueInDays): Ticket => $tickets->create($creator, [
+            'title' => self::DEMO_TICKET_PREFIX."{$title} ({$teamName})",
+            'description' => "Ticket de ejemplo para {$teamName}. Sirve para probar listados, filtros y flujos.",
+            'priority' => $priority->value,
+            'category_id' => $categoryId,
+            'due_date' => now()->addDays($dueInDays)->toDateString(),
+        ]);
+
+        // 1. En la bolsa del equipo (sin asignar).
+        $make($first, 'Revisar equipo de la oficina', Priority::Medium, 7);
+
+        // 2. En proceso, asignado.
+        $inProgress = $make($first, 'Instalar software solicitado', Priority::High, 3);
+        $assignments->assign($coordinator, $inProgress, $second->getKey(), [$third->getKey()]);
+        $tickets->transition($second, $inProgress, TicketStatus::InProgress);
+
+        // 3. En revisión y vencido (fecha límite ya pasada).
+        $overdue = $make($second, 'Entregar reporte semanal', Priority::Urgent, 1);
+        $overdue->forceFill(['due_date' => now()->subDays(2)->toDateString()])->save();
+        $assignments->assign($coordinator, $overdue, $third->getKey());
+        $tickets->transition($third, $overdue, TicketStatus::InProgress);
+        $tickets->transition($third, $overdue, TicketStatus::InReview, 'Listo para revisión');
+
+        // 4. Completado.
+        $done = $make($third, 'Actualizar inventario', Priority::Low, 10);
+        $assignments->assign($coordinator, $done, $first->getKey());
+        $tickets->transition($first, $done, TicketStatus::InProgress);
+        $tickets->transition($first, $done, TicketStatus::InReview);
+        $tickets->transition($coordinator, $done, TicketStatus::Completed, 'Aprobado');
+
+        // 5. Cancelado (solo en el primer equipo).
+        if ($withCancelled) {
+            $cancelled = $make($second, 'Solicitud duplicada', Priority::Low, 5);
+            $tickets->transition($coordinator, $cancelled, TicketStatus::Cancelled, 'Duplicado de otro ticket');
+        }
     }
 
     /**

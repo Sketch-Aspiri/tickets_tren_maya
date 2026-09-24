@@ -25,6 +25,12 @@ return [
         'register_per_hour' => 10,
         'password_reset_per_minute' => 5,
         'two_factor_per_minute' => 5,
+        // Por usuario autenticado (Sprint 2).
+        'ticket_create_per_hour' => 30,
+        'ticket_write_per_minute' => 60,
+        'ticket_comment_per_minute' => 20,
+        'ticket_upload_per_minute' => 10,
+        'attachment_download_per_minute' => 60,
     ],
 
     /*
@@ -60,4 +66,45 @@ return [
     'demo_password' => env('DEMO_USER_PASSWORD') ?: null,
 
     'users_per_page' => 15,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tickets (Sprint 2)
+    |--------------------------------------------------------------------------
+    */
+    'tickets_per_page' => 15,
+    'categories_per_page' => 15,
+    'folio_prefixes' => [
+        'ticket' => 'TM',
+        'activity' => 'ACT',
+    ],
+    'max_collaborators' => 10,
+    'comment_max_length' => 2000,
+
+    /*
+    | Adjuntos: disco PRIVADO (storage/app/private, nunca public/). Un tipo solo se acepta si la
+    | extension esta en la lista blanca Y el MIME detectado por el contenido (finfo) corresponde a
+    | esa extension. `max_kilobytes` y `max_per_ticket` son ajustables.
+    */
+    'attachments' => [
+        'disk' => 'local',
+        'directory' => 'tickets',
+        'max_kilobytes' => (int) env('ATTACHMENT_MAX_KB', 10240),
+        'max_per_ticket' => (int) env('ATTACHMENT_MAX_PER_TICKET', 10),
+        'allowed' => [
+            'pdf' => ['application/pdf'],
+            'png' => ['image/png'],
+            'jpg' => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'txt' => ['text/plain'],
+            'docx' => [
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/zip',
+            ],
+            'xlsx' => [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/zip',
+            ],
+        ],
+    ],
 ];

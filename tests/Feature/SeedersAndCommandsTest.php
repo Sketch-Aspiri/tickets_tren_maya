@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\PermissionName;
+use App\Enums\TicketStatus;
 use App\Enums\UserRole;
+use App\Models\Category;
 use App\Models\Team;
+use App\Models\Ticket;
 use App\Models\User;
 use Database\Factories\UserFactory;
 use Database\Seeders\DatabaseSeeder;
@@ -33,9 +36,45 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->assertTrue($jefe->hasPermissionTo(PermissionName::UsersApprove->value));
         $this->assertTrue($jefe->hasPermissionTo(PermissionName::TeamsManage->value));
 
+        $this->assertTrue($jefe->hasPermissionTo(PermissionName::CategoriesManage->value));
+
+        // Sprint 2: coordinador y empleado ya tienen permisos de tickets, pero ninguno de administracion.
+        $administration = [
+            PermissionName::UsersManage,
+            PermissionName::UsersApprove,
+            PermissionName::TeamsManage,
+            PermissionName::CategoriesManage,
+        ];
+
         foreach ([UserRole::Coordinador, UserRole::Empleado] as $role) {
-            $this->assertCount(0, Role::findByName($role->value)->permissions);
+            $granted = Role::findByName($role->value)->permissions->pluck('name')->all();
+
+            foreach ($administration as $permission) {
+                $this->assertNotContains($permission->value, $granted);
+            }
         }
+    }
+
+    public function test_ticket_permission_matrix_by_role(): void
+    {
+        $granted = fn (UserRole $role): array => Role::findByName($role->value)->permissions->pluck('name')->all();
+
+        $operational = ['tickets.view', 'tickets.create', 'tickets.work'];
+        $managerial = [...$operational, 'tickets.assign', 'tickets.review', 'tickets.manage'];
+
+        $this->assertEqualsCanonicalizing($operational, $granted(UserRole::Empleado));
+        $this->assertEqualsCanonicalizing($managerial, $granted(UserRole::Coordinador));
+        $this->assertEqualsCanonicalizing(array_column(PermissionName::cases(), 'value'), $granted(UserRole::JefeZona));
+    }
+
+    public function test_seeder_is_idempotent_with_ticket_permissions_and_keeps_extra_grants_out(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->assertSame(count(PermissionName::cases()), Permission::query()->count());
+        $this->assertCount(3, Role::findByName(UserRole::Empleado->value)->permissions);
+        $this->assertCount(6, Role::findByName(UserRole::Coordinador->value)->permissions);
     }
 
     public function test_roles_and_permissions_seeder_is_idempotent_and_keeps_user_assignments(): void
@@ -61,6 +100,27 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->assertSame($users, User::query()->count());
         $this->assertSame($teams, Team::query()->count());
         $this->assertNotNull(Team::query()->whereNotNull('coordinator_id')->first());
+    }
+
+    public function test_demo_seeder_creates_categories_and_tickets_in_several_states_and_is_idempotent(): void
+    {
+        $this->seed(DemoDataSeeder::class);
+
+        $tickets = Ticket::query()->get();
+        $categories = Category::query()->count();
+
+        $this->assertGreaterThanOrEqual(4, $categories);
+        $this->assertGreaterThanOrEqual(13, $tickets->count());
+        $this->assertEqualsCanonicalizing(TicketStatus::values(), $tickets->pluck('status')->map->value->unique()->values()->all());
+        $this->assertSame($tickets->count(), $tickets->pluck('folio')->unique()->count());
+        $this->assertGreaterThan(1, $tickets->pluck('team_id')->unique()->count());
+        $this->assertGreaterThan(0, Ticket::query()->overdue()->count());
+        $this->assertGreaterThan(0, Ticket::query()->unassigned()->count());
+
+        $this->seed(DemoDataSeeder::class);
+
+        $this->assertSame($tickets->count(), Ticket::query()->count());
+        $this->assertSame($categories, Category::query()->count());
     }
 
     public function test_demo_seeder_coordinators_respect_the_team_membership_invariant(): void
