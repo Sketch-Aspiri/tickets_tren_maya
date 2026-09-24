@@ -1,0 +1,51 @@
+<?php
+
+return [
+    'json_denied' => 'Se requiere verificación en dos pasos.',
+    'title' => 'Verificación en dos pasos',
+    'setup' => [
+        'title' => 'Configura la verificación en dos pasos',
+        'required_notice' => 'Tu rol exige verificación en dos pasos. Debes configurarla para continuar.',
+        'step_scan' => 'Escanea este código QR con tu aplicación autenticadora (Google Authenticator, Microsoft Authenticator, Authy…).',
+        'step_manual' => 'Si no puedes escanearlo, escribe esta clave manualmente:',
+        'step_confirm' => 'Escribe el código de 6 dígitos que muestra la aplicación para confirmar.',
+        'code' => 'Código de 6 dígitos',
+        'submit' => 'Confirmar y activar',
+    ],
+    'challenge' => [
+        'title' => 'Verificación en dos pasos',
+        'intro' => 'Escribe el código de 6 dígitos de tu aplicación autenticadora.',
+        'code' => 'Código de 6 dígitos',
+        'submit' => 'Verificar',
+        'use_recovery' => 'Usar un código de recuperación',
+        'use_code' => 'Usar el código de la aplicación',
+        'recovery_code' => 'Código de recuperación',
+    ],
+    'settings' => [
+        'title' => 'Verificación en dos pasos',
+        'enabled' => 'Está activada en tu cuenta.',
+        'disabled' => 'No está activada. Es opcional para tu rol, pero recomendada.',
+        'required' => 'Es obligatoria para tu rol y no se puede desactivar.',
+        'enable' => 'Activar',
+        'disable' => 'Desactivar',
+        'password' => 'Contraseña actual',
+        'recovery_remaining' => 'Códigos de recuperación disponibles: :count',
+        'regenerate' => 'Generar códigos nuevos',
+        'recovery_title' => 'Tus códigos de recuperación',
+        'recovery_warning' => 'Guárdalos en un lugar seguro. Cada código sirve una sola vez y no se volverán a mostrar.',
+    ],
+    'command' => [
+        'confirm' => 'Se borrará el 2FA de :email y se cerrarán todas sus sesiones. ¿Continuar?',
+        'done' => 'El 2FA de :email fue restablecido. Deberá configurarlo de nuevo al iniciar sesión.',
+        'nothing' => ':email no tiene 2FA configurado; no se cambió nada.',
+        'not_found' => 'No existe un usuario con el correo :email.',
+        'cancelled' => 'Operación cancelada.',
+    ],
+    'errors' => [
+        'invalid_code' => 'El código es incorrecto o ya fue utilizado.',
+        'already_enabled' => 'La verificación en dos pasos ya está activada.',
+        'not_enabled' => 'La verificación en dos pasos no está activada.',
+        'no_pending_setup' => 'No hay una configuración pendiente de confirmar.',
+        'required_for_role' => 'La verificación en dos pasos es obligatoria para tu rol.',
+    ],
+];
