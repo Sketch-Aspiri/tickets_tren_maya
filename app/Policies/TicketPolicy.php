@@ -29,6 +29,16 @@ class TicketPolicy
         return $this->hasPermission($user, PermissionName::TicketsView);
     }
 
+    /**
+     * Exportar el listado filtrado a Excel (jefe y coordinador). Las FILAS las acota `Ticket::visibleTo`, igual
+     * que el listado; el permiso solo habilita la accion.
+     */
+    public function export(User $user): bool
+    {
+        return $this->hasPermission($user, PermissionName::ExportsCreate)
+            && $this->hasPermission($user, PermissionName::TicketsView);
+    }
+
     public function view(User $user, Ticket $ticket): Response|bool
     {
         return $this->scoped($user, $ticket, fn (): bool => true);

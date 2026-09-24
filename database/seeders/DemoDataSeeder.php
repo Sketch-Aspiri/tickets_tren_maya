@@ -74,6 +74,7 @@ class DemoDataSeeder extends Seeder
         $this->seedCategories();
         $this->seedTickets();
         $this->call(DemoActivitiesSeeder::class);
+        $this->call(DemoTrackingSeeder::class);
 
         $this->report($password, $isGenerated);
     }

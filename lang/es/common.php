@@ -17,6 +17,9 @@ return [
         'activities' => 'Actividades',
         'pending' => 'Mis pendientes',
         'categories' => 'Categorías',
+        'tracking_section' => 'Seguimiento',
+        'tracking' => 'Panel de seguimiento',
+        'audit' => 'Bitácora',
     ],
     'actions' => [
         'save' => 'Guardar',
@@ -33,6 +36,8 @@ return [
     'empty' => 'Sin resultados.',
     'none' => '—',
     'all' => 'Todos',
+    'yes' => 'Sí',
+    'no' => 'No',
     'flash' => [
         'user-approved' => 'Cuenta aprobada. El usuario ya puede entrar al sistema.',
         'user-rejected' => 'Solicitud rechazada.',
@@ -75,6 +80,7 @@ return [
         'role' => 'Tu rol: :role',
         'pending_registrations' => 'Registros pendientes de aprobación',
         'review_pending' => 'Revisar solicitudes',
-        'coming_soon' => 'Aquí aparecerán tus pendientes en los siguientes sprints.',
+        'coming_soon' => 'Consulta tus pendientes en «Mis pendientes».',
+        'open_tracking' => 'Abrir el panel de seguimiento',
     ],
 ];

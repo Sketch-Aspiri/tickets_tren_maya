@@ -36,6 +36,14 @@
             @endcan
         @endcan
 
+        {{-- Panel de seguimiento: solo jefe (global) y coordinador (su equipo). La ruta la protege la Policy; esto solo oculta el enlace. --}}
+        @can('view-dashboard')
+            <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-600">{{ __('common.nav.tracking_section') }}</p>
+            <x-sidebar-link :href="route('tracking.index')" :active="request()->routeIs('tracking.*')">
+                {{ __('common.nav.tracking') }}
+            </x-sidebar-link>
+        @endcan
+
         @can('viewAny', \App\Models\User::class)
             <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-600">{{ __('common.nav.management') }}</p>
             <x-sidebar-link :href="route('users.index')" :active="request()->routeIs('users.*')">
@@ -52,6 +60,12 @@
         @can('viewAny', \App\Models\Category::class)
             <x-sidebar-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                 {{ __('common.nav.categories') }}
+            </x-sidebar-link>
+        @endcan
+
+        @can('viewAny', \Spatie\Activitylog\Models\Activity::class)
+            <x-sidebar-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
+                {{ __('common.nav.audit') }}
             </x-sidebar-link>
         @endcan
     </nav>

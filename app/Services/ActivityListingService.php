@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AssignmentRole;
+use App\Enums\PendingScope;
 use App\Enums\Priority;
 use App\Enums\TicketStatus;
 use App\Models\Activity;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Support\ListingQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Listados de actividades. TODA consulta parte de `Activity::visibleTo($user)` (alcance por rol), de modo que
@@ -32,7 +34,37 @@ final class ActivityListingService
      */
     public function paginate(User $user, array $filters): LengthAwarePaginator
     {
-        $query = $this->baseQuery($user)
+        $query = $this->filtered($user, $filters);
+
+        $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
+
+        return $query->paginate((int) config('tickets.activities_per_page'))->withQueryString();
+    }
+
+    /**
+     * Los MISMOS filtros, alcance y orden del listado, sin paginar y acotado a `$limit` filas (exportacion).
+     *
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, kind?: ?string, q?: ?string, sort?: ?string, direction?: ?string}  $filters
+     * @return Collection<int, Activity>
+     */
+    public function limited(User $user, array $filters, int $limit): Collection
+    {
+        $query = $this->filtered($user, $filters);
+
+        $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
+
+        return $query->limit($limit)->get();
+    }
+
+    /**
+     * Alcance por rol (`visibleTo`) + filtros validados. Ningun filtro puede ensanchar el alcance.
+     *
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, kind?: ?string, q?: ?string}  $filters
+     * @return Builder<Activity>
+     */
+    private function filtered(User $user, array $filters): Builder
+    {
+        return $this->baseQuery($user)
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('activities.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('activities.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('activities.category_id', $id))
@@ -41,10 +73,6 @@ final class ActivityListingService
             ->when($filters['overdue'] ?? false, fn (Builder $q) => $q->overdue())
             ->when($filters['kind'] ?? null, fn (Builder $q, string $kind) => $this->filterByKind($q, $kind))
             ->when($filters['q'] ?? null, fn (Builder $q, string $term) => ListingQuery::search($q, $term, ['activities.title', 'activities.folio']));
-
-        $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
-
-        return $query->paginate((int) config('tickets.activities_per_page'))->withQueryString();
     }
 
     /**
@@ -52,16 +80,24 @@ final class ActivityListingService
      * suya sin hacer), sin plantillas de recurrencia (solo sus instancias), por vencimiento (sin fecha al
      * final) y luego por prioridad. Página propia (`activities_page`) para no chocar con la de tickets.
      *
+     * Con `PendingScope::Team` (solo coordinadores con equipo; para cualquiera mas se ignora) lista en cambio las
+     * actividades abiertas del equipo del coordinador (sin plantillas), siempre dentro de `visibleTo`.
+     *
      * @return LengthAwarePaginator<int, Activity>
      */
-    public function pendingFor(User $user): LengthAwarePaginator
+    public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine): LengthAwarePaginator
     {
         $query = $this->baseQuery($user)
             ->withoutTemplates()
-            ->open()
-            ->where(fn (Builder $mine) => $mine
+            ->open();
+
+        if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
+            $query->where('activities.team_id', $user->team_id);
+        } else {
+            $query->where(fn (Builder $mine) => $mine
                 ->assignedTo($user)
                 ->orWhere(fn (Builder $subtask) => $subtask->hasSubtaskFor($user, true)));
+        }
 
         ListingQuery::orderByDateNullsLast($query, 'activities.due_date', 'asc');
         ListingQuery::orderByEnum($query, 'activities.priority', Priority::cases(), 'desc');

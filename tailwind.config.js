@@ -7,6 +7,8 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        // Clases que el JS agrega en tiempo de ejecucion (p. ej. `-translate-x-full` de la barra lateral movil).
+        './resources/js/**/*.js',
     ],
 
     theme: {

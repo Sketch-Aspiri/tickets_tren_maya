@@ -8,6 +8,9 @@
         <x-card>
             <p class="text-sm text-gray-500">{{ __('common.dashboard.role', ['role' => $user->roleEnum()?->label() ?? '—']) }}</p>
             <p class="mt-2 text-sm text-gray-600">{{ __('common.dashboard.coming_soon') }}</p>
+            @can('view-dashboard')
+                <x-text-link :href="route('tracking.index')" class="mt-2">{{ __('common.dashboard.open_tracking') }}</x-text-link>
+            @endcan
         </x-card>
 
         @if ($pendingCount !== null)

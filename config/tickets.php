@@ -36,6 +36,10 @@ return [
         'activity_write_per_minute' => 60,
         'activity_comment_per_minute' => 20,
         'activity_upload_per_minute' => 10,
+        // Por usuario autenticado (Sprint 5, panel de seguimiento, bitacora y exportacion).
+        'dashboard_per_minute' => 30,
+        'audit_per_minute' => 60,
+        'export_per_hour' => 10,
     ],
 
     /*
@@ -100,6 +104,31 @@ return [
     'recurrence' => [
         'horizon_days' => (int) env('RECURRENCE_HORIZON_DAYS', 14),
         'schedule_at' => env('RECURRENCE_SCHEDULE_AT', '02:00'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Panel de seguimiento y bitacora (Sprint 5)
+    |--------------------------------------------------------------------------
+    | `default_period_days`: periodo por defecto del panel (hoy inclusive). `max_period_days`: tope del
+    | rango que se puede pedir (acota el trabajo de las consultas agregadas). `cache_ttl`: segundos que se
+    | reutiliza un resultado para el MISMO alcance y filtros (0 = sin cache). `max_employee_rows`: filas
+    | maximas de la tabla de carga por empleado. `audit_per_page`: filas por pagina de la bitacora.
+    */
+    'dashboard' => [
+        'default_period_days' => 30,
+        'max_period_days' => 366,
+        'cache_ttl' => (int) env('DASHBOARD_CACHE_TTL', 60),
+        'max_employee_rows' => 50,
+        'weekly_trend_after_days' => 45,
+    ],
+    'audit_per_page' => 25,
+
+    /*
+    | Exportacion a Excel (Sprint 5): filas maximas por archivo (acota memoria y tiempo; se avisa al usuario).
+    */
+    'export' => [
+        'max_rows' => (int) env('EXPORT_MAX_ROWS', 5000),
     ],
 
     /*

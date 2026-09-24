@@ -5,11 +5,14 @@ use App\Http\Controllers\Activities\ActivityAssignmentController;
 use App\Http\Controllers\Activities\ActivityAttachmentController;
 use App\Http\Controllers\Activities\ActivityCommentController;
 use App\Http\Controllers\Activities\ActivityController;
+use App\Http\Controllers\Activities\ActivityExportController;
 use App\Http\Controllers\Activities\ActivityTransitionController;
 use App\Http\Controllers\Activities\SubtaskController;
 use App\Http\Controllers\Attachments\AttachmentController;
+use App\Http\Controllers\Audit\AuditLogController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\Categories\CategoryController;
+use App\Http\Controllers\Dashboard\TrackingPanelController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Teams\TeamController;
@@ -17,6 +20,7 @@ use App\Http\Controllers\Tickets\TicketAssignmentController;
 use App\Http\Controllers\Tickets\TicketAttachmentController;
 use App\Http\Controllers\Tickets\TicketCommentController;
 use App\Http\Controllers\Tickets\TicketController;
+use App\Http\Controllers\Tickets\TicketExportController;
 use App\Http\Controllers\Tickets\TicketPendingController;
 use App\Http\Controllers\Tickets\TicketTransitionController;
 use App\Http\Controllers\Users\UserApprovalController;
@@ -65,6 +69,8 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     // Tickets (TicketPolicy: permiso Spatie + alcance por rol; fuera de alcance responde 404).
     // `tickets/pending` va antes de `tickets/{ticket}` para que no lo capture el parametro.
     Route::get('tickets/pending', TicketPendingController::class)->name('tickets.pending');
+    // Exportacion a Excel del listado filtrado: permiso `exports.create`, limite de tasa y bitacora `exported`.
+    Route::get('tickets/export', TicketExportController::class)->middleware('throttle:export')->name('tickets.export');
     Route::post('tickets', [TicketController::class, 'store'])->middleware('throttle:ticket-create')->name('tickets.store');
     Route::resource('tickets', TicketController::class)->except('store')->middlewareFor(['update', 'destroy'], 'throttle:ticket-write');
 
@@ -84,6 +90,8 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
 
     // Actividades (ActivityPolicy: permiso Spatie + alcance por rol; fuera de alcance responde 404).
     // Sin bolsa, "tomar" ni "devolver a la bolsa": las actividades se asignan siempre de forma explicita.
+    // Exportacion a Excel del listado filtrado (antes del resource: `activities/{activity}` no debe capturarla).
+    Route::get('activities/export', ActivityExportController::class)->middleware('throttle:export')->name('activities.export');
     Route::post('activities', [ActivityController::class, 'store'])->middleware('throttle:activity-create')->name('activities.store');
     Route::resource('activities', ActivityController::class)->except('store')->middlewareFor(['update', 'destroy'], 'throttle:activity-write');
 
@@ -106,6 +114,13 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::post('activities/{activity}/attachments', [ActivityAttachmentController::class, 'store'])
         ->middleware('throttle:activity-upload')
         ->name('activities.attachments.store');
+
+    // Panel de seguimiento (Sprint 5): jefe global, coordinador su equipo; el empleado recibe 403 (habilidad
+    // `view-dashboard`, permiso `dashboard.view`). Solo lectura, con limite de tasa por usuario.
+    Route::get('tracking', TrackingPanelController::class)->middleware('throttle:dashboard')->name('tracking.index');
+
+    // Visor de la bitacora de auditoria: solo jefe (AuditLogPolicy, permiso `audit.view`). Solo lectura.
+    Route::get('audit-log', [AuditLogController::class, 'index'])->middleware('throttle:audit-view')->name('audit.index');
 
     // Los adjuntos solo se sirven por aqui (disco privado); nunca hay URL publica.
     Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])

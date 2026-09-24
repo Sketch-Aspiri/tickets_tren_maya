@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Listeners\LogAuthenticationActivity;
+use App\Policies\AuditLogPolicy;
+use App\Policies\DashboardPolicy;
 use App\Support\EnvironmentSecurityCheck;
 use App\Support\MorphMap;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Activitylog\Models\Activity as ActivityLogEntry;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,11 +33,22 @@ class AppServiceProvider extends ServiceProvider
         (new EnvironmentSecurityCheck($this->app))->assertSecure();
 
         MorphMap::register();
+        $this->registerAuthorization();
         $this->configureTransportSecurity();
         $this->configurePasswordPolicy();
         $this->configureRateLimiters();
 
         Event::subscribe(LogAuthenticationActivity::class);
+    }
+
+    /**
+     * Politicas que no se descubren por convencion de nombre: el panel no tiene modelo asociado y la
+     * bitacora es el modelo de Spatie (no vive en App\Models).
+     */
+    private function registerAuthorization(): void
+    {
+        Gate::define('view-dashboard', [DashboardPolicy::class, 'view']);
+        Gate::policy(ActivityLogEntry::class, AuditLogPolicy::class);
     }
 
     /**
@@ -105,6 +120,9 @@ class AppServiceProvider extends ServiceProvider
             'activity-write' => ['activity_write_per_minute', 'perMinute'],
             'activity-comment' => ['activity_comment_per_minute', 'perMinute'],
             'activity-upload' => ['activity_upload_per_minute', 'perMinute'],
+            'dashboard' => ['dashboard_per_minute', 'perMinute'],
+            'audit-view' => ['audit_per_minute', 'perMinute'],
+            'export' => ['export_per_hour', 'perHour'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {

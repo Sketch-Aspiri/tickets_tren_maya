@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Permisos de Spatie. Solo los usados hasta el Sprint 3; los sprints
+ * Permisos de Spatie. Solo los usados hasta el Sprint 5; los sprints
  * posteriores agregan los suyos. La matriz por rol vive en RolesAndPermissionsSeeder.
  * El ALCANCE (equipo/propios) lo aplican las Policies, no el permiso.
  */
@@ -36,4 +36,10 @@ enum PermissionName: string
     case ActivitiesReview = 'activities.review';
     /** Editar, eliminar, cancelar, reabrir y gestionar subtareas de cualquier actividad del alcance. */
     case ActivitiesManage = 'activities.manage';
+    /** Panel de seguimiento: global (jefe) o de su equipo (coordinador). */
+    case DashboardView = 'dashboard.view';
+    /** Visor de la bitacora de auditoria (solo jefe). Solo lectura. */
+    case AuditView = 'audit.view';
+    /** Exportar listados filtrados a Excel (jefe y coordinador, dentro de su alcance). */
+    case ExportsCreate = 'exports.create';
 }

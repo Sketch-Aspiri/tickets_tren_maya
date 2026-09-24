@@ -3,9 +3,14 @@
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('activities.title') }}</h1>
-            @can('create', \App\Models\Activity::class)
-                <x-primary-button :href="route('activities.create')" class="shrink-0">{{ __('activities.new') }}</x-primary-button>
-            @endcan
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                @can('export', \App\Models\Activity::class)
+                    <x-secondary-button :href="route('activities.export', array_filter($filters, fn ($value) => $value !== null && $value !== false && $value !== ''))">{{ __('activities.export.button') }}</x-secondary-button>
+                @endcan
+                @can('create', \App\Models\Activity::class)
+                    <x-primary-button :href="route('activities.create')" class="shrink-0">{{ __('activities.new') }}</x-primary-button>
+                @endcan
+            </div>
         </div>
     </x-slot>
 
@@ -110,6 +115,12 @@
             </div>
         </form>
     </x-card>
+
+    @can('export', \App\Models\Activity::class)
+        @if ($activities->total() > (int) config('tickets.export.max_rows'))
+            <p class="text-sm text-gray-700">{{ __('activities.export.truncated', ['max' => (int) config('tickets.export.max_rows')]) }}</p>
+        @endif
+    @endcan
 
     <x-activity-table :activities="$activities" :show-team="auth()->user()->team_id === null" />
 

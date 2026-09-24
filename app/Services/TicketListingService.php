@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AssignmentRole;
+use App\Enums\PendingScope;
 use App\Enums\Priority;
 use App\Enums\TicketStatus;
 use App\Models\Ticket;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Support\ListingQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Listados de tickets. TODA consulta parte de `Ticket::visibleTo($user)` (alcance por rol), de modo
@@ -28,7 +30,37 @@ final class TicketListingService
      */
     public function paginate(User $user, array $filters): LengthAwarePaginator
     {
-        $query = $this->baseQuery($user)
+        $query = $this->filtered($user, $filters);
+
+        $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
+
+        return $query->paginate((int) config('tickets.tickets_per_page'))->withQueryString();
+    }
+
+    /**
+     * Los MISMOS filtros, alcance y orden del listado, sin paginar y acotado a `$limit` filas (exportacion).
+     *
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, unassigned?: ?bool, q?: ?string, sort?: ?string, direction?: ?string}  $filters
+     * @return Collection<int, Ticket>
+     */
+    public function limited(User $user, array $filters, int $limit): Collection
+    {
+        $query = $this->filtered($user, $filters);
+
+        $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
+
+        return $query->limit($limit)->get();
+    }
+
+    /**
+     * Alcance por rol (`visibleTo`) + filtros validados. Ningun filtro puede ensanchar el alcance.
+     *
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, unassigned?: ?bool, q?: ?string}  $filters
+     * @return Builder<Ticket>
+     */
+    private function filtered(User $user, array $filters): Builder
+    {
+        return $this->baseQuery($user)
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('tickets.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('tickets.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('tickets.category_id', $id))
@@ -37,10 +69,6 @@ final class TicketListingService
             ->when($filters['overdue'] ?? false, fn (Builder $q) => $q->overdue())
             ->when($filters['unassigned'] ?? false, fn (Builder $q) => $q->unassigned())
             ->when($filters['q'] ?? null, fn (Builder $q, string $term) => ListingQuery::search($q, $term, ['tickets.title', 'tickets.folio']));
-
-        $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
-
-        return $query->paginate((int) config('tickets.tickets_per_page'))->withQueryString();
     }
 
     /**
@@ -48,13 +76,20 @@ final class TicketListingService
      * fecha al final) y luego por prioridad. Las actividades van en su propia sección
      * (ActivityListingService::pendingFor), con paginación independiente.
      *
+     * Con `PendingScope::Team` (solo coordinadores con equipo; para cualquiera mas se ignora) lista en cambio lo
+     * abierto del equipo del coordinador, asignado o no (incluye la bolsa), siempre dentro de `visibleTo`.
+     *
      * @return LengthAwarePaginator<int, Ticket>
      */
-    public function pendingFor(User $user): LengthAwarePaginator
+    public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine): LengthAwarePaginator
     {
-        $query = $this->baseQuery($user)
-            ->open()
-            ->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
+        $query = $this->baseQuery($user)->open();
+
+        if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
+            $query->where('tickets.team_id', $user->team_id);
+        } else {
+            $query->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
+        }
 
         ListingQuery::orderByDateNullsLast($query, 'tickets.due_date', 'asc');
         ListingQuery::orderByEnum($query, 'tickets.priority', Priority::cases(), 'desc');

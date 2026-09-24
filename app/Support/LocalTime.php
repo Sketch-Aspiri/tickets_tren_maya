@@ -29,4 +29,18 @@ final class LocalTime
     {
         return self::now()->year;
     }
+
+    /**
+     * Inicio (00:00 hora de negocio) del día de calendario `$date` (Y-m-d) más `$addDays`, expresado en la zona
+     * de almacenamiento (UTC) y con el formato de las columnas de la BD: sirve para comparar contra
+     * `created_at`/`completed_at` con un intervalo semiabierto [inicio, fin).
+     */
+    public static function storageBoundary(string $date, int $addDays = 0): string
+    {
+        return CarbonImmutable::parse($date, (string) config('app.display_timezone'))
+            ->startOfDay()
+            ->addDays($addDays)
+            ->timezone((string) config('app.timezone'))
+            ->format('Y-m-d H:i:s');
+    }
 }

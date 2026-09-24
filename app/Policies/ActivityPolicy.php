@@ -34,6 +34,16 @@ class ActivityPolicy
         return $this->hasPermission($user, PermissionName::ActivitiesManage);
     }
 
+    /**
+     * Exportar el listado filtrado a Excel (jefe y coordinador, igual que el propio listado). Las FILAS las
+     * acota `Activity::visibleTo`; el permiso solo habilita la accion.
+     */
+    public function export(User $user): bool
+    {
+        return $this->hasPermission($user, PermissionName::ExportsCreate)
+            && $this->hasPermission($user, PermissionName::ActivitiesManage);
+    }
+
     public function view(User $user, Activity $activity): Response|bool
     {
         return $this->scoped($user, $activity, fn (): bool => true);

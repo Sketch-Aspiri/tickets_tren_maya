@@ -32,7 +32,7 @@ class RolesAndPermissionsSeeder extends Seeder
     }
 
     /**
-     * Matriz de CLAUDE.md seccion 5 (solo lo que existe hasta el Sprint 3). El permiso habilita la
+     * Matriz de CLAUDE.md seccion 5 (solo lo que existe hasta el Sprint 5). El permiso habilita la
      * accion; las Policies limitan el alcance (jefe: todo, coordinador: su equipo, empleado: lo suyo).
      *
      * @return array<string, list<string>>
@@ -57,6 +57,10 @@ class RolesAndPermissionsSeeder extends Seeder
             PermissionName::ActivitiesAssign,
             PermissionName::ActivitiesReview,
             PermissionName::ActivitiesManage,
+            // Sprint 5: panel de seguimiento (su alcance lo limita DashboardScope) y exportacion. La bitacora
+            // (audit.view) solo la tiene el jefe, que recibe todos los permisos.
+            PermissionName::DashboardView,
+            PermissionName::ExportsCreate,
         ];
 
         return [

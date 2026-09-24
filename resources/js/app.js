@@ -157,3 +157,9 @@ Alpine.data('recurrenceEditor', () => ({
 }));
 
 Alpine.start();
+
+// Graficas del panel de seguimiento: Chart.js se carga bajo demanda (chunk propio, mismo origen) solo si la
+// pagina trae algun <canvas data-chart>; el resto de las paginas no descarga nada extra.
+if (document.querySelector('canvas[data-chart]') !== null) {
+    import('./charts.js').then(({ initCharts }) => initCharts());
+}
