@@ -32,7 +32,7 @@ class RolesAndPermissionsSeeder extends Seeder
     }
 
     /**
-     * Matriz de CLAUDE.md seccion 5 (solo lo que existe hasta el Sprint 2). El permiso habilita la
+     * Matriz de CLAUDE.md seccion 5 (solo lo que existe hasta el Sprint 3). El permiso habilita la
      * accion; las Policies limitan el alcance (jefe: todo, coordinador: su equipo, empleado: lo suyo).
      *
      * @return array<string, list<string>>
@@ -43,6 +43,9 @@ class RolesAndPermissionsSeeder extends Seeder
             PermissionName::TicketsView,
             PermissionName::TicketsCreate,
             PermissionName::TicketsWork,
+            // Actividades: el empleado solo ve las suyas y avanza hasta En revision (sin crear ni editar).
+            PermissionName::ActivitiesView,
+            PermissionName::ActivitiesWork,
         ];
 
         $managerial = [
@@ -50,6 +53,10 @@ class RolesAndPermissionsSeeder extends Seeder
             PermissionName::TicketsAssign,
             PermissionName::TicketsReview,
             PermissionName::TicketsManage,
+            PermissionName::ActivitiesCreate,
+            PermissionName::ActivitiesAssign,
+            PermissionName::ActivitiesReview,
+            PermissionName::ActivitiesManage,
         ];
 
         return [

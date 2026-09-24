@@ -6,25 +6,29 @@ namespace App\Http\Requests\Tickets;
 
 use App\Enums\TicketStatus;
 use App\Http\Requests\Concerns\AuthorizesWithGate;
+use App\Http\Requests\Concerns\ResolvesWorkItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Cambio de estado. Sirve a tickets y a actividades (ruta `{ticket}` o `{activity}`).
+ */
 class TransitionTicketRequest extends FormRequest
 {
-    use AuthorizesWithGate;
+    use AuthorizesWithGate, ResolvesWorkItem;
 
     /**
-     * Primero el alcance (404 si el ticket no es visible) y, si el destino es un estado válido, el
+     * Primero el alcance (404 si el registro no es visible) y, si el destino es un estado válido, el
      * permiso para esa transición concreta (403).
      */
     public function authorize(): bool
     {
-        $ticket = $this->route('ticket');
-        $this->authorizeAbility('view', $ticket);
+        $item = $this->workItem();
+        $this->authorizeAbility('view', $item);
 
         $target = $this->target();
 
-        return $target === null || $this->authorizeAbility('transition', [$ticket, $target]);
+        return $target === null || $this->authorizeAbility('transition', [$item, $target]);
     }
 
     /**

@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tickets;
 
 use App\Http\Requests\Concerns\AuthorizesWithGate;
+use App\Http\Requests\Concerns\ResolvesWorkItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Asignar / reasignar. Sirve a tickets y a actividades (ruta `{ticket}` o `{activity}`).
+ */
 class AssignTicketRequest extends FormRequest
 {
-    use AuthorizesWithGate;
+    use AuthorizesWithGate, ResolvesWorkItem;
 
     public function authorize(): bool
     {
-        return $this->authorizeAbility('assign', $this->route('ticket'));
+        return $this->authorizeAbility('assign', $this->workItem());
     }
 
     /**

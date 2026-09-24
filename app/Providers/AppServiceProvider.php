@@ -90,7 +90,8 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Limites por usuario autenticado (o IP si no hay sesion) para acciones de escritura y descargas.
+     * Limites por usuario autenticado (o IP si no hay sesion) para acciones de escritura y descargas
+     * de tickets y actividades.
      */
     private function configureTicketRateLimiters(): void
     {
@@ -100,6 +101,10 @@ class AppServiceProvider extends ServiceProvider
             'ticket-comment' => ['ticket_comment_per_minute', 'perMinute'],
             'ticket-upload' => ['ticket_upload_per_minute', 'perMinute'],
             'attachment-download' => ['attachment_download_per_minute', 'perMinute'],
+            'activity-create' => ['activity_create_per_hour', 'perHour'],
+            'activity-write' => ['activity_write_per_minute', 'perMinute'],
+            'activity-comment' => ['activity_comment_per_minute', 'perMinute'],
+            'activity-upload' => ['activity_upload_per_minute', 'perMinute'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {

@@ -123,4 +123,37 @@ Alpine.data('twoFactorChallenge', () => ({
     },
 }));
 
+// Editor de recurrencia de actividades: solo muestra/oculta secciones segun la casilla "se repite" y la
+// frecuencia elegida (los campos son inputs normales que viajan en el formulario).
+// data-recurring="1" (iniciar activo) y data-frequency="daily|weekly|monthly" (frecuencia inicial).
+Alpine.data('recurrenceEditor', () => ({
+    recurring: false,
+    frequency: 'weekly',
+
+    init() {
+        this.recurring = this.$el.dataset.recurring === '1';
+        this.frequency = this.$el.dataset.frequency ?? 'weekly';
+    },
+
+    onToggle(event) {
+        this.recurring = event.target.checked;
+    },
+
+    onFrequency(event) {
+        this.frequency = event.target.value;
+    },
+
+    get isRecurring() {
+        return this.recurring;
+    },
+
+    get isWeekly() {
+        return this.frequency === 'weekly';
+    },
+
+    get isMonthly() {
+        return this.frequency === 'monthly';
+    },
+}));
+
 Alpine.start();

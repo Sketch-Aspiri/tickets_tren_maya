@@ -21,6 +21,7 @@ class PendingTicketsRequest extends FormRequest
     {
         return [
             'page' => ['nullable', 'integer', 'min:1'],
+            'activities_page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

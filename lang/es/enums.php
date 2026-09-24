@@ -28,6 +28,11 @@ return [
         'responsable' => 'Responsable',
         'colaborador' => 'Colaborador',
     ],
+    'recurrence_frequency' => [
+        'daily' => 'Diaria',
+        'weekly' => 'Semanal',
+        'monthly' => 'Mensual',
+    ],
     'ticket_source' => [
         'web' => 'Web',
         'email' => 'Correo',

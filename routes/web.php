@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Controllers\AccountStatusController;
+use App\Http\Controllers\Activities\ActivityAssignmentController;
+use App\Http\Controllers\Activities\ActivityAttachmentController;
+use App\Http\Controllers\Activities\ActivityCommentController;
+use App\Http\Controllers\Activities\ActivityController;
+use App\Http\Controllers\Activities\ActivityTransitionController;
+use App\Http\Controllers\Activities\SubtaskController;
 use App\Http\Controllers\Attachments\AttachmentController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\Categories\CategoryController;
@@ -75,6 +81,31 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::post('tickets/{ticket}/attachments', [TicketAttachmentController::class, 'store'])
         ->middleware('throttle:ticket-upload')
         ->name('tickets.attachments.store');
+
+    // Actividades (ActivityPolicy: permiso Spatie + alcance por rol; fuera de alcance responde 404).
+    // Sin bolsa, "tomar" ni "devolver a la bolsa": las actividades se asignan siempre de forma explicita.
+    Route::post('activities', [ActivityController::class, 'store'])->middleware('throttle:activity-create')->name('activities.store');
+    Route::resource('activities', ActivityController::class)->except('store')->middlewareFor(['update', 'destroy'], 'throttle:activity-write');
+
+    Route::middleware('throttle:activity-write')->prefix('activities/{activity}')->name('activities.')->group(function () {
+        Route::post('transition', [ActivityTransitionController::class, 'store'])->name('transition');
+        Route::put('assignments', [ActivityAssignmentController::class, 'update'])->name('assignments.update');
+
+        // Subtareas anidadas con `scopeBindings`: una subtarea de otra actividad responde 404.
+        Route::scopeBindings()->prefix('subtasks')->name('subtasks.')->group(function () {
+            Route::post('/', [SubtaskController::class, 'store'])->name('store');
+            Route::put('{subtask}', [SubtaskController::class, 'update'])->name('update');
+            Route::post('{subtask}/done', [SubtaskController::class, 'done'])->name('done');
+            Route::delete('{subtask}', [SubtaskController::class, 'destroy'])->name('destroy');
+        });
+    });
+
+    Route::post('activities/{activity}/comments', [ActivityCommentController::class, 'store'])
+        ->middleware('throttle:activity-comment')
+        ->name('activities.comments.store');
+    Route::post('activities/{activity}/attachments', [ActivityAttachmentController::class, 'store'])
+        ->middleware('throttle:activity-upload')
+        ->name('activities.attachments.store');
 
     // Los adjuntos solo se sirven por aqui (disco privado); nunca hay URL publica.
     Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])

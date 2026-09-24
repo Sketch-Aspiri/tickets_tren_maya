@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exceptions\BusinessRuleException;
+use App\Models\Activity;
 use App\Models\Attachment;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Support\AttachmentInspector;
+use App\Support\WorkflowSubject;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,9 +18,10 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Adjuntos seguros: disco privado (`storage/app/private`), nombre aleatorio elegido por el servidor,
- * extensión de la lista blanca validada contra el MIME real y nombre original saneado. Se sirven
- * únicamente por AttachmentController (con Policy); nunca desde `public/`.
+ * Adjuntos seguros de tickets y actividades: disco privado (`storage/app/private`), nombre aleatorio elegido
+ * por el servidor, extensión de la lista blanca validada contra el MIME real y nombre original saneado. Se
+ * sirven únicamente por AttachmentController (con Policy); nunca desde `public/`. Cada tipo de registro
+ * tiene su propio directorio (los ids de tickets y actividades pueden coincidir).
  */
 final class AttachmentService
 {
@@ -27,7 +30,7 @@ final class AttachmentService
         private readonly AttachmentInspector $inspector,
     ) {}
 
-    public function store(User $actor, Ticket $ticket, UploadedFile $file): Attachment
+    public function store(User $actor, Ticket|Activity $subject, UploadedFile $file): Attachment
     {
         // Se revalida aquí aunque el Form Request ya lo hizo: el servicio no confía en su llamador.
         $extension = $this->inspector->acceptedExtension($file);
@@ -41,23 +44,23 @@ final class AttachmentService
         }
 
         $disk = Storage::disk((string) config('tickets.attachments.disk'));
-        $directory = trim((string) config('tickets.attachments.directory'), '/').'/'.(int) $ticket->getKey();
+        $directory = WorkflowSubject::attachmentDirectory($subject);
         $storedName = Str::random(40).'.'.$extension;
         $path = null;
 
         try {
-            return DB::transaction(function () use ($actor, $ticket, $file, $disk, $directory, $storedName, &$path): Attachment {
-                // Bloquear el ticket serializa las subidas concurrentes: el tope por ticket no se rebasa.
-                Ticket::query()->lockForUpdate()->findOrFail($ticket->getKey());
+            return DB::transaction(function () use ($actor, $subject, $file, $disk, $directory, $storedName, &$path): Attachment {
+                // Bloquear el registro serializa las subidas concurrentes: el tope por registro no se rebasa.
+                $subject::query()->lockForUpdate()->findOrFail($subject->getKey());
 
-                if ($ticket->attachments()->count() >= (int) config('tickets.attachments.max_per_ticket')) {
-                    throw BusinessRuleException::because('tickets.errors.too_many_attachments', ['max' => (int) config('tickets.attachments.max_per_ticket')]);
+                if ($subject->attachments()->count() >= (int) config('tickets.attachments.max_per_ticket')) {
+                    throw BusinessRuleException::because(WorkflowSubject::error($subject, 'too_many_attachments'), ['max' => (int) config('tickets.attachments.max_per_ticket')]);
                 }
 
                 $path = $disk->putFileAs($directory, $file, $storedName);
 
                 if ($path === false) {
-                    throw BusinessRuleException::because('tickets.errors.upload_failed');
+                    throw BusinessRuleException::because(WorkflowSubject::error($subject, 'upload_failed'));
                 }
 
                 $attachment = new Attachment([
@@ -67,10 +70,10 @@ final class AttachmentService
                     'mime' => (string) $file->getMimeType(),
                     'size' => (int) $file->getSize(),
                 ]);
-                $ticket->attachments()->save($attachment);
+                $subject->attachments()->save($attachment);
 
-                $this->audit->record('tickets', 'attachment_added', $ticket, $actor, [], [], [
-                    'folio' => $ticket->folio,
+                $this->audit->record(WorkflowSubject::group($subject), 'attachment_added', $subject, $actor, [], [], [
+                    'folio' => $subject->folio,
                     'attachment_id' => $attachment->getKey(),
                     'original_name' => $attachment->original_name,
                 ]);
@@ -89,14 +92,14 @@ final class AttachmentService
 
     public function delete(User $actor, Attachment $attachment): void
     {
-        $ticket = $attachment->attachable;
+        $subject = $attachment->attachable;
         $path = $attachment->path;
 
-        DB::transaction(function () use ($actor, $attachment, $ticket): void {
+        DB::transaction(function () use ($actor, $attachment, $subject): void {
             $attachment->delete();
 
-            $this->audit->record('tickets', 'attachment_removed', $ticket, $actor, [], [], [
-                'folio' => $ticket?->folio,
+            $this->audit->record($subject === null ? 'tickets' : WorkflowSubject::group($subject), 'attachment_removed', $subject, $actor, [], [], [
+                'folio' => $subject?->folio,
                 'attachment_id' => $attachment->getKey(),
                 'original_name' => $attachment->original_name,
             ]);

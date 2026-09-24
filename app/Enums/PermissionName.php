@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Permisos de Spatie. Solo los usados hasta el Sprint 2; los sprints
+ * Permisos de Spatie. Solo los usados hasta el Sprint 3; los sprints
  * posteriores agregan los suyos. La matriz por rol vive en RolesAndPermissionsSeeder.
  * El ALCANCE (equipo/propios) lo aplican las Policies, no el permiso.
  */
@@ -25,4 +25,15 @@ enum PermissionName: string
     case TicketsReview = 'tickets.review';
     /** Editar cualquier ticket del alcance, eliminar, cancelar y reabrir. */
     case TicketsManage = 'tickets.manage';
+    case ActivitiesView = 'activities.view';
+    /** Crear actividades (jefe: cualquier equipo; coordinador: el suyo). */
+    case ActivitiesCreate = 'activities.create';
+    /** Avanzar hasta En revision lo propio, marcar subtareas, comentar y adjuntar. */
+    case ActivitiesWork = 'activities.work';
+    /** Asignar y reasignar (responsable unico + colaboradores). */
+    case ActivitiesAssign = 'activities.assign';
+    /** Aprobar o rechazar (En revision -> Completado / En proceso). */
+    case ActivitiesReview = 'activities.review';
+    /** Editar, eliminar, cancelar, reabrir y gestionar subtareas de cualquier actividad del alcance. */
+    case ActivitiesManage = 'activities.manage';
 }

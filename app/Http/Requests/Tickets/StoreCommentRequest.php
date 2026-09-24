@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tickets;
 
 use App\Http\Requests\Concerns\AuthorizesWithGate;
+use App\Http\Requests\Concerns\ResolvesWorkItem;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * Comentar. Sirve a tickets y a actividades (ruta `{ticket}` o `{activity}`).
+ */
 class StoreCommentRequest extends FormRequest
 {
-    use AuthorizesWithGate;
+    use AuthorizesWithGate, ResolvesWorkItem;
 
     public function authorize(): bool
     {
-        return $this->authorizeAbility('comment', $this->route('ticket'));
+        return $this->authorizeAbility('comment', $this->workItem());
     }
 
     /**

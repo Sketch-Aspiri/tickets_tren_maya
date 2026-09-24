@@ -28,6 +28,12 @@
             <x-sidebar-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*') && ! request()->routeIs('tickets.pending')">
                 {{ __('common.nav.tickets') }}
             </x-sidebar-link>
+            {{-- Listado y alta de actividades: solo quien las gestiona (jefe / coordinador). El empleado ve las suyas en "Mis pendientes". --}}
+            @can('viewAny', \App\Models\Activity::class)
+                <x-sidebar-link :href="route('activities.index')" :active="request()->routeIs('activities.*')">
+                    {{ __('common.nav.activities') }}
+                </x-sidebar-link>
+            @endcan
         @endcan
 
         @can('viewAny', \App\Models\User::class)

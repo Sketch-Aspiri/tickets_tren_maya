@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tickets;
 
 use App\Http\Requests\Concerns\AuthorizesWithGate;
-use App\Http\Requests\Concerns\ValidatesTicketFields;
+use App\Http\Requests\Concerns\ValidatesWorkItemFields;
 use App\Models\Ticket;
 use App\Support\LocalTime;
 use Illuminate\Foundation\Http\FormRequest;
@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateTicketRequest extends FormRequest
 {
-    use AuthorizesWithGate, ValidatesTicketFields;
+    use AuthorizesWithGate, ValidatesWorkItemFields;
 
     public function authorize(): bool
     {
@@ -32,7 +32,7 @@ class UpdateTicketRequest extends FormRequest
         $currentDate = $ticket->due_date?->toDateString();
 
         return [
-            ...$this->ticketFieldRules(),
+            ...$this->workItemFieldRules(),
             'category_id' => [
                 'nullable',
                 'integer',

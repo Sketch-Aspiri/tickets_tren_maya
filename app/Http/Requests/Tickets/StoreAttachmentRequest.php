@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tickets;
 
 use App\Http\Requests\Concerns\AuthorizesWithGate;
+use App\Http\Requests\Concerns\ResolvesWorkItem;
 use App\Rules\AllowedAttachment;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * Adjuntar. Sirve a tickets y a actividades (ruta `{ticket}` o `{activity}`).
+ */
 class StoreAttachmentRequest extends FormRequest
 {
-    use AuthorizesWithGate;
+    use AuthorizesWithGate, ResolvesWorkItem;
 
     public function authorize(): bool
     {
-        return $this->authorizeAbility('attach', $this->route('ticket'));
+        return $this->authorizeAbility('attach', $this->workItem());
     }
 
     /**

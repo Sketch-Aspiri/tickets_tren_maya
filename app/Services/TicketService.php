@@ -11,25 +11,22 @@ use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Ciclo de vida del ticket: crear, editar, eliminar y cambiar de estado.
  *
- * La MÁQUINA de estados (qué transiciones existen y cuáles exigen comentario) vive en TicketStatus y
- * se aplica UNA sola vez aquí, en `transition()`; QUIÉN puede recorrer cada transición lo decide
- * TicketPolicy::transition. Ni controladores ni vistas validan transiciones.
+ * La MÁQUINA de estados (qué transiciones existen y cuáles exigen comentario) vive en TicketStatus y se
+ * aplica UNA sola vez en StatusTransitioner (compartido con las actividades); QUIÉN puede recorrer cada
+ * transición lo decide TicketPolicy::transition. Ni controladores ni vistas validan transiciones.
  */
 final class TicketService
 {
-    private const LOG = 'tickets';
-
     /** Campos que el usuario puede escribir (los mismos que el $fillable del modelo). */
     private const FORM_FIELDS = ['title', 'description', 'priority', 'category_id', 'due_date'];
 
     public function __construct(
-        private readonly AuditLogger $audit,
         private readonly FolioGenerator $folios,
+        private readonly StatusTransitioner $transitioner,
     ) {}
 
     /**
@@ -94,74 +91,22 @@ final class TicketService
     }
 
     /**
-     * Cambia el estado. Bloquea la fila, revalida transición y permiso sobre el estado actual (dos
-     * usuarios actuando a la vez no pueden pisarse), guarda historial y bitácora en una transacción.
+     * Cambia el estado (ver StatusTransitioner: lock, re-autorización, arista, comentario, historial y bitácora).
      */
     public function transition(User $actor, Ticket $ticket, TicketStatus $to, ?string $comment = null): Ticket
     {
-        $comment = $comment === null ? null : trim($comment);
-        $comment = $comment === '' ? null : $comment;
-
-        return DB::transaction(function () use ($actor, $ticket, $to, $comment): Ticket {
-            $locked = Ticket::query()->lockForUpdate()->findOrFail($ticket->getKey());
-            $from = $locked->status;
-
-            Gate::forUser($actor)->authorize('transition', [$locked, $to]);
-
-            if (! $from->canTransitionTo($to)) {
-                throw BusinessRuleException::because('tickets.errors.invalid_transition', [
-                    'from' => $from->label(),
-                    'to' => $to->label(),
-                ]);
-            }
-
-            if ($from->requiresCommentWhenMovingTo($to) && $comment === null) {
-                throw BusinessRuleException::because('tickets.errors.comment_required');
-            }
-
-            $this->persistStatus($locked, $to);
-
-            $locked->statusHistories()->create([
-                'from_status' => $from,
-                'to_status' => $to,
-                'user_id' => $actor->getKey(),
-                'comment' => $comment,
-            ]);
-
-            $this->audit->record(self::LOG, 'status_changed', $locked, $actor, ['status' => $from->value], ['status' => $to->value], [
-                'folio' => $locked->folio,
-                'comment' => $comment,
-            ]);
-
-            return $locked;
-        });
+        /** @var Ticket */
+        return $this->transitioner->transition($actor, $ticket, $to, $comment);
     }
 
     /**
-     * Estados a los que ESTE usuario puede pasar el ticket ahora (para mostrar solo las acciones
-     * permitidas; ocultar botones es UX, la autorización real es TicketPolicy + transition()).
+     * Estados a los que ESTE usuario puede pasar el ticket ahora (ocultar botones es UX; la autorización
+     * real es TicketPolicy + transition()).
      *
      * @return list<TicketStatus>
      */
     public function availableTransitions(User $user, Ticket $ticket): array
     {
-        return array_values(array_filter(
-            $ticket->status->allowedTargets(),
-            fn (TicketStatus $target): bool => Gate::forUser($user)->allows('transition', [$ticket, $target]),
-        ));
-    }
-
-    /**
-     * `completed_at` solo tiene valor mientras el ticket está Completado (reabrir lo limpia). El evento
-     * genérico del modelo se suprime porque se emite `status_changed` con el detalle.
-     */
-    private function persistStatus(Ticket $ticket, TicketStatus $to): void
-    {
-        $ticket->disableLogging();
-        $ticket->forceFill([
-            'status' => $to,
-            'completed_at' => $to === TicketStatus::Completed ? now() : null,
-        ])->save();
-        $ticket->enableLogging();
+        return $this->transitioner->availableTransitions($user, $ticket);
     }
 }

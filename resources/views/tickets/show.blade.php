@@ -149,81 +149,11 @@
         </x-card>
     @endif
 
-    {{-- Historial --}}
-    <x-card :title="__('tickets.show.history')">
-        <ol class="space-y-3 text-sm">
-            @foreach ($ticket->statusHistories as $history)
-                <li class="border-s-2 border-brand-mint ps-3">
-                    <p class="font-medium text-gray-900">
-                        @if ($history->from_status === null)
-                            {{ __('tickets.show.history_created') }}
-                        @else
-                            {{ __('tickets.show.history_change', ['from' => $history->from_status->label(), 'to' => $history->to_status->label()]) }}
-                        @endif
-                    </p>
-                    <p class="text-xs text-gray-600">{{ __('tickets.show.by') }} {{ $history->user->name }} · <x-local-datetime :value="$history->created_at" /></p>
-                    @if ($history->comment)
-                        <p class="mt-1 whitespace-pre-line break-words text-gray-800">{{ $history->comment }}</p>
-                    @endif
-                </li>
-            @endforeach
-        </ol>
-    </x-card>
+    <x-history-panel :item="$ticket" :created-label="__('tickets.show.history_created')" />
 
-    {{-- Comentarios: texto plano, siempre escapado. --}}
-    <x-card :title="__('tickets.show.comments')" id="comentarios">
-        @forelse ($ticket->comments as $comment)
-            <div class="mb-4 border-b border-brand-green/10 pb-3 last:mb-0 last:border-0 last:pb-0">
-                <p class="text-xs text-gray-600"><span class="font-medium text-gray-900">{{ $comment->user->name }}</span> · <x-local-datetime :value="$comment->created_at" /></p>
-                <p class="mt-1 whitespace-pre-line break-words text-sm text-gray-900">{{ $comment->body }}</p>
-            </div>
-        @empty
-            <p class="text-sm text-gray-700">{{ __('tickets.show.no_comments') }}</p>
-        @endforelse
+    <x-comments-panel :item="$ticket" :store-url="route('tickets.comments.store', $ticket)" />
 
-        @can('comment', $ticket)
-            <form method="POST" action="{{ route('tickets.comments.store', $ticket) }}" class="mt-4">
-                @csrf
-                <x-input-label for="body" :value="__('tickets.comment.label')" />
-                <textarea id="body" name="body" rows="3" maxlength="{{ config('tickets.comment_max_length') }}" required aria-describedby="body_hint" class="mt-1 block min-h-[44px] w-full rounded-md border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('body') }}</textarea>
-                <p id="body_hint" class="mt-1 text-xs text-gray-600">{{ __('tickets.comment.plain_text_hint') }}</p>
-                <x-input-error :messages="$errors->get('body')" class="mt-2" />
-                <x-primary-button class="mt-3">{{ __('tickets.comment.submit') }}</x-primary-button>
-            </form>
-        @endcan
-    </x-card>
-
-    {{-- Adjuntos: solo se descargan por AttachmentController (disco privado + Policy). --}}
-    <x-card :title="__('tickets.show.attachments')" id="adjuntos">
-        @forelse ($ticket->attachments as $attachment)
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-green/10 py-2 text-sm last:border-0">
-                <div class="min-w-0">
-                    <a href="{{ route('attachments.download', $attachment) }}" class="inline-flex min-h-[44px] items-center break-all font-medium text-brand-teal underline underline-offset-2 hover:text-brand-green focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ $attachment->original_name }}</a>
-                    <p class="text-xs text-gray-600">{{ number_format($attachment->size / 1024, 1) }} KB · {{ $attachment->user->name }} · <x-local-datetime :value="$attachment->created_at" /></p>
-                </div>
-                @can('delete', $attachment)
-                    <form method="POST" action="{{ route('attachments.destroy', $attachment) }}" x-data="confirmSubmit" data-confirm="{{ __('tickets.show.remove_attachment_confirm') }}" x-on:submit="onSubmit">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('tickets.attachment.delete') }}</button>
-                    </form>
-                @endcan
-            </div>
-        @empty
-            <p class="text-sm text-gray-700">{{ __('tickets.show.no_attachments') }}</p>
-        @endforelse
-
-        @can('attach', $ticket)
-            <form method="POST" action="{{ route('tickets.attachments.store', $ticket) }}" enctype="multipart/form-data" class="mt-4">
-                @csrf
-                <x-input-label for="file" :value="__('tickets.attachment.label')" />
-                <input id="file" name="file" type="file" required aria-describedby="file_hint" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt" class="mt-1 block min-h-[44px] w-full text-sm text-gray-800 file:mr-3 file:min-h-[44px] file:cursor-pointer file:rounded-md file:border file:border-brand-teal file:bg-white file:px-4 file:text-sm file:font-semibold file:text-brand-green hover:file:bg-brand-mist">
-                <p id="file_hint" class="mt-1 text-xs text-gray-600">{{ __('tickets.attachment.hint', ['max' => intdiv($maxKb, 1024), 'count' => config('tickets.attachments.max_per_ticket')]) }}</p>
-                <x-input-error :messages="$errors->get('file')" class="mt-2" />
-                <x-primary-button class="mt-3">{{ __('tickets.attachment.submit') }}</x-primary-button>
-            </form>
-        @endcan
-    </x-card>
+    <x-attachments-panel :item="$ticket" :store-url="route('tickets.attachments.store', $ticket)" :hint="__('tickets.attachment.hint', ['max' => intdiv($maxKb, 1024), 'count' => config('tickets.attachments.max_per_ticket')])" />
 
     @can('delete', $ticket)
         <x-card>

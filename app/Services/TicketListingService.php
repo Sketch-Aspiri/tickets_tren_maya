@@ -9,7 +9,7 @@ use App\Enums\Priority;
 use App\Enums\TicketStatus;
 use App\Models\Ticket;
 use App\Models\User;
-use BackedEnum;
+use App\Support\ListingQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -19,9 +19,6 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class TicketListingService
 {
-    /** Escape de LIKE portable (MySQL y SQLite): `!` como carácter de escape. */
-    private const LIKE_ESCAPE = '!';
-
     /** Columnas por las que se permite ordenar (lista blanca; la validación vive en IndexTicketsRequest). */
     public const SORTABLE = ['created_at', 'due_date', 'priority', 'status', 'folio', 'title'];
 
@@ -39,7 +36,7 @@ final class TicketListingService
             ->when($filters['responsible_id'] ?? null, fn (Builder $q, int $id) => $this->filterByResponsible($q, $id))
             ->when($filters['overdue'] ?? false, fn (Builder $q) => $q->overdue())
             ->when($filters['unassigned'] ?? false, fn (Builder $q) => $q->unassigned())
-            ->when($filters['q'] ?? null, fn (Builder $q, string $term) => $this->applySearch($q, $term));
+            ->when($filters['q'] ?? null, fn (Builder $q, string $term) => ListingQuery::search($q, $term, ['tickets.title', 'tickets.folio']));
 
         $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
 
@@ -47,9 +44,9 @@ final class TicketListingService
     }
 
     /**
-     * "Mis pendientes": lo asignado al usuario que sigue abierto, por vencimiento (sin fecha al final)
-     * y luego por prioridad. Estructura lista para sumar actividades en el Sprint 3: bastará con unir
-     * aquí la consulta equivalente de actividades y ordenar el resultado combinado.
+     * "Mis pendientes" (sección de tickets): lo asignado al usuario que sigue abierto, por vencimiento (sin
+     * fecha al final) y luego por prioridad. Las actividades van en su propia sección
+     * (ActivityListingService::pendingFor), con paginación independiente.
      *
      * @return LengthAwarePaginator<int, Ticket>
      */
@@ -59,9 +56,8 @@ final class TicketListingService
             ->open()
             ->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
 
-        $query->orderByRaw('tickets.due_date is null')
-            ->orderBy('tickets.due_date');
-        $this->orderByEnum($query, 'tickets.priority', Priority::cases(), 'desc');
+        ListingQuery::orderByDateNullsLast($query, 'tickets.due_date', 'asc');
+        ListingQuery::orderByEnum($query, 'tickets.priority', Priority::cases(), 'desc');
 
         return $query->orderBy('tickets.id')
             ->paginate((int) config('tickets.tickets_per_page'))
@@ -91,23 +87,6 @@ final class TicketListingService
 
     /**
      * @param  Builder<Ticket>  $query
-     * @return Builder<Ticket>
-     */
-    private function applySearch(Builder $query, string $term): Builder
-    {
-        $escape = self::LIKE_ESCAPE;
-        $escaped = str_replace([$escape, '%', '_'], [$escape.$escape, $escape.'%', $escape.'_'], $term);
-        $pattern = "%{$escaped}%";
-
-        // El fragmento SQL es constante; el termino del usuario solo viaja como binding.
-        return $query->where(function (Builder $inner) use ($pattern, $escape): void {
-            $inner->whereRaw("tickets.title like ? escape '{$escape}'", [$pattern])
-                ->orWhereRaw("tickets.folio like ? escape '{$escape}'", [$pattern]);
-        });
-    }
-
-    /**
-     * @param  Builder<Ticket>  $query
      */
     private function applySort(Builder $query, ?string $sort, ?string $direction): void
     {
@@ -115,28 +94,13 @@ final class TicketListingService
         $dir = $direction === 'asc' ? 'asc' : 'desc';
 
         match ($sort) {
-            'due_date' => $query->orderByRaw('tickets.due_date is null')->orderBy('tickets.due_date', $dir),
-            'priority' => $this->orderByEnum($query, 'tickets.priority', Priority::cases(), $dir),
-            'status' => $this->orderByEnum($query, 'tickets.status', TicketStatus::cases(), $dir),
+            'due_date' => ListingQuery::orderByDateNullsLast($query, 'tickets.due_date', $dir),
+            'priority' => ListingQuery::orderByEnum($query, 'tickets.priority', Priority::cases(), $dir),
+            'status' => ListingQuery::orderByEnum($query, 'tickets.status', TicketStatus::cases(), $dir),
             'folio', 'title' => $query->orderBy('tickets.'.$sort, $dir),
             default => $query->orderBy('tickets.created_at', $dir),
         };
 
         $query->orderBy('tickets.id', 'desc');
-    }
-
-    /**
-     * Ordena por el orden de declaracion de un enum (no alfabetico) con un CASE parametrizado.
-     *
-     * @param  Builder<Ticket>  $query
-     * @param  list<BackedEnum>  $cases
-     */
-    private function orderByEnum(Builder $query, string $column, array $cases, string $dir): void
-    {
-        $whens = implode(' ', array_map(fn (int $index): string => 'when ? then '.($index + 1), array_keys($cases)));
-        $bindings = array_map(fn (BackedEnum $case): string|int => $case->value, $cases);
-        $direction = $dir === 'asc' ? 'asc' : 'desc';
-
-        $query->orderByRaw("case {$column} {$whens} else 0 end {$direction}", $bindings);
     }
 }

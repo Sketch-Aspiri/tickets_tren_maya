@@ -8,7 +8,7 @@ use App\Enums\Priority;
 use App\Enums\TicketSource;
 use App\Enums\TicketStatus;
 use App\Enums\UserRole;
-use App\Support\LocalTime;
+use App\Models\Concerns\HasWorkflow;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +20,7 @@ use Spatie\Activitylog\Support\LogOptions;
 
 class Ticket extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, HasWorkflow, LogsActivity, SoftDeletes;
 
     /**
      * Solo lo que el usuario puede escribir en el formulario. `folio`, `status`, `team_id`,
@@ -183,29 +183,6 @@ class Ticket extends Model
     }
 
     /**
-     * Vencido = fecha límite anterior a hoy (hora de negocio) y estado no final. Nunca es un estado.
-     *
-     * @param  Builder<Ticket>  $query
-     * @return Builder<Ticket>
-     */
-    public function scopeOverdue(Builder $query): Builder
-    {
-        return $query
-            ->whereNotNull('tickets.due_date')
-            ->where('tickets.due_date', '<', LocalTime::today())
-            ->whereNotIn('tickets.status', TicketStatus::finalValues());
-    }
-
-    /**
-     * @param  Builder<Ticket>  $query
-     * @return Builder<Ticket>
-     */
-    public function scopeOpen(Builder $query): Builder
-    {
-        return $query->whereNotIn('tickets.status', TicketStatus::finalValues());
-    }
-
-    /**
      * Sin ningún asignado: la "bolsa" del equipo.
      *
      * @param  Builder<Ticket>  $query
@@ -217,13 +194,6 @@ class Ticket extends Model
     }
 
     // --- Consultas de instancia --------------------------------------------
-
-    public function isOverdue(): bool
-    {
-        return $this->due_date !== null
-            && $this->due_date->toDateString() < LocalTime::today()
-            && ! $this->status->isFinal();
-    }
 
     /**
      * "Lo suyo" para un empleado: lo creó o está asignado a él.

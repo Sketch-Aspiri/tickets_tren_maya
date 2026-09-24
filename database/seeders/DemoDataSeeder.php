@@ -30,7 +30,7 @@ class DemoDataSeeder extends Seeder
     /** Entornos donde se permiten cuentas demo con contrasena conocida. */
     public const ALLOWED_ENVIRONMENTS = ['local', 'testing'];
 
-    private const TEAM_NAMES = ['Operaciones', 'Mantenimiento', 'Administracion'];
+    public const TEAM_NAMES = ['Operaciones', 'Mantenimiento', 'Administracion'];
 
     private const EMPLOYEES_PER_TEAM = 3;
 
@@ -73,6 +73,7 @@ class DemoDataSeeder extends Seeder
 
         $this->seedCategories();
         $this->seedTickets();
+        $this->call(DemoActivitiesSeeder::class);
 
         $this->report($password, $isGenerated);
     }

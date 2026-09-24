@@ -5,7 +5,9 @@ return [
     'new' => 'Nuevo ticket',
     'edit' => 'Editar ticket',
     'pending_title' => 'Mis pendientes',
-    'pending_intro' => 'Lo que tienes asignado y sigue abierto, ordenado por fecha límite y prioridad.',
+    'pending_intro' => 'Lo que tienes asignado y sigue abierto (tickets y actividades), ordenado por fecha límite y prioridad.',
+    'pending_tickets_heading' => 'Tickets',
+    'pending_activities_heading' => 'Actividades',
     'pending_empty' => 'No tienes pendientes asignados. Revisa la bolsa de tu equipo para tomar un ticket.',
     'columns' => [
         'folio' => 'Folio',

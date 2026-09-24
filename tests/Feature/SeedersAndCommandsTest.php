@@ -59,8 +59,9 @@ class SeedersAndCommandsTest extends DatabaseTestCase
     {
         $granted = fn (UserRole $role): array => Role::findByName($role->value)->permissions->pluck('name')->all();
 
-        $operational = ['tickets.view', 'tickets.create', 'tickets.work'];
-        $managerial = [...$operational, 'tickets.assign', 'tickets.review', 'tickets.manage'];
+        // Sprint 3: las actividades suman permisos (el detalle por rol esta en ActivityModelTest).
+        $operational = ['tickets.view', 'tickets.create', 'tickets.work', 'activities.view', 'activities.work'];
+        $managerial = [...$operational, 'tickets.assign', 'tickets.review', 'tickets.manage', 'activities.create', 'activities.assign', 'activities.review', 'activities.manage'];
 
         $this->assertEqualsCanonicalizing($operational, $granted(UserRole::Empleado));
         $this->assertEqualsCanonicalizing($managerial, $granted(UserRole::Coordinador));
@@ -73,8 +74,8 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $this->assertSame(count(PermissionName::cases()), Permission::query()->count());
-        $this->assertCount(3, Role::findByName(UserRole::Empleado->value)->permissions);
-        $this->assertCount(6, Role::findByName(UserRole::Coordinador->value)->permissions);
+        $this->assertCount(5, Role::findByName(UserRole::Empleado->value)->permissions);
+        $this->assertCount(12, Role::findByName(UserRole::Coordinador->value)->permissions);
     }
 
     public function test_roles_and_permissions_seeder_is_idempotent_and_keeps_user_assignments(): void

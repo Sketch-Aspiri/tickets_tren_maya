@@ -31,6 +31,11 @@ return [
         'ticket_comment_per_minute' => 20,
         'ticket_upload_per_minute' => 10,
         'attachment_download_per_minute' => 60,
+        // Por usuario autenticado (Sprint 3, actividades).
+        'activity_create_per_hour' => 30,
+        'activity_write_per_minute' => 60,
+        'activity_comment_per_minute' => 20,
+        'activity_upload_per_minute' => 10,
     ],
 
     /*
@@ -82,13 +87,31 @@ return [
     'comment_max_length' => 2000,
 
     /*
+    |--------------------------------------------------------------------------
+    | Actividades (Sprint 3)
+    |--------------------------------------------------------------------------
+    | `max_subtasks`: tope de subtareas por actividad (acota el trabajo de las consultas de avance).
+    | `recurrence.horizon_days`: hasta cuantos dias por delante de HOY (hora de negocio, inclusive) genera
+    | instancias `activities:generate-recurring`. `recurrence.schedule_at`: hora local (America/Cancun) de la
+    | ejecucion diaria programada.
+    */
+    'activities_per_page' => 15,
+    'max_subtasks' => 50,
+    'recurrence' => [
+        'horizon_days' => (int) env('RECURRENCE_HORIZON_DAYS', 14),
+        'schedule_at' => env('RECURRENCE_SCHEDULE_AT', '02:00'),
+    ],
+
+    /*
     | Adjuntos: disco PRIVADO (storage/app/private, nunca public/). Un tipo solo se acepta si la
     | extension esta en la lista blanca Y el MIME detectado por el contenido (finfo) corresponde a
-    | esa extension. `max_kilobytes` y `max_per_ticket` son ajustables.
+    | esa extension. `max_kilobytes` y `max_per_ticket` (por ticket o por actividad) son ajustables.
     */
     'attachments' => [
         'disk' => 'local',
         'directory' => 'tickets',
+        // Los adjuntos de actividades van en otro directorio: los ids de tickets y actividades pueden coincidir.
+        'activity_directory' => 'activities',
         'max_kilobytes' => (int) env('ATTACHMENT_MAX_KB', 10240),
         'max_per_ticket' => (int) env('ATTACHMENT_MAX_PER_TICKET', 10),
         'allowed' => [

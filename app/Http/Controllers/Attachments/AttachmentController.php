@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Attachments;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachments\DeleteAttachmentRequest;
+use App\Models\Activity;
 use App\Models\Attachment;
 use App\Models\Ticket;
 use App\Services\AttachmentService;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Único punto de acceso a los archivos adjuntos: los archivos viven en el disco privado y nunca
- * tienen URL pública; toda descarga pasa por la Policy (`view`, que hereda el alcance del ticket).
+ * tienen URL pública; toda descarga pasa por la Policy (`view`, que hereda el alcance del ticket o de la actividad dueña).
  */
 class AttachmentController extends Controller
 {
@@ -41,12 +42,14 @@ class AttachmentController extends Controller
     {
         $this->authorize('delete', $attachment);
 
-        $ticket = $attachment->attachable;
+        $parent = $attachment->attachable;
 
         $this->attachments->delete($request->user(), $attachment);
 
-        return $ticket instanceof Ticket
-            ? redirect()->route('tickets.show', $ticket)->withFragment('adjuntos')->with('status', 'attachment-deleted')
-            : redirect()->route('tickets.index')->with('status', 'attachment-deleted');
+        return match (true) {
+            $parent instanceof Ticket => redirect()->route('tickets.show', $parent)->withFragment('adjuntos')->with('status', 'attachment-deleted'),
+            $parent instanceof Activity => redirect()->route('activities.show', $parent)->withFragment('adjuntos')->with('status', 'attachment-deleted'),
+            default => redirect()->route('tickets.index')->with('status', 'attachment-deleted'),
+        };
     }
 }
