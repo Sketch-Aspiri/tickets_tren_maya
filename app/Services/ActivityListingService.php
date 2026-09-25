@@ -81,7 +81,7 @@ final class ActivityListingService
      * final) y luego por prioridad. Página propia (`activities_page`) para no chocar con la de tickets.
      *
      * Con `PendingScope::Team` (solo coordinadores con equipo; para cualquiera mas se ignora) lista en cambio las
-     * actividades abiertas del equipo del coordinador (sin plantillas), siempre dentro de `visibleTo`.
+     * actividades abiertas de los equipos del coordinador (sin plantillas), siempre dentro de `visibleTo`.
      *
      * @return LengthAwarePaginator<int, Activity>
      */
@@ -92,7 +92,7 @@ final class ActivityListingService
             ->open();
 
         if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
-            $query->where('activities.team_id', $user->team_id);
+            $query->whereIn('activities.team_id', $user->teamIdsQuery());
         } else {
             $query->where(fn (Builder $mine) => $mine
                 ->assignedTo($user)

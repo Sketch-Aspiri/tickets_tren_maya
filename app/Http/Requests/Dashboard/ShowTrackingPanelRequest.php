@@ -14,8 +14,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * Filtros del panel de seguimiento (query string). Autoriza ANTES de validar. Los filtros solo estrechan el
- * alcance (DashboardScope): además, un coordinador que envía el equipo o la persona de otro equipo recibe un
- * error de validación en lugar de un resultado vacío o ampliado.
+ * alcance (DashboardScope): además, un coordinador que envía un equipo que no es suyo, o una persona que no comparte
+ * ninguno de sus equipos, recibe un error de validación en lugar de un resultado vacío o ampliado.
  */
 class ShowTrackingPanelRequest extends FormRequest
 {
@@ -33,15 +33,17 @@ class ShowTrackingPanelRequest extends FormRequest
     {
         $user = $this->user();
         $isCoordinator = $user?->roleEnum() === UserRole::Coordinador;
+        $ownTeamIds = $isCoordinator ? $user->teamIds() : [];
 
         return [
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:'.LocalTime::today()],
             'team_id' => ['nullable', 'integer', $isCoordinator
-                ? Rule::in([(int) $user->team_id])
+                ? Rule::in($ownTeamIds)
                 : Rule::exists('teams', 'id')],
-            'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')
-                ->when($isCoordinator, fn ($rule) => $rule->where('team_id', (int) $user->team_id))],
+            'user_id' => ['nullable', 'integer', $isCoordinator
+                ? Rule::exists('team_user', 'user_id')->whereIn('team_id', $ownTeamIds)
+                : Rule::exists('users', 'id')],
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
         ];
     }

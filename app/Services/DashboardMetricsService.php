@@ -62,7 +62,7 @@ final class DashboardMetricsService
         $identity = [
             'user' => $user->getKey(),
             'role' => $user->roleEnum()?->value,
-            'team' => $user->team_id,
+            'teams' => $user->seesAllTeams() ? null : $user->teamIds(),
             'day' => LocalTime::today(),
             'filters' => $filters->cacheKey(),
         ];
@@ -80,17 +80,36 @@ final class DashboardMetricsService
             'activities' => $this->scope->activities($user, $filters),
         ];
         $granularity = $filters->days() > (int) config('tickets.dashboard.weekly_trend_after_days') ? 'week' : 'day';
-        $teamId = $this->scope->effectiveTeamId($user, $filters);
 
         return [
             'period' => ['from' => $filters->from, 'to' => $filters->to, 'days' => $filters->days()],
-            'scope' => ['team_id' => $teamId, 'team_name' => $teamId === null ? null : Team::query()->whereKey($teamId)->value('name')],
+            'scope' => $this->scopeSummary($this->scope->effectiveTeamIds($user, $filters)),
             'generated_at' => CarbonImmutable::now()->toIso8601String(),
             'cards' => $this->cards($builders, $filters),
             'created_distribution' => $this->distribution($builders, $filters),
             'trend' => ['granularity' => $granularity, 'points' => $this->trend($builders, $filters, $granularity)],
             'workload' => $this->workload($builders, $filters),
             'closing' => $this->closing($builders, $filters),
+        ];
+    }
+
+    /**
+     * Texto del alcance: `team_id`/`team_name` con un solo equipo, `team_names` con varios (coordinador con más
+     * de un equipo y sin filtro) y todo en `null`/vacío para el alcance global.
+     *
+     * @param  list<int>|null  $teamIds
+     * @return array{team_id: ?int, team_name: ?string, team_names: list<string>}
+     */
+    private function scopeSummary(?array $teamIds): array
+    {
+        $names = $teamIds === null || $teamIds === []
+            ? []
+            : Team::query()->whereKey($teamIds)->orderBy('name')->pluck('name')->all();
+
+        return [
+            'team_id' => count($names) === 1 ? $teamIds[0] : null,
+            'team_name' => count($names) === 1 ? $names[0] : null,
+            'team_names' => count($names) > 1 ? $names : [],
         ];
     }
 

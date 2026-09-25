@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PermissionName;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Team;
 use App\Models\User;
 use Closure;
 use Illuminate\Contracts\Database\ConcurrencyErrorDetector;
@@ -16,8 +18,12 @@ use Illuminate\Support\Facades\DB;
 use PDOException;
 
 /**
- * Gestion de usuarios por el jefe de zona: listado, aprobacion, estado, rol y equipo.
+ * Gestion de usuarios por el administrador y el jefe de zona: listado, aprobacion, estado, rol y equipos.
  * Toda regla de integridad vive aqui, no en controladores ni vistas.
+ *
+ * Un usuario de cualquier rol puede pertenecer a varios equipos (`team_user`). Coordinadores y empleados
+ * necesitan al menos uno; administrador y jefe de zona lo tienen opcional (ven todo de todos modos).
+ * Las cuentas y el rol de administrador solo los gestiona quien tiene `admins.manage` (el administrador).
  */
 final class UserService
 {
@@ -39,10 +45,10 @@ final class UserService
     public function paginate(array $filters, ?int $perPage = null): LengthAwarePaginator
     {
         return User::query()
-            ->with(['roles:id,name', 'team:id,name'])
+            ->with(['roles:id,name', 'teams:id,name'])
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('status', $status))
             ->when($filters['role'] ?? null, fn (Builder $q, string $role) => $q->role($role))
-            ->when($filters['team_id'] ?? null, fn (Builder $q, int $teamId) => $q->where('team_id', $teamId))
+            ->when($filters['team_id'] ?? null, fn (Builder $q, int $teamId) => $q->memberOfAny([$teamId]))
             ->when($filters['q'] ?? null, fn (Builder $q, string $term) => $this->applySearch($q, $term))
             ->latest('id')
             ->paginate($perPage ?? (int) config('tickets.users_per_page'))
@@ -55,21 +61,24 @@ final class UserService
     }
 
     /**
-     * Aprueba una cuenta pendiente (o re-evalua una rechazada) asignando rol y equipo.
+     * Aprueba una cuenta pendiente (o re-evalua una rechazada) asignando rol y equipos.
+     *
+     * @param  list<int>  $teamIds
      */
-    public function approve(User $actor, User $target, UserRole $role, ?int $teamId): User
+    public function approve(User $actor, User $target, UserRole $role, array $teamIds): User
     {
         if ($target->isActive()) {
             throw BusinessRuleException::because('users.errors.already_active');
         }
 
-        $this->assertTeamRequirement($role, $teamId);
-        $teamId = $this->teamIdFor($role, $teamId);
+        $teamIds = $this->normalizeTeamIds($role, $teamIds);
+        $this->assertCanAssignRole($actor, $target, $role);
 
-        return DB::transaction(function () use ($actor, $target, $role, $teamId): User {
+        return DB::transaction(function () use ($actor, $target, $role, $teamIds): User {
             $before = $this->snapshot($target);
 
-            $this->persist($target, ['status' => UserStatus::Active, 'team_id' => $teamId]);
+            $this->persist($target, ['status' => UserStatus::Active]);
+            $target->teams()->sync($teamIds);
             $target->syncRoles([$role->value]);
 
             $this->audit->record(self::LOG, 'approved', $target, $actor, $before, $this->snapshot($target));
@@ -103,9 +112,11 @@ final class UserService
 
         $role = $target->roleEnum();
 
-        if ($role === null || ($role->requiresTeam() && $target->team_id === null)) {
+        if ($role === null || ($role->requiresTeam() && ! $target->teams()->exists())) {
             throw BusinessRuleException::because('users.errors.needs_role_and_team');
         }
+
+        $this->assertCanAssignRole($actor, $target, $role);
 
         return DB::transaction(function () use ($actor, $target): User {
             $before = $this->snapshot($target);
@@ -129,8 +140,10 @@ final class UserService
             throw BusinessRuleException::because('users.errors.cannot_deactivate_self');
         }
 
+        $this->assertCanAssignRole($actor, $target, $target->roleEnum());
+
         return $this->transactionWithRetry(function () use ($actor, $target, $reason): User {
-            $this->assertNotLastActiveJefe($target);
+            $this->assertNotLastActiveOfRole($target);
 
             $before = $this->snapshot($target);
             $this->persist($target, ['status' => UserStatus::Inactive]);
@@ -144,18 +157,20 @@ final class UserService
     }
 
     /**
-     * Cambia rol y/o equipo de un usuario activo.
+     * Cambia rol y/o equipos de un usuario activo.
+     *
+     * @param  list<int>  $teamIds
      */
-    public function updateRoleAndTeam(User $actor, User $target, UserRole $role, ?int $teamId): User
+    public function updateRoleAndTeams(User $actor, User $target, UserRole $role, array $teamIds): User
     {
         if (! $target->isActive()) {
             throw BusinessRuleException::because('users.errors.not_active');
         }
 
-        $this->assertTeamRequirement($role, $teamId);
-        $teamId = $this->teamIdFor($role, $teamId);
+        $teamIds = $this->normalizeTeamIds($role, $teamIds);
+        $this->assertCanAssignRole($actor, $target, $role);
 
-        return $this->transactionWithRetry(function () use ($actor, $target, $role, $teamId): User {
+        return $this->transactionWithRetry(function () use ($actor, $target, $role, $teamIds): User {
             $oldRole = $target->roleEnum();
             $roleChanged = $oldRole !== $role;
 
@@ -165,18 +180,18 @@ final class UserService
 
             $before = $this->snapshot($target);
 
-            $this->persist($target, ['team_id' => $teamId]);
+            $target->teams()->sync($teamIds);
 
             if ($roleChanged) {
                 $target->syncRoles([$role->value]);
             }
 
-            // Un coordinador que cambia de equipo o de rol deja de coordinar lo que ya no le corresponde.
+            // Un coordinador que cambia de rol o deja un equipo deja de coordinar lo que ya no le corresponde.
             $this->teams->releaseInvalidCoordination($target->refresh());
 
             $after = $this->snapshot($target);
 
-            if ($roleChanged || $before['team_id'] !== $after['team_id']) {
+            if ($roleChanged || $before['team_ids'] !== $after['team_ids']) {
                 $this->audit->record(self::LOG, $roleChanged ? 'role_changed' : 'team_changed', $target, $actor, $before, $after);
             }
 
@@ -184,9 +199,22 @@ final class UserService
         });
     }
 
+    /**
+     * Solo quien tiene `admins.manage` (el administrador) otorga el rol de administrador o gestiona una cuenta que
+     * ya lo es (aprobarla, cambiarle el rol, activarla o inactivarla). Un jefe de zona no puede.
+     */
+    private function assertCanAssignRole(User $actor, User $target, ?UserRole $role): void
+    {
+        $touchesAdmin = $role === UserRole::Administrador || $target->hasSystemRole(UserRole::Administrador);
+
+        if ($touchesAdmin && ! ($actor->canAccessApplication() && $actor->checkPermissionTo(PermissionName::AdminsManage->value))) {
+            throw BusinessRuleException::because('users.errors.admin_only');
+        }
+    }
+
     private function enforceRoleChangeRules(User $actor, User $target, ?UserRole $oldRole): void
     {
-        if ($oldRole !== UserRole::JefeZona) {
+        if (! $oldRole?->mustKeepOneActive()) {
             return;
         }
 
@@ -194,28 +222,31 @@ final class UserService
             throw BusinessRuleException::because('users.errors.cannot_change_own_role');
         }
 
-        $this->assertNotLastActiveJefe($target);
+        $this->assertNotLastActiveOfRole($target);
     }
 
     /**
-     * El sistema nunca puede quedarse sin un jefe de zona activo. Se bloquea el conjunto completo
-     * de jefes activos (ordenado por id, para que dos transacciones tomen los bloqueos en el mismo
-     * orden) y se cuenta despues del bloqueo, de modo que dos bajas simultaneas no dejen cero.
+     * El sistema nunca puede quedarse sin un administrador ni sin un jefe de zona activos (mientras el rol
+     * exista, alguien debe poder aprobar cuentas). Se bloquea el conjunto completo de activos de ese rol (ordenado
+     * por id, para que dos transacciones tomen los bloqueos en el mismo orden) y se cuenta despues del bloqueo,
+     * de modo que dos bajas simultaneas no dejen cero.
      */
-    private function assertNotLastActiveJefe(User $target): void
+    private function assertNotLastActiveOfRole(User $target): void
     {
-        if (! $target->isActive() || ! $target->hasSystemRole(UserRole::JefeZona)) {
+        $role = $target->roleEnum();
+
+        if (! $target->isActive() || $role === null || ! $role->mustKeepOneActive()) {
             return;
         }
 
-        $activeJefeIds = User::query()
-            ->activeWithRole(UserRole::JefeZona)
+        $activeIds = User::query()
+            ->activeWithRole($role)
             ->orderBy('id')
             ->lockForUpdate()
             ->pluck('id');
 
-        if ($activeJefeIds->reject(fn (mixed $id): bool => (int) $id === (int) $target->getKey())->isEmpty()) {
-            throw BusinessRuleException::because('users.errors.last_jefe');
+        if ($activeIds->reject(fn (mixed $id): bool => (int) $id === (int) $target->getKey())->isEmpty()) {
+            throw BusinessRuleException::because($role === UserRole::Administrador ? 'users.errors.last_admin' : 'users.errors.last_jefe');
         }
     }
 
@@ -240,26 +271,32 @@ final class UserService
         }
     }
 
-    private function assertTeamRequirement(UserRole $role, ?int $teamId): void
+    /**
+     * Ids unicos y existentes; coordinadores y empleados necesitan al menos uno (el resto puede no tener ninguno).
+     *
+     * @param  list<int>  $teamIds
+     * @return list<int>
+     */
+    private function normalizeTeamIds(UserRole $role, array $teamIds): array
     {
-        if ($role->requiresTeam() && $teamId === null) {
+        $teamIds = array_values(array_unique(array_map('intval', $teamIds)));
+
+        if ($role->requiresTeam() && $teamIds === []) {
             throw BusinessRuleException::because('users.errors.team_required');
         }
+
+        if ($teamIds !== [] && Team::query()->whereKey($teamIds)->count() !== count($teamIds)) {
+            throw BusinessRuleException::because('users.errors.invalid_team');
+        }
+
+        return $teamIds;
     }
 
     /**
-     * El jefe de zona ve todo y no pertenece a ningun equipo: nunca conserva un `team_id` residual.
-     */
-    private function teamIdFor(UserRole $role, ?int $teamId): ?int
-    {
-        return $role->requiresTeam() ? $teamId : null;
-    }
-
-    /**
-     * status/team_id no son asignables en masa: se fijan aqui de forma explicita.
+     * El estado no es asignable en masa: se fija aqui de forma explicita.
      * El registro generico del modelo se suprime porque se emite un evento explicito.
      *
-     * @param  array{status?: UserStatus, team_id?: ?int}  $attributes
+     * @param  array{status?: UserStatus}  $attributes
      */
     private function persist(User $target, array $attributes): void
     {
@@ -269,7 +306,7 @@ final class UserService
     }
 
     /**
-     * @return array{status: string, role: ?string, team_id: ?int}
+     * @return array{status: string, role: ?string, team_ids: list<int>}
      */
     private function snapshot(User $user): array
     {
@@ -278,7 +315,7 @@ final class UserService
         return [
             'status' => $user->status->value,
             'role' => $user->roleEnum()?->value,
-            'team_id' => $user->team_id,
+            'team_ids' => $user->teamIds(),
         ];
     }
 

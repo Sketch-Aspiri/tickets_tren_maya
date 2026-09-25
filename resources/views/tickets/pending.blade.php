@@ -27,7 +27,7 @@
     <section aria-labelledby="pending-tickets" class="space-y-3">
         <h2 id="pending-tickets" class="text-lg font-semibold text-brand-green">{{ __('tickets.pending_tickets_heading') }}</h2>
 
-        <x-ticket-table :tickets="$tickets" :show-team="auth()->user()->team_id === null" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('tickets.pending_empty')" />
+        <x-ticket-table :tickets="$tickets" :show-team="auth()->user()->mustChooseTeam()" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('tickets.pending_empty')" />
 
         {{ $tickets->links() }}
     </section>
@@ -35,7 +35,7 @@
     <section aria-labelledby="pending-activities" class="space-y-3">
         <h2 id="pending-activities" class="text-lg font-semibold text-brand-green">{{ __('tickets.pending_activities_heading') }}</h2>
 
-        <x-activity-table :activities="$activities" :show-team="auth()->user()->team_id === null" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('activities.pending_empty')" />
+        <x-activity-table :activities="$activities" :show-team="auth()->user()->mustChooseTeam()" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('activities.pending_empty')" />
 
         {{ $activities->links() }}
     </section>

@@ -8,7 +8,7 @@ use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -45,7 +45,8 @@ class Team extends Model
 
     /**
      * Invariante de coordinacion (unica definicion): solo un usuario activo con rol coordinador
-     * que pertenezca a este equipo (`users.team_id` es la fuente de verdad) puede coordinarlo.
+     * que sea integrante de este equipo (`team_user`) puede coordinarlo. Un coordinador puede
+     * pertenecer, y por tanto coordinar, varios equipos; cada equipo tiene un unico coordinador.
      * Lo usan la regla de validacion ActiveCoordinator y TeamService::releaseInvalidCoordination.
      */
     public function canBeCoordinatedBy(User $user): bool
@@ -53,8 +54,7 @@ class Team extends Model
         return $this->exists
             && $user->isActive()
             && $user->hasSystemRole(UserRole::Coordinador)
-            && $user->team_id !== null
-            && (int) $user->team_id === (int) $this->getKey();
+            && $user->belongsToTeam($this->getKey());
     }
 
     /**
@@ -66,10 +66,10 @@ class Team extends Model
     }
 
     /**
-     * @return HasMany<User, $this>
+     * @return BelongsToMany<User, $this>
      */
-    public function members(): HasMany
+    public function members(): BelongsToMany
     {
-        return $this->hasMany(User::class);
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 }

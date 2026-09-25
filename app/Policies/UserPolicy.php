@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\PermissionName;
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Policies\Concerns\ChecksPermissions;
 
 /**
- * Gestion de usuarios: solo el jefe de zona (permisos `users.manage` / `users.approve`).
+ * Gestion de usuarios: administrador y jefe de zona (permisos `users.manage` / `users.approve`). Las cuentas de
+ * administrador solo las gestiona quien tiene ademas `admins.manage` (el administrador): un jefe de zona puede
+ * verlas, pero no aprobarlas, editarlas, activarlas ni inactivarlas.
  * Las habilidades de 2FA actuan siempre sobre la cuenta propia.
  */
 class UserPolicy
@@ -28,27 +31,27 @@ class UserPolicy
 
     public function update(User $user, User $target): bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage);
+        return $this->hasPermission($user, PermissionName::UsersManage) && $this->mayTouch($user, $target);
     }
 
     public function approve(User $user, User $target): bool
     {
-        return $this->hasPermission($user, PermissionName::UsersApprove);
+        return $this->hasPermission($user, PermissionName::UsersApprove) && $this->mayTouch($user, $target);
     }
 
     public function reject(User $user, User $target): bool
     {
-        return $this->hasPermission($user, PermissionName::UsersApprove);
+        return $this->hasPermission($user, PermissionName::UsersApprove) && $this->mayTouch($user, $target);
     }
 
     public function activate(User $user, User $target): bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage);
+        return $this->hasPermission($user, PermissionName::UsersManage) && $this->mayTouch($user, $target);
     }
 
     public function deactivate(User $user, User $target): bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage);
+        return $this->hasPermission($user, PermissionName::UsersManage) && $this->mayTouch($user, $target);
     }
 
     /**
@@ -73,5 +76,14 @@ class UserPolicy
     public function disableTwoFactor(User $user, User $target): bool
     {
         return $this->manageTwoFactor($user, $target) && ! $user->requiresTwoFactor();
+    }
+
+    /**
+     * Una cuenta de administrador solo la gestiona quien tiene `admins.manage`.
+     */
+    private function mayTouch(User $user, User $target): bool
+    {
+        return ! $target->hasSystemRole(UserRole::Administrador)
+            || $this->hasPermission($user, PermissionName::AdminsManage);
     }
 }

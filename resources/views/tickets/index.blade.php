@@ -116,7 +116,7 @@
         @endif
     @endcan
 
-    <x-ticket-table :tickets="$tickets" :show-team="auth()->user()->team_id === null" />
+    <x-ticket-table :tickets="$tickets" :show-team="auth()->user()->mustChooseTeam()" />
 
     {{ $tickets->links() }}
 </x-app-layout>

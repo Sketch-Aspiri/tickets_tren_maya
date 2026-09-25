@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Users;
 
+use App\Enums\PermissionName;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -13,6 +14,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -32,14 +34,14 @@ class UserController extends Controller
         ]);
     }
 
-    public function show(User $user): View
+    public function show(Request $request, User $user): View
     {
         $this->authorize('view', $user);
 
         return view('users.show', [
-            'managedUser' => $user->load(['roles:id,name', 'team:id,name']),
+            'managedUser' => $user->load(['roles:id,name', 'teams:id,name']),
             'teams' => Team::query()->orderBy('name')->get(['id', 'name']),
-            'roles' => UserRole::cases(),
+            'roles' => $this->assignableRoles($request->user()),
         ]);
     }
 
@@ -47,8 +49,23 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $this->users->updateRoleAndTeam($request->user(), $user, $request->selectedRole(), $request->selectedTeamId());
+        $this->users->updateRoleAndTeams($request->user(), $user, $request->selectedRole(), $request->selectedTeamIds());
 
         return redirect()->route('users.show', $user)->with('status', 'user-updated');
+    }
+
+    /**
+     * Roles que este usuario puede otorgar: el de administrador solo lo otorga quien tiene `admins.manage`.
+     *
+     * @return list<UserRole>
+     */
+    private function assignableRoles(User $actor): array
+    {
+        $canGrantAdmin = $actor->checkPermissionTo(PermissionName::AdminsManage->value);
+
+        return array_values(array_filter(
+            UserRole::cases(),
+            fn (UserRole $role): bool => $role !== UserRole::Administrador || $canGrantAdmin,
+        ));
     }
 }

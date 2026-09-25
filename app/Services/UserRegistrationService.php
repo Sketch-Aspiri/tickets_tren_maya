@@ -11,7 +11,7 @@ use App\Notifications\NewUserPendingApproval;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Registro propio: la cuenta nace `pending`, sin rol ni equipo, y se avisa a los jefes de zona.
+ * Registro propio: la cuenta nace `pending`, sin rol ni equipo, y se avisa a los administradores y jefes de zona.
  */
 final class UserRegistrationService
 {
@@ -29,7 +29,7 @@ final class UserRegistrationService
         ]);
         $user->forceFill(['status' => UserStatus::Pending])->save();
 
-        $this->notifyJefes($user);
+        $this->notifyApprovers($user);
 
         return $user;
     }
@@ -39,19 +39,36 @@ final class UserRegistrationService
      */
     public function createJefe(string $name, string $email, string $password): User
     {
+        return $this->createFromConsole(UserRole::JefeZona, $name, $email, $password);
+    }
+
+    /**
+     * Alta directa de un administrador desde consola: el rol de administrador no se puede otorgar desde el registro
+     * publico ni por un jefe de zona, asi que el primero se crea aqui.
+     */
+    public function createAdministrador(string $name, string $email, string $password): User
+    {
+        return $this->createFromConsole(UserRole::Administrador, $name, $email, $password);
+    }
+
+    private function createFromConsole(UserRole $role, string $name, string $email, string $password): User
+    {
         $user = new User(['name' => $name, 'email' => $email, 'password' => $password]);
         $user->forceFill(['status' => UserStatus::Active])->save();
-        $user->assignRole(UserRole::JefeZona->value);
+        $user->assignRole($role->value);
 
-        $this->audit->record('users', 'created_by_console', $user, null, extra: ['role' => UserRole::JefeZona->value]);
+        $this->audit->record('users', 'created_by_console', $user, null, extra: ['role' => $role->value]);
 
         return $user;
     }
 
-    private function notifyJefes(User $pending): void
+    private function notifyApprovers(User $pending): void
     {
-        $jefes = User::query()->activeWithRole(UserRole::JefeZona)->get();
+        $approvers = User::query()
+            ->role([UserRole::Administrador->value, UserRole::JefeZona->value])
+            ->where('status', UserStatus::Active->value)
+            ->get();
 
-        Notification::send($jefes, new NewUserPendingApproval($pending->id, $pending->name, $pending->email));
+        Notification::send($approvers, new NewUserPendingApproval($pending->id, $pending->name, $pending->email));
     }
 }

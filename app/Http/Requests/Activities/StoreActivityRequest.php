@@ -21,8 +21,8 @@ class StoreActivityRequest extends FormRequest
     }
 
     /**
-     * El equipo es el del coordinador; solo el jefe (sin equipo) debe elegirlo. Que el responsable y los
-     * colaboradores sean activos y del equipo correcto lo impone AssignmentService. La fecha límite de una
+     * El equipo es el único del coordinador; quien tiene alcance global o varios equipos debe elegirlo. Que el
+     * responsable y los colaboradores sean activos y del equipo correcto lo impone AssignmentService. La fecha límite de una
      * actividad normal no puede ser anterior a hoy (hora de negocio); la de una recurrente solo debe seguir
      * a su fecha de inicio (el inicio puede ser pasado: la serie empieza a generar desde hoy).
      *
@@ -35,12 +35,7 @@ class StoreActivityRequest extends FormRequest
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('active', true)],
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'due_date' => $this->dueDateRules(),
-            'team_id' => [
-                Rule::requiredIf(fn (): bool => $this->user()?->team_id === null),
-                'nullable',
-                'integer',
-                Rule::exists('teams', 'id'),
-            ],
+            'team_id' => $this->newWorkItemTeamRules(),
             'responsible_id' => ['required', 'integer', Rule::exists('users', 'id')],
             'collaborator_ids' => ['nullable', 'array', 'max:'.(int) config('tickets.max_collaborators')],
             'collaborator_ids.*' => ['integer', 'distinct', Rule::exists('users', 'id')],

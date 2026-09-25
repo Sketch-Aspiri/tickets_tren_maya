@@ -77,7 +77,7 @@ final class TicketListingService
      * (ActivityListingService::pendingFor), con paginación independiente.
      *
      * Con `PendingScope::Team` (solo coordinadores con equipo; para cualquiera mas se ignora) lista en cambio lo
-     * abierto del equipo del coordinador, asignado o no (incluye la bolsa), siempre dentro de `visibleTo`.
+     * abierto de los equipos del coordinador, asignado o no (incluye la bolsa), siempre dentro de `visibleTo`.
      *
      * @return LengthAwarePaginator<int, Ticket>
      */
@@ -86,7 +86,7 @@ final class TicketListingService
         $query = $this->baseQuery($user)->open();
 
         if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
-            $query->where('tickets.team_id', $user->team_id);
+            $query->whereIn('tickets.team_id', $user->teamIdsQuery());
         } else {
             $query->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
         }

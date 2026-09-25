@@ -105,14 +105,13 @@ class TicketPolicy
     }
 
     /**
-     * "Tomar" un ticket de la bolsa: solo de SU equipo (el jefe no tiene equipo, así que no toma).
-     * Que siga sin asignar lo verifica AssignmentService bajo lock.
+     * "Tomar" un ticket de la bolsa: solo de un equipo AL QUE PERTENECE (un administrador o jefe sin ese equipo
+     * no toma). Que siga sin asignar lo verifica AssignmentService bajo lock.
      */
     public function take(User $user, Ticket $ticket): Response|bool
     {
         return $this->scoped($user, $ticket, fn (): bool => $this->hasPermission($user, PermissionName::TicketsWork)
-            && $user->team_id !== null
-            && (int) $user->team_id === (int) $ticket->team_id);
+            && $user->belongsToTeam($ticket->team_id));
     }
 
     public function comment(User $user, Ticket $ticket): Response|bool

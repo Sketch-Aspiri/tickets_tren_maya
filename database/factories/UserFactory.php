@@ -56,6 +56,13 @@ class UserFactory extends Factory
         return $this->state(fn () => ['status' => UserStatus::Inactive]);
     }
 
+    public function administrador(): static
+    {
+        return $this->active()
+            ->withTwoFactor()
+            ->withRole(UserRole::Administrador);
+    }
+
     public function jefe(): static
     {
         return $this->active()
@@ -95,5 +102,42 @@ class UserFactory extends Factory
             Role::findOrCreate($role->value, 'web');
             $user->assignRole($role->value);
         });
+    }
+
+    /**
+     * Pertenece a estos equipos a la vez (cualquier rol puede estar en varios). Se suma a los que ya tenga.
+     */
+    public function inTeams(Team|int ...$teams): static
+    {
+        $ids = array_map(fn (Team|int $team): int => $team instanceof Team ? (int) $team->getKey() : $team, $teams);
+
+        return $this->afterCreating(fn (User $user) => $user->teams()->syncWithoutDetaching($ids));
+    }
+
+    /**
+     * Atajo de las pruebas: `team_id` (un solo equipo) ya no es una columna de `users`; la fabrica lo convierte en
+     * una pertenencia a `team_user`. El equipo por defecto de coordinador()/empleado() es una fabrica de `Team`.
+     */
+    public function configure(): static
+    {
+        return $this
+            ->afterMaking(function (User $user): void {
+                if (! array_key_exists('team_id', $user->getAttributes())) {
+                    return;
+                }
+
+                $teamId = $user->getAttribute('team_id');
+                $user->offsetUnset('team_id');
+                $user->setRelation('factoryTeamIds', $teamId === null ? [] : [(int) $teamId]);
+            })
+            ->afterCreating(function (User $user): void {
+                if (! $user->relationLoaded('factoryTeamIds')) {
+                    return;
+                }
+
+                $ids = $user->getRelation('factoryTeamIds');
+                $user->unsetRelation('factoryTeamIds');
+                $user->teams()->syncWithoutDetaching($ids);
+            });
     }
 }

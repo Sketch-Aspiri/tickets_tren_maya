@@ -280,10 +280,28 @@ class DashboardMetricsServiceTest extends DatabaseTestCase
         $filters = DashboardFilters::fromValidated([]);
         $before = $this->metrics->cacheKey($this->coordA, $filters);
 
-        $moved = clone $this->coordA;
-        $moved->team_id = $this->teamB->id;
+        $this->coordA->teams()->attach($this->teamB->id);
 
-        $this->assertNotSame($before, $this->metrics->cacheKey($moved, $filters));
+        $this->assertNotSame($before, $this->metrics->cacheKey($this->coordA, $filters));
+
+        $this->coordA->teams()->detach($this->teamA->id);
+
+        $this->assertNotSame($before, $this->metrics->cacheKey($this->coordA, $filters));
+    }
+
+    public function test_a_coordinator_of_two_teams_gets_the_combined_scope_and_can_narrow_to_one(): void
+    {
+        $this->coordA->teams()->attach($this->teamB->id);
+
+        $both = $this->report($this->coordA);
+        $onlyB = $this->metrics->report($this->coordA, DashboardFilters::fromValidated(['team_id' => $this->teamB->id]));
+        $jefeTotal = $this->report($this->jefe)['cards']['open']['total'];
+
+        $this->assertSame($jefeTotal, $both['cards']['open']['total'], 'con A y B ve lo mismo que el jefe (solo hay dos equipos)');
+        $this->assertSame([$this->teamA->name, $this->teamB->name], $both['scope']['team_names']);
+        $this->assertNull($both['scope']['team_id']);
+        $this->assertSame($this->teamB->id, $onlyB['scope']['team_id']);
+        $this->assertLessThan($both['cards']['open']['total'], $onlyB['cards']['open']['total']);
     }
 
     public function test_category_names_come_from_the_database_only_for_used_categories(): void

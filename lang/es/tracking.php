@@ -6,6 +6,7 @@ return [
     'scope' => [
         'global' => 'Alcance: todas las zonas y equipos',
         'team' => 'Alcance: equipo :team',
+        'teams' => 'Alcance: equipos :teams',
     ],
     'filters' => [
         'from' => 'Desde',

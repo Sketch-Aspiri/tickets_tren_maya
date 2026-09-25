@@ -53,6 +53,8 @@ class DemoDataSeeder extends Seeder
         $hash = Hash::make($password);
         $this->createdUsers = 0;
 
+        $this->createUser('Administrador Demo', 'admin@demo.test', $hash, UserRole::Administrador, null);
+        $this->createUser('Administrador Demo', 'admin@demo.test', $hash, UserRole::Administrador, null);
         $this->createUser('Jefe de Zona Demo', 'jefe@demo.test', $hash, UserRole::JefeZona, null);
 
         foreach (self::TEAM_NAMES as $index => $teamName) {
@@ -211,9 +213,13 @@ class DemoDataSeeder extends Seeder
         $user->forceFill([
             'password' => $hash,
             'status' => UserStatus::Active,
-            'team_id' => $role->requiresTeam() ? $team?->id : null,
         ])->save();
         $user->assignRole($role->value);
+
+        if ($role->requiresTeam() && $team !== null) {
+            $user->teams()->attach($team->id);
+        }
+
         $this->createdUsers++;
 
         return $user;

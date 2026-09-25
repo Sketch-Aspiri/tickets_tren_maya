@@ -7,6 +7,7 @@ return [
         'inactive' => 'Inactivo',
     ],
     'user_role' => [
+        'administrador' => 'Administrador',
         'jefe_zona' => 'Jefe de zona',
         'coordinador' => 'Coordinador',
         'empleado' => 'Empleado',

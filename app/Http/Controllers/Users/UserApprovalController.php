@@ -19,7 +19,7 @@ class UserApprovalController extends Controller
     {
         $this->authorize('approve', $user);
 
-        $this->users->approve($request->user(), $user, $request->selectedRole(), $request->selectedTeamId());
+        $this->users->approve($request->user(), $user, $request->selectedRole(), $request->selectedTeamIds());
 
         return redirect()->route('users.show', $user)->with('status', 'user-approved');
     }

@@ -129,11 +129,11 @@ class Ticket extends Model
      * ALCANCE por rol: única definición de "qué tickets puede ver este usuario" (listados, Mis
      * pendientes, TicketPolicy::view y cualquier consulta futura).
      *
-     * - Jefe de zona: todos.
-     * - Coordinador: los de su equipo (`users.team_id` es la fuente de verdad, decisión 17) y los que
-     *   se le asignaron explícitamente (si no, un ticket asignado por el jefe fuera de su equipo sería
+     * - Administrador y jefe de zona: todos.
+     * - Coordinador: los de sus equipos (`team_user` es la fuente de verdad, decisiones 17 y 55) y los que
+     *   se le asignaron explícitamente (si no, un ticket asignado por el jefe fuera de sus equipos sería
      *   trabajo suyo que no puede abrir).
-     * - Empleado: los que creó, los asignados a él y la bolsa (sin asignar) de su equipo.
+     * - Empleado: los que creó, los asignados a él y la bolsa (sin asignar) de cualquiera de sus equipos.
      * - Sin acceso a la aplicación (pendiente/inactivo/sin rol): ninguno.
      *
      * @param  Builder<Ticket>  $query
@@ -148,7 +148,7 @@ class Ticket extends Model
         }
 
         return match ($user->roleEnum()) {
-            UserRole::JefeZona => $query,
+            UserRole::Administrador, UserRole::JefeZona => $query,
             UserRole::Coordinador => $query->where(fn (Builder $scope) => $this->applyCoordinatorScope($scope, $user)),
             UserRole::Empleado => $query->where(fn (Builder $scope) => $this->applyEmployeeScope($scope, $user)),
             default => $none(),
@@ -160,11 +160,8 @@ class Ticket extends Model
      */
     private function applyCoordinatorScope(Builder $scope, User $user): void
     {
-        $scope->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
-
-        if ($user->team_id !== null) {
-            $scope->orWhere('tickets.team_id', $user->team_id);
-        }
+        $scope->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()))
+            ->orWhereIn('tickets.team_id', $user->teamIdsQuery());
     }
 
     /**
@@ -173,13 +170,10 @@ class Ticket extends Model
     private function applyEmployeeScope(Builder $scope, User $user): void
     {
         $scope->where('tickets.created_by', $user->getKey())
-            ->orWhereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
-
-        if ($user->team_id !== null) {
-            $scope->orWhere(fn (Builder $bag) => $bag
-                ->where('tickets.team_id', $user->team_id)
+            ->orWhereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()))
+            ->orWhere(fn (Builder $bag) => $bag
+                ->whereIn('tickets.team_id', $user->teamIdsQuery())
                 ->whereDoesntHave('assignments'));
-        }
     }
 
     /**

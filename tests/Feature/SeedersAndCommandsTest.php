@@ -23,13 +23,13 @@ use Tests\DatabaseTestCase;
 
 class SeedersAndCommandsTest extends DatabaseTestCase
 {
-    public function test_roles_and_permissions_seeder_creates_the_three_roles(): void
+    public function test_roles_and_permissions_seeder_creates_the_four_roles(): void
     {
         $this->assertEqualsCanonicalizing(UserRole::values(), Role::query()->pluck('name')->all());
         $this->assertSame(count(PermissionName::cases()), Permission::query()->count());
     }
 
-    public function test_only_jefe_zona_holds_the_management_permissions(): void
+    public function test_only_administrador_and_jefe_zona_hold_the_management_permissions(): void
     {
         $jefe = Role::findByName(UserRole::JefeZona->value);
         $this->assertTrue($jefe->hasPermissionTo(PermissionName::UsersManage->value));
@@ -66,7 +66,13 @@ class SeedersAndCommandsTest extends DatabaseTestCase
 
         $this->assertEqualsCanonicalizing($operational, $granted(UserRole::Empleado));
         $this->assertEqualsCanonicalizing($managerial, $granted(UserRole::Coordinador));
-        $this->assertEqualsCanonicalizing(array_column(PermissionName::cases(), 'value'), $granted(UserRole::JefeZona));
+        $everything = array_column(PermissionName::cases(), 'value');
+        $this->assertEqualsCanonicalizing($everything, $granted(UserRole::Administrador));
+        $this->assertEqualsCanonicalizing(array_values(array_diff($everything, ['admins.manage'])), $granted(UserRole::JefeZona));
+        $this->assertContains('admins.manage', $granted(UserRole::Administrador));
+        $this->assertNotContains('admins.manage', $granted(UserRole::JefeZona));
+        $this->assertNotContains('admins.manage', $granted(UserRole::Coordinador));
+        $this->assertNotContains('admins.manage', $granted(UserRole::Empleado));
         $this->assertContains('audit.view', $granted(UserRole::JefeZona));
         $this->assertNotContains('audit.view', $granted(UserRole::Coordinador));
         $this->assertNotContains('audit.view', $granted(UserRole::Empleado));
@@ -90,7 +96,7 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $this->assertSame(3, Role::query()->count());
+        $this->assertSame(4, Role::query()->count());
         $this->assertSame(count(PermissionName::cases()), Permission::query()->count());
         $this->assertTrue($user->fresh()->hasRole(UserRole::JefeZona->value));
     }
@@ -134,7 +140,7 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->seed(DemoDataSeeder::class);
 
         foreach (Team::query()->whereNotNull('coordinator_id')->get() as $team) {
-            $this->assertSame($team->id, $team->coordinator->team_id);
+            $this->assertTrue($team->canBeCoordinatedBy($team->coordinator));
         }
     }
 
@@ -227,10 +233,40 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->assertTrue($jefe->isActive());
         $this->assertTrue($jefe->hasSystemRole(UserRole::JefeZona));
         $this->assertTrue(Hash::check('Initial-Passw0rd', $jefe->password));
-        $this->assertNull($jefe->team_id);
+        $this->assertSame([], $jefe->teamIds());
 
         $this->actingAs($jefe)->get('/dashboard')->assertRedirect(route('two-factor.setup'));
         $this->assertDatabaseHas('activity_log', ['event' => 'created_by_console', 'subject_id' => $jefe->id]);
+    }
+
+    public function test_create_admin_command_creates_an_active_administrador_who_must_set_up_two_factor(): void
+    {
+        $this->artisan('users:create-admin', ['email' => 'Admin@Example.com', '--name' => 'Admin Inicial'])
+            ->expectsQuestion('Contrasena (no se muestra)', 'Initial-Passw0rd')
+            ->assertSuccessful();
+
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $this->assertTrue($admin->isActive());
+        $this->assertTrue($admin->hasSystemRole(UserRole::Administrador));
+        $this->assertTrue($admin->checkPermissionTo(PermissionName::AdminsManage->value));
+        $this->assertTrue(Hash::check('Initial-Passw0rd', $admin->password));
+
+        $this->actingAs($admin)->get('/dashboard')->assertRedirect(route('two-factor.setup'));
+        $this->assertDatabaseHas('activity_log', ['event' => 'created_by_console', 'subject_id' => $admin->id]);
+    }
+
+    public function test_create_admin_command_rejects_weak_passwords_and_duplicate_emails(): void
+    {
+        $this->artisan('users:create-admin', ['email' => 'admin@example.com', '--name' => 'Admin'])
+            ->expectsQuestion('Contrasena (no se muestra)', 'weak')
+            ->assertFailed();
+
+        User::factory()->create(['email' => 'taken@example.com']);
+        $this->artisan('users:create-admin', ['email' => 'taken@example.com', '--name' => 'Admin'])
+            ->expectsQuestion('Contrasena (no se muestra)', UserFactory::DEFAULT_PASSWORD)
+            ->assertFailed();
+
+        $this->assertSame(1, User::query()->count());
     }
 
     public function test_create_jefe_command_rejects_weak_passwords_and_duplicate_emails(): void

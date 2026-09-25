@@ -9,9 +9,12 @@ use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -22,8 +25,8 @@ class User extends Authenticatable
     use HasFactory, HasRoles, LogsActivity, Notifiable;
 
     /**
-     * Solo lo que el propio usuario puede enviar al registrarse. `status`,
-     * `team_id` y los campos de 2FA se asignan exclusivamente desde Services.
+     * Solo lo que el propio usuario puede enviar al registrarse. `status`, los equipos
+     * (`team_user`) y los campos de 2FA se asignan exclusivamente desde Services.
      *
      * @var list<string>
      */
@@ -66,18 +69,110 @@ class User extends Authenticatable
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'status', 'team_id'])
+            ->logOnly(['name', 'email', 'status'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('users');
     }
 
     /**
-     * @return BelongsTo<Team, $this>
+     * Equipos a los que pertenece (cualquier rol puede estar en varios a la vez).
+     *
+     * @return BelongsToMany<Team, $this>
      */
-    public function team(): BelongsTo
+    public function teams(): BelongsToMany
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsToMany(Team::class)->withTimestamps();
+    }
+
+    /**
+     * Ids de sus equipos, siempre leidos de la base (nunca de una relacion cargada que pudo quedar vieja).
+     *
+     * @return list<int>
+     */
+    public function teamIds(): array
+    {
+        return $this->teams()->pluck('teams.id')->map(fn (mixed $id): int => (int) $id)->sort()->values()->all();
+    }
+
+    /**
+     * Subconsulta con los ids de sus equipos, para usarla dentro de otra consulta sin una lectura previa.
+     */
+    public function teamIdsQuery(): QueryBuilder
+    {
+        return DB::table('team_user')->select('team_id')->where('user_id', $this->getKey());
+    }
+
+    public function belongsToTeam(int|string|null $teamId): bool
+    {
+        return $teamId !== null && $this->teams()->whereKey((int) $teamId)->exists();
+    }
+
+    /**
+     * Usuarios que pertenecen a al menos uno de los equipos dados (sin ninguno: nadie).
+     *
+     * @param  Builder<User>  $query
+     * @param  list<int>  $teamIds
+     * @return Builder<User>
+     */
+    public function scopeMemberOfAny(Builder $query, array $teamIds): Builder
+    {
+        return $query->whereIn(
+            $query->qualifyColumn('id'),
+            DB::table('team_user')->select('user_id')->whereIn('team_id', $teamIds),
+        );
+    }
+
+    /**
+     * Administrador y jefe de zona ven todos los equipos; para el resto el alcance son sus equipos.
+     */
+    public function seesAllTeams(): bool
+    {
+        return $this->roleEnum()?->hasGlobalScope() ?? false;
+    }
+
+    /**
+     * Equipos entre los que debe ELEGIR al crear o filtrar: todos (alcance global) o los suyos si son mas de
+     * uno. Con un solo equipo no hay nada que elegir (se usa ese), y sin ninguno tampoco.
+     *
+     * @return Collection<int, Team>
+     */
+    public function selectableTeams(): Collection
+    {
+        if ($this->seesAllTeams()) {
+            return Team::query()->orderBy('name')->get(['id', 'name']);
+        }
+
+        $teams = $this->teams()->orderBy('teams.name')->get(['teams.id', 'teams.name']);
+
+        return $teams->count() > 1 ? $teams : new Collection;
+    }
+
+    /**
+     * Equipo para un ticket/actividad nuevo: el unico equipo del usuario; si tiene varios (o alcance global) el
+     * indicado, que debe ser uno de los suyos (el alcance global acepta cualquiera). `null` si no se puede decidir.
+     */
+    public function workTeamIdFor(?int $requested): ?int
+    {
+        if ($this->seesAllTeams()) {
+            return $requested;
+        }
+
+        $own = $this->teamIds();
+
+        if (count($own) === 1) {
+            return $own[0];
+        }
+
+        return $requested !== null && in_array($requested, $own, true) ? $requested : null;
+    }
+
+    /**
+     * Debe elegir el equipo en el formulario (mas de uno o alcance global).
+     */
+    public function mustChooseTeam(): bool
+    {
+        return $this->seesAllTeams() || count($this->teamIds()) > 1;
     }
 
     /**

@@ -20,7 +20,7 @@ class StoreTicketRequest extends FormRequest
     }
 
     /**
-     * El equipo es el del creador; solo el jefe (sin equipo) debe elegirlo. La fecha límite no puede
+     * El equipo es el único del creador; quien tiene alcance global o varios equipos debe elegirlo. La fecha límite no puede
      * ser anterior a hoy (hora de negocio).
      *
      * @return array<string, array<int, mixed>>
@@ -31,12 +31,7 @@ class StoreTicketRequest extends FormRequest
             ...$this->workItemFieldRules(),
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('active', true)],
             'due_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:'.LocalTime::today()],
-            'team_id' => [
-                Rule::requiredIf(fn (): bool => $this->user()?->team_id === null),
-                'nullable',
-                'integer',
-                Rule::exists('teams', 'id'),
-            ],
+            'team_id' => $this->newWorkItemTeamRules(),
         ];
     }
 }

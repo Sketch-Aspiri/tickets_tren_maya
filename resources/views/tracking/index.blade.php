@@ -4,9 +4,11 @@
     $workload = $report['workload'];
     $maxOpen = max(1, (int) collect($workload['rows'])->max('open'));
     $trendCaption = $report['trend']['granularity'] === 'week' ? __('tracking.charts.trend_caption_week') : __('tracking.charts.trend_caption_day');
-    $scopeText = $report['scope']['team_id'] === null
-        ? __('tracking.scope.global')
-        : __('tracking.scope.team', ['team' => $report['scope']['team_name'] ?? '#'.$report['scope']['team_id']]);
+    $scopeText = match (true) {
+        $report['scope']['team_id'] !== null => __('tracking.scope.team', ['team' => $report['scope']['team_name'] ?? '#'.$report['scope']['team_id']]),
+        $report['scope']['team_names'] !== [] => __('tracking.scope.teams', ['teams' => implode(', ', $report['scope']['team_names'])]),
+        default => __('tracking.scope.global'),
+    };
 @endphp
 
 <x-app-layout>

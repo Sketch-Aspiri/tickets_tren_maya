@@ -83,7 +83,7 @@ class TeamController extends Controller
 
         return User::query()
             ->activeWithRole(UserRole::Coordinador)
-            ->where('team_id', $team->getKey())
+            ->memberOfAny([$team->getKey()])
             ->orderBy('name')
             ->get(['id', 'name']);
     }

@@ -43,42 +43,46 @@ class UserIntegrityTest extends DatabaseTestCase
         });
     }
 
-    // --- M6: el jefe no conserva team_id ------------------------------------------
+    // --- M6: equipos de los roles globales (opcionales) ------------------------------
 
-    public function test_approving_a_jefe_never_persists_a_team(): void
+    public function test_approving_a_jefe_keeps_the_teams_it_is_given_and_they_are_optional(): void
     {
         $pending = User::factory()->pending()->create();
         $team = Team::factory()->create();
 
-        $this->signIn($this->jefe)->post("/users/{$pending->id}/approve", ['role' => 'jefe_zona', 'team_id' => $team->id])
+        $this->signIn($this->jefe)->post("/users/{$pending->id}/approve", ['role' => 'jefe_zona', 'team_ids' => [$team->id]])
             ->assertSessionHasNoErrors();
 
         $fresh = $pending->fresh();
         $this->assertSame(UserRole::JefeZona, $fresh->roleEnum());
-        $this->assertNull($fresh->team_id);
+        $this->assertSame([$team->id], $fresh->teamIds());
     }
 
-    public function test_updating_a_user_to_jefe_clears_the_team_and_does_not_block_deleting_it(): void
+    public function test_a_team_with_members_cannot_be_deleted_until_they_leave_it(): void
     {
         $team = Team::factory()->create();
         $empleado = User::factory()->empleado()->create(['team_id' => $team->id]);
+        $other = Team::factory()->create();
 
-        $this->signIn($this->jefe)->put("/users/{$empleado->id}", ['role' => 'jefe_zona', 'team_id' => $team->id])
+        $this->signIn($this->jefe)->from('/teams')->delete("/teams/{$team->id}")
+            ->assertSessionHas('error', __('teams.errors.has_members'));
+        $this->assertModelExists($team);
+
+        $this->signIn($this->jefe)->put("/users/{$empleado->id}", ['role' => 'empleado', 'team_ids' => [$other->id]])
             ->assertSessionHasNoErrors();
-
-        $this->assertNull($empleado->fresh()->team_id);
         $this->signIn($this->jefe)->delete("/teams/{$team->id}")->assertRedirect(route('teams.index'));
+
         $this->assertModelMissing($team);
     }
 
-    public function test_service_also_clears_the_team_for_roles_that_do_not_need_one(): void
+    public function test_service_keeps_the_teams_of_roles_that_do_not_need_one(): void
     {
         $team = Team::factory()->create();
         $pending = User::factory()->pending()->create();
 
-        app(UserService::class)->approve($this->jefe, $pending, UserRole::JefeZona, $team->id);
+        app(UserService::class)->approve($this->jefe, $pending, UserRole::JefeZona, [$team->id]);
 
-        $this->assertNull($pending->fresh()->team_id);
+        $this->assertSame([$team->id], $pending->fresh()->teamIds());
     }
 
     // --- M5: atomicidad de estado + auditoria ---------------------------------------
@@ -118,7 +122,7 @@ class UserIntegrityTest extends DatabaseTestCase
 
         foreach ([
             fn () => app(UserService::class)->deactivate($this->jefe, $empleado),
-            fn () => app(UserService::class)->approve($this->jefe, $pending, UserRole::Empleado, $team->id),
+            fn () => app(UserService::class)->approve($this->jefe, $pending, UserRole::Empleado, [$team->id]),
         ] as $operation) {
             try {
                 $operation();

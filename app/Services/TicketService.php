@@ -30,13 +30,14 @@ final class TicketService
     ) {}
 
     /**
-     * El equipo del ticket es el del creador; un jefe (sin equipo) debe elegirlo.
+     * El equipo del ticket es el único del creador; con varios equipos (o alcance global) debe elegirlo
+     * (`User::workTeamIdFor`).
      *
      * @param  array<string, mixed>  $data  Datos ya validados (Form Request).
      */
     public function create(User $actor, array $data): Ticket
     {
-        $teamId = $actor->team_id ?? ($data['team_id'] ?? null);
+        $teamId = $actor->workTeamIdFor(isset($data['team_id']) ? (int) $data['team_id'] : null);
 
         if ($teamId === null) {
             throw BusinessRuleException::because('tickets.errors.team_required');

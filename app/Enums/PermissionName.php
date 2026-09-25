@@ -12,6 +12,8 @@ namespace App\Enums;
 enum PermissionName: string
 {
     case UsersManage = 'users.manage';
+    /** Gestionar cuentas de administrador y otorgar ese rol (solo administrador; el jefe no puede tocarlas). */
+    case AdminsManage = 'admins.manage';
     case UsersApprove = 'users.approve';
     case TeamsManage = 'teams.manage';
     case CategoriesManage = 'categories.manage';

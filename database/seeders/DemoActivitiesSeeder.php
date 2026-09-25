@@ -45,7 +45,7 @@ class DemoActivitiesSeeder extends Seeder
         foreach (DemoDataSeeder::TEAM_NAMES as $index => $teamName) {
             $team = Team::query()->where('name', $teamName)->first();
             $coordinator = $team?->coordinator_id === null ? null : User::query()->find($team->coordinator_id);
-            $employees = $team === null ? collect() : User::query()->where('team_id', $team->id)->whereHas('roles', fn ($roles) => $roles->where('name', 'empleado'))->orderBy('email')->get();
+            $employees = $team === null ? collect() : User::query()->memberOfAny([$team->id])->whereHas('roles', fn ($roles) => $roles->where('name', 'empleado'))->orderBy('email')->get();
 
             if ($coordinator === null || $employees->count() < 2) {
                 continue;

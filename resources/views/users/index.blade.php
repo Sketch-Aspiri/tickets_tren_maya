@@ -53,7 +53,7 @@
             <tr>
                 <th class="px-4 py-3">{{ __('users.index.columns.name') }}</th>
                 <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.role') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.team') }}</th>
+                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.teams') }}</th>
                 <th class="px-4 py-3">{{ __('users.index.columns.status') }}</th>
                 <th class="hidden px-4 py-3 lg:table-cell">{{ __('users.index.columns.registered') }}</th>
                 <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
@@ -67,7 +67,7 @@
                         <p class="max-w-[6.5rem] truncate text-xs text-gray-500 sm:max-w-xs">{{ $listedUser->email }}</p>
                     </td>
                     <td class="hidden px-4 py-3 md:table-cell"><x-role-badge :role="$listedUser->roleEnum()" /></td>
-                    <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->team?->name ?? __('users.index.no_team') }}</td>
+                    <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->teams->isEmpty() ? __('users.index.no_team') : $listedUser->teams->pluck('name')->sort()->implode(', ') }}</td>
                     <td class="px-4 py-3"><x-status-badge :status="$listedUser->status" /></td>
                     <td class="hidden px-4 py-3 lg:table-cell"><x-local-datetime :value="$listedUser->created_at" /></td>
                     <td class="px-2 py-3 text-right sm:px-4">

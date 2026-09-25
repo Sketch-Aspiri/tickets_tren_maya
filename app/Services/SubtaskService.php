@@ -136,7 +136,7 @@ final class SubtaskService
 
         $isEligible = $candidate !== null
             && $candidate->canAccessApplication()
-            && ((int) $candidate->team_id === (int) $activity->team_id
+            && ($candidate->belongsToTeam($activity->team_id)
                 || $activity->assignments()->where('user_id', $candidate->getKey())->exists());
 
         if (! $isEligible) {

@@ -6,6 +6,7 @@ namespace App\Enums;
 
 enum UserRole: string
 {
+    case Administrador = 'administrador';
     case JefeZona = 'jefe_zona';
     case Coordinador = 'coordinador';
     case Empleado = 'empleado';
@@ -16,22 +17,39 @@ enum UserRole: string
     }
 
     /**
-     * El 2FA es obligatorio para jefe de zona y coordinadores; opcional para empleados.
+     * El 2FA es obligatorio para administrador, jefe de zona y coordinadores; opcional para empleados.
      */
     public function requiresTwoFactor(): bool
     {
         return match ($this) {
-            self::JefeZona, self::Coordinador => true,
+            self::Administrador, self::JefeZona, self::Coordinador => true,
             self::Empleado => false,
         };
     }
 
     /**
-     * Los coordinadores y empleados pertenecen a un equipo; el jefe de zona ve todo.
+     * Administrador y jefe de zona ven todos los equipos (alcance global): su pertenencia a equipos es
+     * opcional y no limita lo que ven. Coordinadores y empleados necesitan al menos un equipo.
      */
+    public function hasGlobalScope(): bool
+    {
+        return match ($this) {
+            self::Administrador, self::JefeZona => true,
+            self::Coordinador, self::Empleado => false,
+        };
+    }
+
     public function requiresTeam(): bool
     {
-        return $this !== self::JefeZona;
+        return ! $this->hasGlobalScope();
+    }
+
+    /**
+     * Roles que el sistema nunca puede dejar sin al menos una cuenta activa (quedarian sin quien apruebe cuentas).
+     */
+    public function mustKeepOneActive(): bool
+    {
+        return $this->hasGlobalScope();
     }
 
     /**

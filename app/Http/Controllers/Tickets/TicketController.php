@@ -12,7 +12,6 @@ use App\Http\Requests\Tickets\IndexTicketsRequest;
 use App\Http\Requests\Tickets\StoreTicketRequest;
 use App\Http\Requests\Tickets\UpdateTicketRequest;
 use App\Models\Category;
-use App\Models\Team;
 use App\Models\Ticket;
 use App\Services\AssignmentService;
 use App\Services\CategoryService;
@@ -43,8 +42,8 @@ class TicketController extends Controller
             'statuses' => TicketStatus::cases(),
             'priorities' => Priority::cases(),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            // Filtros por equipo y responsable: solo el jefe ve mas de un equipo.
-            'teams' => $user->team_id === null ? Team::query()->orderBy('name')->get(['id', 'name']) : collect(),
+            // Filtro por equipo: solo quien ve mas de un equipo (alcance global o varios equipos).
+            'teams' => $user->selectableTeams(),
             'responsibles' => $this->assignments->assignableUsers($user),
         ]);
     }
@@ -125,10 +124,8 @@ class TicketController extends Controller
             'ticket' => $ticket,
             'priorities' => Priority::cases(),
             'categories' => $this->categories->selectable($ticket->category_id),
-            // Solo el jefe (sin equipo propio) elige el equipo del ticket nuevo.
-            'teams' => ! $ticket->exists && $request->user()->team_id === null
-                ? Team::query()->orderBy('name')->get(['id', 'name'])
-                : collect(),
+            // Elige el equipo del ticket nuevo quien tiene alcance global o varios equipos.
+            'teams' => $ticket->exists ? collect() : $request->user()->selectableTeams(),
         ];
     }
 }

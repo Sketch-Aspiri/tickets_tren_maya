@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\AssignmentRole;
-use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Activity;
@@ -23,7 +22,8 @@ use Illuminate\Support\Facades\Gate;
  * `responsable` y N `colaborador`. Asignar, reasignar y delegar son la misma operación (`assign`).
  *
  * Reglas (todas se revalidan aquí, bajo lock del registro, aunque la Policy ya las haya comprobado):
- * - jefe: puede asignar a cualquier usuario ACTIVO con rol; coordinador: solo a activos de SU equipo;
+ * - administrador y jefe: pueden asignar a cualquier usuario ACTIVO con rol; coordinador: solo a activos que
+ *   compartan al menos uno de SUS equipos;
  * - nunca a usuarios pendientes/inactivos/sin rol; nunca dos responsables; sin duplicar personas;
  * - los registros finales (Completado/Cancelado) no se asignan: primero se reabren.
  */
@@ -41,9 +41,9 @@ final class AssignmentService
         return User::query()
             ->where('status', UserStatus::Active->value)
             ->whereHas('roles')
-            ->when(! $actor->hasSystemRole(UserRole::JefeZona), fn ($query) => $query->where('team_id', $actor->team_id))
+            ->when(! $actor->seesAllTeams(), fn ($query) => $query->memberOfAny($actor->teamIds()))
             ->orderBy('name')
-            ->get(['id', 'name', 'team_id']);
+            ->get(['id', 'name']);
     }
 
     /**
@@ -153,12 +153,14 @@ final class AssignmentService
             throw BusinessRuleException::because(WorkflowSubject::error($subject, 'invalid_assignee'));
         }
 
+        $actorTeamIds = $actor->seesAllTeams() ? [] : $actor->teamIds();
+
         foreach ($users as $candidate) {
             if (! $candidate->canAccessApplication()) {
                 throw BusinessRuleException::because(WorkflowSubject::error($subject, 'invalid_assignee'));
             }
 
-            if (! $actor->hasSystemRole(UserRole::JefeZona) && (int) $candidate->team_id !== (int) $actor->team_id) {
+            if (! $actor->seesAllTeams() && array_intersect($actorTeamIds, $candidate->teamIds()) === []) {
                 throw BusinessRuleException::because(WorkflowSubject::error($subject, 'assignee_out_of_team'));
             }
         }

@@ -15,7 +15,6 @@ use App\Http\Requests\Activities\StoreActivityRequest;
 use App\Http\Requests\Activities\UpdateActivityRequest;
 use App\Models\Activity;
 use App\Models\Category;
-use App\Models\Team;
 use App\Models\User;
 use App\Services\ActivityListingService;
 use App\Services\ActivityService;
@@ -48,8 +47,8 @@ class ActivityController extends Controller
             'priorities' => Priority::cases(),
             'kinds' => ActivityListingService::KINDS,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            // Filtro por equipo: solo el jefe ve mas de un equipo.
-            'teams' => $user->team_id === null ? Team::query()->orderBy('name')->get(['id', 'name']) : collect(),
+            // Filtro por equipo: solo quien ve mas de un equipo (alcance global o varios equipos).
+            'teams' => $user->selectableTeams(),
             'responsibles' => $this->assignments->assignableUsers($user),
         ]);
     }
@@ -164,10 +163,8 @@ class ActivityController extends Controller
             'priorities' => Priority::cases(),
             'categories' => $this->categories->selectable($activity->category_id),
             'frequencies' => RecurrenceFrequency::cases(),
-            // Solo el jefe (sin equipo propio) elige el equipo de la actividad nueva.
-            'teams' => $creating && $request->user()->team_id === null
-                ? Team::query()->orderBy('name')->get(['id', 'name'])
-                : collect(),
+            // Elige el equipo de la actividad nueva quien tiene alcance global o varios equipos.
+            'teams' => $creating ? $request->user()->selectableTeams() : collect(),
             // Responsable y colaboradores se eligen al crear; despues se cambian desde el detalle.
             'assignableUsers' => $creating ? $this->assignments->assignableUsers($request->user()) : collect(),
             'rule' => $activity->isTemplate() ? RecurrenceRule::fromArray((array) $activity->recurrence_rule)->toArray() : null,

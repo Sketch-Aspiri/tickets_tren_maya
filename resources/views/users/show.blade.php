@@ -1,7 +1,9 @@
 @php
     $isSelf = auth()->user()->is($managedUser);
     $currentRole = $managedUser->roleEnum();
-    $canReactivate = $managedUser->isInactive() && $currentRole !== null && (! $currentRole->requiresTeam() || $managedUser->team_id !== null);
+    $memberTeamIds = $managedUser->teams->pluck('id')->all();
+    $selectedTeamIds = old('team_ids', $memberTeamIds);
+    $canReactivate = $managedUser->isInactive() && $currentRole !== null && (! $currentRole->requiresTeam() || $memberTeamIds !== []);
 @endphp
 
 <x-app-layout>
@@ -18,13 +20,13 @@
             <div><dt class="text-gray-500">{{ __('users.index.columns.email') }}</dt><dd class="break-all font-medium">{{ $managedUser->email }}</dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.status') }}</dt><dd><x-status-badge :status="$managedUser->status" /></dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.role') }}</dt><dd><x-role-badge :role="$currentRole" /></dd></div>
-            <div><dt class="text-gray-500">{{ __('users.index.columns.team') }}</dt><dd class="font-medium">{{ $managedUser->team?->name ?? __('users.index.no_team') }}</dd></div>
+            <div><dt class="text-gray-500">{{ __('users.index.columns.teams') }}</dt><dd class="font-medium">{{ $managedUser->teams->isEmpty() ? __('users.index.no_team') : $managedUser->teams->pluck('name')->sort()->implode(', ') }}</dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.registered') }}</dt><dd><x-local-datetime :value="$managedUser->created_at" /></dd></div>
             <div><dt class="text-gray-500">{{ __('users.show.two_factor') }}</dt><dd>{{ $managedUser->hasTwoFactorEnabled() ? __('users.show.two_factor_on') : __('users.show.two_factor_off') }}</dd></div>
         </dl>
     </x-card>
 
-    {{-- Aprobar: cuentas pendientes o rechazadas. Rol obligatorio; equipo obligatorio salvo jefe de zona. --}}
+    {{-- Aprobar: cuentas pendientes o rechazadas. Rol obligatorio; al menos un equipo salvo administrador y jefe de zona. --}}
     @if (! $managedUser->isActive())
         @can('approve', $managedUser)
             <x-card :title="__('users.show.approve_title')">
@@ -42,14 +44,9 @@
                         <x-input-error :messages="$errors->get('role')" class="mt-2" />
                     </div>
                     <div>
-                        <x-input-label for="approve_team" :value="__('users.show.team')" />
-                        <x-select-input id="approve_team" name="team_id" class="mt-1 block w-full">
-                            <option value="">{{ __('users.show.team_optional_for_jefe') }}</option>
-                            @foreach ($teams as $team)
-                                <option value="{{ $team->id }}" @selected((int) old('team_id', $managedUser->team_id) === $team->id)>{{ $team->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
+                        <x-team-checkboxes prefix="approve_team" :teams="$teams" :selected="$selectedTeamIds" :legend="__('users.show.teams')" :hint="__('users.show.teams_hint')" />
+                        <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
                     </div>
                     <div class="sm:col-span-2">
                         <x-primary-button>{{ __('users.show.approve_submit') }}</x-primary-button>
@@ -97,14 +94,9 @@
                         <x-input-error :messages="$errors->get('role')" class="mt-2" />
                     </div>
                     <div>
-                        <x-input-label for="update_team" :value="__('users.show.team')" />
-                        <x-select-input id="update_team" name="team_id" class="mt-1 block w-full">
-                            <option value="">{{ __('users.show.team_optional_for_jefe') }}</option>
-                            @foreach ($teams as $team)
-                                <option value="{{ $team->id }}" @selected((int) old('team_id', $managedUser->team_id) === $team->id)>{{ $team->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
+                        <x-team-checkboxes prefix="update_team" :teams="$teams" :selected="$selectedTeamIds" :legend="__('users.show.teams')" :hint="__('users.show.teams_hint')" />
+                        <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
                     </div>
                     <div class="sm:col-span-2">
                         <x-primary-button>{{ __('users.show.save_role_team') }}</x-primary-button>

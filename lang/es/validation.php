@@ -127,6 +127,8 @@ return [
         'password_confirmation' => 'confirmación de contraseña',
         'role' => 'rol',
         'team_id' => 'equipo',
+        'team_ids' => 'equipos',
+        'team_ids.*' => 'equipo',
         'coordinator_id' => 'coordinador',
         'status' => 'estado',
         'reason' => 'motivo',

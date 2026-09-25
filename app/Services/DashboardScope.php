@@ -18,10 +18,11 @@ use Illuminate\Support\Collection;
 /**
  * ÚNICA definición del alcance del panel de seguimiento (sección 11 de CLAUDE.md):
  *
- * - Jefe de zona: global (y puede acotar por equipo con el filtro).
- * - Coordinador: SOLO su equipo. Parte de `visibleTo` (que además le incluye lo que se le asignó fuera de su
- *   equipo) y lo restringe a su `team_id`: el panel mide el trabajo del equipo, no lo asignado a título personal.
- *   El filtro `team_id` que envíe se IGNORA aquí (el Form Request ya lo rechaza; esto es defensa en profundidad).
+ * - Administrador y jefe de zona: global (y pueden acotar por equipo con el filtro).
+ * - Coordinador: SOLO sus equipos (pertenece a uno o varios). Parte de `visibleTo` (que además le incluye lo que se
+ *   le asignó fuera de sus equipos) y lo restringe a los `team_user` propios: el panel mide el trabajo de los
+ *   equipos, no lo asignado a título personal. El filtro `team_id` puede estrechar a uno de sus equipos; si envía
+ *   uno ajeno se IGNORA aquí (el Form Request ya lo rechaza; esto es defensa en profundidad).
  * - Empleado, pendiente, inactivo o sin rol: nada (además la Policy responde 403 antes de llegar aquí).
  *
  * Los filtros (equipo, empleado, categoría) solo pueden ESTRECHAR el conjunto resultante: la consulta siempre
@@ -59,34 +60,37 @@ final class DashboardScope
     }
 
     /**
-     * Equipo que efectivamente acota la consulta: el filtro (solo el jefe) o el propio del coordinador.
+     * Equipos que efectivamente acotan la consulta. `null` = sin restricción de equipo (alcance global sin filtro);
+     * lista vacía = ninguno (coordinador sin equipos, o un rol sin panel).
+     *
+     * @return list<int>|null
      */
-    public function effectiveTeamId(User $user, DashboardFilters $filters): ?int
+    public function effectiveTeamIds(User $user, DashboardFilters $filters): ?array
     {
         return match ($user->roleEnum()) {
-            UserRole::JefeZona => $filters->teamId,
-            UserRole::Coordinador => $user->team_id,
-            default => null,
+            UserRole::Administrador, UserRole::JefeZona => $filters->teamId === null ? null : [$filters->teamId],
+            UserRole::Coordinador => $this->coordinatorTeamIds($user, $filters),
+            default => [],
         };
     }
 
     /**
-     * Equipos que puede elegir en el filtro: solo el jefe (el coordinador no ve selector).
+     * Equipos que puede elegir en el filtro: todos (alcance global) o los suyos si el coordinador tiene varios
+     * (con uno solo no hay nada que elegir).
      *
      * @return Collection<int, Team>
      */
     public function selectableTeams(User $user): Collection
     {
-        if ($user->roleEnum() !== UserRole::JefeZona) {
-            return new Collection;
-        }
-
-        return Team::query()->orderBy('name')->get(['id', 'name']);
+        return match ($user->roleEnum()) {
+            UserRole::Administrador, UserRole::JefeZona, UserRole::Coordinador => $user->selectableTeams(),
+            default => new Collection,
+        };
     }
 
     /**
-     * Personas que puede elegir en el filtro: el jefe, todas las activas con rol; el coordinador, solo los
-     * integrantes activos de su equipo.
+     * Personas que puede elegir en el filtro: alcance global, todas las activas con rol; el coordinador, solo los
+     * integrantes activos de sus equipos.
      *
      * @return Collection<int, User>
      */
@@ -98,10 +102,8 @@ final class DashboardScope
             ->orderBy('name');
 
         return match ($user->roleEnum()) {
-            UserRole::JefeZona => $query->get(['id', 'name']),
-            UserRole::Coordinador => $user->team_id === null
-                ? new Collection
-                : $query->where('team_id', $user->team_id)->get(['id', 'name']),
+            UserRole::Administrador, UserRole::JefeZona => $query->get(['id', 'name']),
+            UserRole::Coordinador => $query->memberOfAny($user->teamIds())->get(['id', 'name']),
             default => new Collection,
         };
     }
@@ -115,26 +117,26 @@ final class DashboardScope
     }
 
     /**
+     * @return list<int>
+     */
+    private function coordinatorTeamIds(User $user, DashboardFilters $filters): array
+    {
+        $own = $user->teamIds();
+
+        return $filters->teamId !== null && in_array($filters->teamId, $own, true) ? [$filters->teamId] : $own;
+    }
+
+    /**
      * @param  Builder<Ticket>|Builder<Activity>  $query
      */
     private function narrowByTeam(Builder $query, string $table, User $user, DashboardFilters $filters): void
     {
-        $role = $user->roleEnum();
+        $teamIds = $this->effectiveTeamIds($user, $filters);
 
-        if ($role !== UserRole::JefeZona && $role !== UserRole::Coordinador) {
-            $query->whereIn("{$table}.id", []);
-
+        if ($teamIds === null) {
             return;
         }
 
-        $teamId = $this->effectiveTeamId($user, $filters);
-
-        if ($role === UserRole::Coordinador && $teamId === null) {
-            $query->whereIn("{$table}.id", []);
-
-            return;
-        }
-
-        $query->when($teamId, fn (Builder $q, int $id) => $q->where("{$table}.team_id", $id));
+        $query->whereIn("{$table}.team_id", $teamIds);
     }
 }

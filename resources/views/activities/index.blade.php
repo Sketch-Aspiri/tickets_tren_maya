@@ -122,7 +122,7 @@
         @endif
     @endcan
 
-    <x-activity-table :activities="$activities" :show-team="auth()->user()->team_id === null" />
+    <x-activity-table :activities="$activities" :show-team="auth()->user()->mustChooseTeam()" />
 
     {{ $activities->links() }}
 </x-app-layout>

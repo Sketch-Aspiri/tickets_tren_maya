@@ -39,16 +39,17 @@ final class ActivityService
     ) {}
 
     /**
-     * El equipo de la actividad es el del creador (coordinador); un jefe (sin equipo) debe elegirlo. Todo va en
-     * una transacción: si la asignación es inválida, no queda una actividad a medias.
+     * El equipo de la actividad es el único del creador (coordinador); con varios equipos (o alcance global) debe
+     * elegirlo (`User::workTeamIdFor`). Todo va en una transacción: si la asignación es inválida, no queda una
+     * actividad a medias.
      *
      * @param  array<string, mixed>  $data  Datos ya validados (Form Request): campos del formulario,
-     *                                      `responsible_id`, `collaborator_ids`, `team_id` (jefe) y, si es
-     *                                      recurrente, `is_recurring` + `recurrence`.
+     *                                      `responsible_id`, `collaborator_ids`, `team_id` (si debe elegirlo) y,
+     *                                      si es recurrente, `is_recurring` + `recurrence`.
      */
     public function create(User $actor, array $data): Activity
     {
-        $teamId = $actor->team_id ?? ($data['team_id'] ?? null);
+        $teamId = $actor->workTeamIdFor(isset($data['team_id']) ? (int) $data['team_id'] : null);
 
         if ($teamId === null) {
             throw BusinessRuleException::because('activities.errors.team_required');

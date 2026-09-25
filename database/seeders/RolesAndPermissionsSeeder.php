@@ -58,13 +58,19 @@ class RolesAndPermissionsSeeder extends Seeder
             PermissionName::ActivitiesReview,
             PermissionName::ActivitiesManage,
             // Sprint 5: panel de seguimiento (su alcance lo limita DashboardScope) y exportacion. La bitacora
-            // (audit.view) solo la tiene el jefe, que recibe todos los permisos.
+            // (audit.view) la tienen jefe y administrador; `admins.manage` es exclusivo del administrador.
             PermissionName::DashboardView,
             PermissionName::ExportsCreate,
         ];
 
+        $jefe = array_values(array_filter(
+            PermissionName::cases(),
+            fn (PermissionName $permission): bool => $permission !== PermissionName::AdminsManage,
+        ));
+
         return [
-            UserRole::JefeZona->value => array_column(PermissionName::cases(), 'value'),
+            UserRole::Administrador->value => array_column(PermissionName::cases(), 'value'),
+            UserRole::JefeZona->value => $this->values($jefe),
             UserRole::Coordinador->value => $this->values($managerial),
             UserRole::Empleado->value => $this->values($operational),
         ];

@@ -8,7 +8,7 @@ use App\Models\User;
 
 /**
  * Vista de "Mis pendientes": lo asignado a la propia persona (`mine`, por defecto) o, solo para coordinadores, lo
- * abierto de su equipo (`team`). Quien no puede usar la vista de equipo recibe siempre `mine`, lo pida como lo pida.
+ * abierto de sus equipos (`team`). Quien no puede usar la vista de equipo recibe siempre `mine`, lo pida como lo pida.
  */
 enum PendingScope: string
 {
@@ -21,13 +21,14 @@ enum PendingScope: string
     }
 
     /**
-     * Solo un coordinador con equipo puede ver los pendientes de su equipo (no el jefe, que no tiene equipo).
+     * Solo un coordinador con al menos un equipo puede ver los pendientes de sus equipos (ni el administrador ni el
+     * jefe, que ya ven todo en los listados).
      */
     public static function canUseTeam(User $user): bool
     {
         return $user->canAccessApplication()
             && $user->roleEnum() === UserRole::Coordinador
-            && $user->team_id !== null;
+            && $user->teams()->exists();
     }
 
     /**

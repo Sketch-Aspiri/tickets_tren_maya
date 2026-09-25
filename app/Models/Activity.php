@@ -171,8 +171,8 @@ class Activity extends Model
      * ALCANCE por rol: única definición de "qué actividades puede ver este usuario" (listados, Mis
      * pendientes y ActivityPolicy::view).
      *
-     * - Jefe de zona: todas.
-     * - Coordinador: las de su equipo (`users.team_id`, decisión 17) y las que se le asignaron
+     * - Administrador y jefe de zona: todas.
+     * - Coordinador: las de sus equipos (`team_user`, decisiones 17 y 55) y las que se le asignaron
      *   explícitamente (igual que en tickets).
      * - Empleado: solo las asignadas a él (responsable o colaborador) o con una subtarea asignada a él
      *   (una subtarea puede ir a alguien del equipo que no está asignado a la actividad, y debe poder
@@ -190,7 +190,7 @@ class Activity extends Model
         }
 
         return match ($user->roleEnum()) {
-            UserRole::JefeZona => $query,
+            UserRole::Administrador, UserRole::JefeZona => $query,
             UserRole::Coordinador => $query->where(fn (Builder $scope) => $this->applyCoordinatorScope($scope, $user)),
             UserRole::Empleado => $query
                 ->whereNull('activities.recurrence_rule')
@@ -204,11 +204,8 @@ class Activity extends Model
      */
     private function applyCoordinatorScope(Builder $scope, User $user): void
     {
-        $scope->assignedTo($user);
-
-        if ($user->team_id !== null) {
-            $scope->orWhere('activities.team_id', $user->team_id);
-        }
+        $scope->assignedTo($user)
+            ->orWhereIn('activities.team_id', $user->teamIdsQuery());
     }
 
     /**
