@@ -129,7 +129,7 @@ class PendingScopeToggleTest extends DatabaseTestCase
     public function test_a_coordinator_without_a_team_falls_back_to_their_own_view(): void
     {
         $this->makeTicket($this->teamA, $this->empA1);
-        $this->coordA->forceFill(['team_id' => null])->save();
+        $this->coordA->teams()->detach();
 
         $this->assertFalse(PendingScope::canUseTeam($this->coordA->fresh()));
         $this->assertSame([], $this->pending($this->coordA->fresh(), '?scope=team')['tickets']);

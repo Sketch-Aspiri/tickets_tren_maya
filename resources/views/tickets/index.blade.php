@@ -79,7 +79,7 @@
                 <x-input-label for="sort" :value="__('tickets.filters.sort')" />
                 <x-select-input id="sort" name="sort" class="mt-1 block w-full">
                     @foreach (\App\Services\TicketListingService::SORTABLE as $column)
-                        <option value="{{ $column }}" @selected(($filters['sort'] ?? 'created_at') === $column)>{{ __('tickets.sort.'.$column) }}</option>
+                        <option value="{{ $column }}" @selected(($filters['sort'] ?? 'due_date') === $column)>{{ __('tickets.sort.'.$column) }}</option>
                     @endforeach
                 </x-select-input>
             </div>
@@ -87,8 +87,8 @@
             <div>
                 <x-input-label for="direction" :value="__('tickets.filters.direction')" />
                 <x-select-input id="direction" name="direction" class="mt-1 block w-full">
-                    <option value="desc" @selected(($filters['direction'] ?? 'desc') === 'desc')>{{ __('tickets.filters.desc') }}</option>
-                    <option value="asc" @selected(($filters['direction'] ?? null) === 'asc')>{{ __('tickets.filters.asc') }}</option>
+                    <option value="desc" @selected(($filters['direction'] ?? (($filters['sort'] ?? 'due_date') === 'due_date' ? 'asc' : 'desc')) === 'desc')>{{ __('tickets.filters.desc') }}</option>
+                    <option value="asc" @selected(($filters['direction'] ?? (($filters['sort'] ?? 'due_date') === 'due_date' ? 'asc' : 'desc')) === 'asc')>{{ __('tickets.filters.asc') }}</option>
                 </x-select-input>
             </div>
 

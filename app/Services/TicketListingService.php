@@ -125,8 +125,11 @@ final class TicketListingService
      */
     private function applySort(Builder $query, ?string $sort, ?string $direction): void
     {
-        // Se normaliza a un literal del propio codigo: nunca se interpola texto del usuario.
-        $dir = $direction === 'asc' ? 'asc' : 'desc';
+        // Por defecto se ordena por fecha limite (la mas proxima primero, sin fecha al final), no por creacion.
+        // La direccion se normaliza a un literal del propio codigo: nunca se interpola texto del usuario.
+        $sort ??= 'due_date';
+        $dir = $direction ?? ($sort === 'due_date' ? 'asc' : 'desc');
+        $dir = $dir === 'asc' ? 'asc' : 'desc';
 
         match ($sort) {
             'due_date' => ListingQuery::orderByDateNullsLast($query, 'tickets.due_date', $dir),
@@ -136,6 +139,6 @@ final class TicketListingService
             default => $query->orderBy('tickets.created_at', $dir),
         };
 
-        $query->orderBy('tickets.id', 'desc');
+        $query->orderBy('tickets.created_at', 'desc')->orderBy('tickets.id', 'desc');
     }
 }

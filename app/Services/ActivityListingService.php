@@ -11,6 +11,7 @@ use App\Enums\TicketStatus;
 use App\Models\Activity;
 use App\Models\User;
 use App\Support\ListingQuery;
+use App\Support\LocalTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -29,7 +30,7 @@ final class ActivityListingService
     public const KINDS = ['single', 'template', 'instance'];
 
     /**
-     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, kind?: ?string, q?: ?string, sort?: ?string, direction?: ?string}  $filters
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, due_today?: ?bool, kind?: ?string, q?: ?string, sort?: ?string, direction?: ?string}  $filters
      * @return LengthAwarePaginator<int, Activity>
      */
     public function paginate(User $user, array $filters): LengthAwarePaginator
@@ -44,7 +45,7 @@ final class ActivityListingService
     /**
      * Los MISMOS filtros, alcance y orden del listado, sin paginar y acotado a `$limit` filas (exportacion).
      *
-     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, kind?: ?string, q?: ?string, sort?: ?string, direction?: ?string}  $filters
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, due_today?: ?bool, kind?: ?string, q?: ?string, sort?: ?string, direction?: ?string}  $filters
      * @return Collection<int, Activity>
      */
     public function limited(User $user, array $filters, int $limit): Collection
@@ -59,7 +60,7 @@ final class ActivityListingService
     /**
      * Alcance por rol (`visibleTo`) + filtros validados. Ningun filtro puede ensanchar el alcance.
      *
-     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, kind?: ?string, q?: ?string}  $filters
+     * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, due_today?: ?bool, kind?: ?string, q?: ?string}  $filters
      * @return Builder<Activity>
      */
     private function filtered(User $user, array $filters): Builder
@@ -71,6 +72,7 @@ final class ActivityListingService
             ->when($filters['team_id'] ?? null, fn (Builder $q, int $id) => $q->where('activities.team_id', $id))
             ->when($filters['responsible_id'] ?? null, fn (Builder $q, int $id) => $this->filterByResponsible($q, $id))
             ->when($filters['overdue'] ?? false, fn (Builder $q) => $q->overdue())
+            ->when($filters['due_today'] ?? false, fn (Builder $q) => $this->filterDueToday($q))
             ->when($filters['kind'] ?? null, fn (Builder $q, string $kind) => $this->filterByKind($q, $kind))
             ->when($filters['q'] ?? null, fn (Builder $q, string $term) => ListingQuery::search($q, $term, ['activities.title', 'activities.folio']));
     }
@@ -130,6 +132,18 @@ final class ActivityListingService
     }
 
     /**
+     * Actividades ABIERTAS cuya fecha limite es hoy (hora de negocio). Las plantillas de recurrencia no cuentan:
+     * su trabajo lo hacen sus instancias. `whereDate` porque en SQLite un `date` se guarda como `Y-m-d 00:00:00`.
+     *
+     * @param  Builder<Activity>  $query
+     * @return Builder<Activity>
+     */
+    private function filterDueToday(Builder $query): Builder
+    {
+        return $query->open()->withoutTemplates()->whereDate('activities.due_date', LocalTime::today());
+    }
+
+    /**
      * @param  Builder<Activity>  $query
      * @return Builder<Activity>
      */
@@ -148,8 +162,11 @@ final class ActivityListingService
      */
     private function applySort(Builder $query, ?string $sort, ?string $direction): void
     {
-        // Se normaliza a un literal del propio codigo: nunca se interpola texto del usuario.
-        $dir = $direction === 'asc' ? 'asc' : 'desc';
+        // Por defecto se ordena por fecha limite (la mas proxima primero, sin fecha al final), no por creacion.
+        // La direccion se normaliza a un literal del propio codigo: nunca se interpola texto del usuario.
+        $sort ??= 'due_date';
+        $dir = $direction ?? ($sort === 'due_date' ? 'asc' : 'desc');
+        $dir = $dir === 'asc' ? 'asc' : 'desc';
 
         match ($sort) {
             'due_date' => ListingQuery::orderByDateNullsLast($query, 'activities.due_date', $dir),
@@ -159,6 +176,6 @@ final class ActivityListingService
             default => $query->orderBy('activities.created_at', $dir),
         };
 
-        $query->orderBy('activities.id', 'desc');
+        $query->orderBy('activities.created_at', 'desc')->orderBy('activities.id', 'desc');
     }
 }

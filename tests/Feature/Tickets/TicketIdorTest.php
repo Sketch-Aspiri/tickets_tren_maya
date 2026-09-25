@@ -171,7 +171,7 @@ class TicketIdorTest extends DatabaseTestCase
         $ticketOfA = Ticket::factory()->forTeam($this->teamA)->create();
         $this->signIn($this->coordA)->get("/tickets/{$ticketOfA->id}")->assertOk();
 
-        $this->coordA->forceFill(['team_id' => $this->teamB->id])->save();
+        $this->coordA->teams()->sync([$this->teamB->id]);
 
         $this->signIn($this->coordA->fresh())->get("/tickets/{$ticketOfA->id}")->assertNotFound();
         $this->signIn($this->coordA->fresh())->get("/tickets/{$this->ticketOfB->id}")->assertOk();

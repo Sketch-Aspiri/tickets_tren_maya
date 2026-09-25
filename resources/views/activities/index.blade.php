@@ -4,6 +4,16 @@
         <div class="flex items-center justify-between gap-4">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('activities.title') }}</h1>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
+                {{-- Alterna el filtro "vencen hoy" conservando el resto de filtros. Activo = boton resaltado que lo quita. --}}
+                @php
+                    $dueToday = (bool) ($filters['due_today'] ?? false);
+                    $otherFilters = array_filter(\Illuminate\Support\Arr::except($filters, ['due_today']), fn ($value) => $value !== null && $value !== false && $value !== '');
+                @endphp
+                @if ($dueToday)
+                    <x-primary-button :href="route('activities.index', $otherFilters)" aria-current="true" :title="__('activities.filters.due_today_clear')">{{ __('activities.filters.due_today') }} ✕</x-primary-button>
+                @else
+                    <x-secondary-button :href="route('activities.index', [...$otherFilters, 'due_today' => 1])">{{ __('activities.filters.due_today') }}</x-secondary-button>
+                @endif
                 @can('export', \App\Models\Activity::class)
                     <x-secondary-button :href="route('activities.export', array_filter($filters, fn ($value) => $value !== null && $value !== false && $value !== ''))">{{ __('activities.export.button') }}</x-secondary-button>
                 @endcan
@@ -16,6 +26,9 @@
 
     <x-card>
         <form method="GET" action="{{ route('activities.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            @if ($dueToday)
+                <input type="hidden" name="due_today" value="1">
+            @endif
             <div class="sm:col-span-2">
                 <x-input-label for="q" :value="__('activities.filters.search')" />
                 <x-text-input id="q" name="q" type="search" class="mt-1 block w-full" :value="$filters['q'] ?? ''" maxlength="100" />
@@ -89,7 +102,7 @@
                 <x-input-label for="sort" :value="__('activities.filters.sort')" />
                 <x-select-input id="sort" name="sort" class="mt-1 block w-full">
                     @foreach (\App\Services\ActivityListingService::SORTABLE as $column)
-                        <option value="{{ $column }}" @selected(($filters['sort'] ?? 'created_at') === $column)>{{ __('activities.sort.'.$column) }}</option>
+                        <option value="{{ $column }}" @selected(($filters['sort'] ?? 'due_date') === $column)>{{ __('activities.sort.'.$column) }}</option>
                     @endforeach
                 </x-select-input>
             </div>
@@ -97,8 +110,8 @@
             <div>
                 <x-input-label for="direction" :value="__('activities.filters.direction')" />
                 <x-select-input id="direction" name="direction" class="mt-1 block w-full">
-                    <option value="desc" @selected(($filters['direction'] ?? 'desc') === 'desc')>{{ __('activities.filters.desc') }}</option>
-                    <option value="asc" @selected(($filters['direction'] ?? null) === 'asc')>{{ __('activities.filters.asc') }}</option>
+                    <option value="desc" @selected(($filters['direction'] ?? (($filters['sort'] ?? 'due_date') === 'due_date' ? 'asc' : 'desc')) === 'desc')>{{ __('activities.filters.desc') }}</option>
+                    <option value="asc" @selected(($filters['direction'] ?? (($filters['sort'] ?? 'due_date') === 'due_date' ? 'asc' : 'desc')) === 'asc')>{{ __('activities.filters.asc') }}</option>
                 </x-select-input>
             </div>
 

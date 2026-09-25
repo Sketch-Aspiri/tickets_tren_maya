@@ -168,7 +168,7 @@ class TicketViewsTest extends DatabaseTestCase
     {
         $team = Team::factory()->create();
         Ticket::factory()->forTeam($team)->create();
-        User::query()->where('team_id', $team->id)->update(['team_id' => null]);
+        $team->members()->detach();
 
         $this->signIn($this->jefe)->delete("/teams/{$team->id}")->assertSessionHas('error', __('teams.errors.has_tickets'));
 
@@ -179,7 +179,7 @@ class TicketViewsTest extends DatabaseTestCase
     {
         $team = Team::factory()->create();
         Ticket::factory()->forTeam($team)->create()->delete();
-        User::query()->where('team_id', $team->id)->update(['team_id' => null]);
+        $team->members()->detach();
 
         $this->signIn($this->jefe)->delete("/teams/{$team->id}")->assertSessionHas('error');
 

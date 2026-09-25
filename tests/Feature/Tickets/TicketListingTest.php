@@ -175,7 +175,19 @@ class TicketListingTest extends DatabaseTestCase
         $this->assertSame([$late->id, $soon->id, $none->id], $this->listedIds($this->jefe, ['sort' => 'due_date', 'direction' => 'desc']));
     }
 
-    public function test_default_order_is_newest_first_and_other_sort_columns_work(): void
+    public function test_default_order_is_by_due_date_soonest_first_with_undated_last_and_newest_breaking_ties(): void
+    {
+        $late = Ticket::factory()->forTeam($this->teamA)->dueOn('2030-05-01')->create();
+        $olderUndated = Ticket::factory()->forTeam($this->teamA)->create();
+        $soon = Ticket::factory()->forTeam($this->teamA)->dueOn('2030-01-01')->create();
+        $newerUndated = Ticket::factory()->forTeam($this->teamA)->create();
+
+        $this->assertSame([$soon->id, $late->id, $newerUndated->id, $olderUndated->id], $this->listedIds($this->jefe));
+        $this->assertSame([$soon->id, $late->id, $newerUndated->id, $olderUndated->id], $this->listedIds($this->jefe, ['sort' => 'due_date']));
+        $this->assertSame([$newerUndated->id, $soon->id, $olderUndated->id, $late->id], $this->listedIds($this->jefe, ['sort' => 'created_at']), 'ordenar por creacion sigue disponible de forma explicita');
+    }
+
+    public function test_other_sort_columns_work(): void
     {
         $first = Ticket::factory()->forTeam($this->teamA)->create(['title' => 'Bravo']);
         $second = Ticket::factory()->forTeam($this->teamA)->inProgress()->create(['title' => 'Alfa']);

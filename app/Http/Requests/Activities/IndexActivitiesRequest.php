@@ -32,6 +32,7 @@ class IndexActivitiesRequest extends FormRequest
             'responsible_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'team_id' => ['nullable', 'integer', Rule::exists('teams', 'id')],
             'overdue' => ['nullable', 'boolean'],
+            'due_today' => ['nullable', 'boolean'],
             'kind' => ['nullable', 'string', Rule::in(ActivityListingService::KINDS)],
             'q' => ['nullable', 'string', 'max:100'],
             'sort' => ['nullable', 'string', Rule::in(ActivityListingService::SORTABLE)],
@@ -48,6 +49,7 @@ class IndexActivitiesRequest extends FormRequest
         return [
             ...$this->safe()->only(['status', 'priority', 'category_id', 'responsible_id', 'team_id', 'kind', 'q', 'sort', 'direction']),
             'overdue' => $this->boolean('overdue'),
+            'due_today' => $this->boolean('due_today'),
         ];
     }
 }

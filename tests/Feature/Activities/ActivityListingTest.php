@@ -10,6 +10,8 @@ use App\Enums\TicketStatus;
 use App\Models\Activity;
 use App\Models\Category;
 use App\Models\User;
+use App\Support\LocalTime;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Concerns\BuildsActivityScenario;
@@ -133,6 +135,56 @@ class ActivityListingTest extends DatabaseTestCase
 
         $this->assertSame([$urgent->id, $noDate->id, $low->id], $this->listedIds($this->coordA, ['sort' => 'priority', 'direction' => 'desc']));
         $this->assertSame([$urgent->id, $low->id, $noDate->id], $this->listedIds($this->coordA, ['sort' => 'due_date', 'direction' => 'asc']));
+    }
+
+    public function test_default_order_is_by_due_date_soonest_first_with_undated_last(): void
+    {
+        $late = $this->makeActivity($this->teamA, ['due_date' => '2030-05-01']);
+        $olderUndated = $this->makeActivity($this->teamA);
+        $soon = $this->makeActivity($this->teamA, ['due_date' => '2030-01-01']);
+        $newerUndated = $this->makeActivity($this->teamA);
+
+        $this->assertSame([$soon->id, $late->id, $newerUndated->id, $olderUndated->id], $this->listedIds($this->coordA));
+        $this->assertSame([$newerUndated->id, $soon->id, $olderUndated->id, $late->id], $this->listedIds($this->coordA, ['sort' => 'created_at']));
+    }
+
+    public function test_due_today_filter_lists_only_open_non_template_activities_due_today(): void
+    {
+        $today = LocalTime::today();
+        $dueToday = $this->makeActivity($this->teamA, ['due_date' => $today]);
+        $dueTodayInProgress = $this->makeActivity($this->teamA, ['due_date' => $today, 'status' => TicketStatus::InProgress]);
+        $this->makeActivity($this->teamA, ['due_date' => $today, 'status' => TicketStatus::Completed]);
+        $this->makeActivity($this->teamA, ['due_date' => $today, 'status' => TicketStatus::Cancelled]);
+        $this->makeActivity($this->teamA, ['due_date' => CarbonImmutable::parse($today)->addDay()->toDateString()]);
+        $this->makeActivity($this->teamA, ['due_date' => CarbonImmutable::parse($today)->subDay()->toDateString()]);
+        $this->makeActivity($this->teamA);
+        $this->makeActivity($this->teamA, ['due_date' => $today, 'recurrence_rule' => ['frequency' => 'daily', 'interval' => 1], 'start_date' => $today]);
+
+        $this->assertEqualsCanonicalizing([$dueToday->id, $dueTodayInProgress->id], $this->listedIds($this->coordA, ['due_today' => 1]));
+    }
+
+    public function test_due_today_filter_never_widens_the_scope_and_combines_with_other_filters(): void
+    {
+        $today = LocalTime::today();
+        $mine = $this->makeActivity($this->teamA, ['due_date' => $today, 'priority' => Priority::High]);
+        $mineLow = $this->makeActivity($this->teamA, ['due_date' => $today, 'priority' => Priority::Low]);
+        $foreign = $this->makeActivity($this->teamB, ['due_date' => $today, 'priority' => Priority::High]);
+
+        $this->assertEqualsCanonicalizing([$mine->id, $mineLow->id], $this->listedIds($this->coordA, ['due_today' => 1]));
+        $this->assertEqualsCanonicalizing([$mine->id, $mineLow->id, $foreign->id], $this->listedIds($this->jefe, ['due_today' => 1]));
+        $this->assertSame([$mine->id], $this->listedIds($this->coordA, ['due_today' => 1, 'priority' => 'high']));
+    }
+
+    public function test_the_due_today_button_toggles_the_filter_and_keeps_other_filters(): void
+    {
+        $this->signIn($this->coordA)->get('/activities?priority=high')->assertOk()
+            ->assertSee(__('activities.filters.due_today'))
+            ->assertSee(e(route('activities.index', ['priority' => 'high', 'due_today' => 1])), false)
+            ->assertDontSee('name="due_today"', false);
+
+        $this->signIn($this->coordA)->get('/activities?priority=high&due_today=1')->assertOk()
+            ->assertSee(e(route('activities.index', ['priority' => 'high'])), false)
+            ->assertSee('name="due_today"', false);
     }
 
     public function test_invalid_filters_are_rejected_by_the_form_request(): void

@@ -52,6 +52,8 @@ return [
         'team' => 'Equipo',
         'responsible' => 'Responsable',
         'overdue' => 'Solo vencidas',
+        'due_today' => 'Vencen hoy',
+        'due_today_clear' => 'Quitar el filtro y ver todas las actividades',
         'kind' => 'Tipo',
         'kinds' => [
             'single' => 'Normales (sin recurrencia)',
