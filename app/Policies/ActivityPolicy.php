@@ -69,6 +69,33 @@ class ActivityPolicy
     }
 
     /**
+     * Restaurar una plantilla eliminada (papelera de `/activities/templates`). NO usa `scoped()`/`canSee()`:
+     * esas dos parten de `Activity::query()->visibleTo($user)`, que por el scope global de SoftDeletes nunca
+     * encuentra una fila eliminada. Aquí se encadena `withTrashed()` ANTES de `visibleTo()` a propósito.
+     * Fuera de alcance responde 404 (igual que el resto de la Policy; el alcance del empleado ya excluye
+     * las plantillas por completo, así que nunca llega a comprobar el permiso). Una actividad visible que
+     * NO es plantilla responde 403 (existe y está en su alcance, pero esta papelera es exclusiva de
+     * plantillas): la Policy comprueba `isTemplate()` por sí misma para que la autorización sea autosuficiente
+     * y nunca dependa solo de que `ActivityService::restore()` lance la excepción de negocio.
+     */
+    public function restore(User $user, Activity $activity): Response|bool
+    {
+        if (! Activity::withTrashed()->visibleTo($user)->whereKey($activity->getKey())->exists()) {
+            return Response::denyAsNotFound();
+        }
+
+        if (! $this->hasPermission($user, PermissionName::ActivitiesManage)) {
+            return Response::deny();
+        }
+
+        if (! $activity->isTemplate()) {
+            return Response::deny(__('activities.errors.restore_not_template'));
+        }
+
+        return Response::allow();
+    }
+
+    /**
      * Cambiar la actividad al estado `$to`. Quién puede recorrer cada arista (igual que en tickets):
      * - cancelar y reabrir (volver a Pendiente): gestión (jefe / coordinador del alcance);
      * - aprobar (-> Completado) y rechazar (En revisión -> En proceso): revisión (jefe / coordinador);

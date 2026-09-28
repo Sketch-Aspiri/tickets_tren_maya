@@ -38,4 +38,9 @@ return [
         'web' => 'Web',
         'email' => 'Correo',
     ],
+    'incoming_email_status' => [
+        'pending_review' => 'Pendiente de revisión',
+        'converted' => 'Convertido',
+        'discarded' => 'Descartado',
+    ],
 ];

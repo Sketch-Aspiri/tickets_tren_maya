@@ -126,6 +126,22 @@ final class ActivityService
     }
 
     /**
+     * Restaurar una plantilla eliminada (papelera de `/activities/templates`). Este proyecto no tiene una
+     * "papelera" general para tickets/actividades normales: esto es deliberadamente exclusivo de plantillas
+     * (el jefe/coordinador editan/cancelan/reabren lo demás, nunca lo eliminan y lo restauran). El evento
+     * `restored` lo registra `LogsActivity` automáticamente (igual que `delete()` no llama a la bitácora a
+     * mano para `deleted`): no hace falta una llamada explícita.
+     */
+    public function restore(Activity $activity): void
+    {
+        if (! $activity->isTemplate()) {
+            throw BusinessRuleException::because('activities.errors.restore_not_template');
+        }
+
+        $activity->restore();
+    }
+
+    /**
      * Cambia el estado (ver StatusTransitioner) más las reglas propias de las actividades.
      */
     public function transition(User $actor, Activity $activity, TicketStatus $to, ?string $comment = null): Activity

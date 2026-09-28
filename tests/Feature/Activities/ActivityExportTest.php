@@ -164,7 +164,7 @@ class ActivityExportTest extends DatabaseTestCase
         );
     }
 
-    public function test_recurrence_column_distinguishes_template_and_instance_like_the_listing_does(): void
+    public function test_recurrence_column_distinguishes_instance_and_never_exports_templates(): void
     {
         $template = Activity::factory()->forTeam($this->teamA)->createdBy($this->coordA)->recurring()->create();
         $instance = Activity::factory()->forTeam($this->teamA)->createdBy($this->coordA)->instanceOf($template, '2026-10-05')->create();
@@ -172,11 +172,12 @@ class ActivityExportTest extends DatabaseTestCase
         $response = $this->signIn($this->jefe)->get('/activities/export')->assertOk();
         $byFolio = array_column(array_slice($this->sheetRows($response), 1), 12, 0);
 
-        $this->assertSame('Plantilla', $byFolio[$template->folio]);
+        // La plantilla nunca se exporta (igual que nunca aparece en el listado); solo su instancia.
+        $this->assertArrayNotHasKey($template->folio, $byFolio);
         $this->assertSame('Instancia de '.$template->folio, $byFolio[$instance->folio]);
 
         // Exactamente lo que muestra el listado: el filtro `kind` tambien acota la exportacion.
-        $this->assertSame([$template->folio], $this->exportedFolios($this->jefe, '?kind=template'));
+        // `kind=template` ya no existe: las plantillas se gestionan en /activities/templates.
         $this->assertSame([$instance->folio], $this->exportedFolios($this->jefe, '?kind=instance'));
     }
 

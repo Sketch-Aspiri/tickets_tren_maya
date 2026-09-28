@@ -61,6 +61,9 @@ class RolesAndPermissionsSeeder extends Seeder
             // (audit.view) la tienen jefe y administrador; `admins.manage` es exclusivo del administrador.
             PermissionName::DashboardView,
             PermissionName::ExportsCreate,
+            // Correos entrantes: bandeja global de revision (sin recorte por equipo, ver IncomingEmailPolicy).
+            PermissionName::EmailsView,
+            PermissionName::EmailsManage,
         ];
 
         $jefe = array_values(array_filter(

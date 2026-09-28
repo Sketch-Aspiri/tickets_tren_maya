@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\MailboxClient;
+use App\Infrastructure\WebklexMailboxClient;
 use App\Listeners\LogAuthenticationActivity;
+use App\Models\IncomingEmail;
 use App\Policies\AuditLogPolicy;
 use App\Policies\DashboardPolicy;
+use App\Policies\IncomingEmailPolicy;
 use App\Support\EnvironmentSecurityCheck;
 use App\Support\MorphMap;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -24,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->bind(MailboxClient::class, WebklexMailboxClient::class);
     }
 
     public function boot(): void
@@ -49,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('view-dashboard', [DashboardPolicy::class, 'view']);
         Gate::policy(ActivityLogEntry::class, AuditLogPolicy::class);
+        Gate::policy(IncomingEmail::class, IncomingEmailPolicy::class);
     }
 
     /**
@@ -123,6 +128,7 @@ class AppServiceProvider extends ServiceProvider
             'dashboard' => ['dashboard_per_minute', 'perMinute'],
             'audit-view' => ['audit_per_minute', 'perMinute'],
             'export' => ['export_per_hour', 'perHour'],
+            'email-write' => ['email_write_per_minute', 'perMinute'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {

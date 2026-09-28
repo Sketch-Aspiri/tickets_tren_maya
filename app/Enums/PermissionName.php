@@ -44,4 +44,7 @@ enum PermissionName: string
     case AuditView = 'audit.view';
     /** Exportar listados filtrados a Excel (jefe y coordinador, dentro de su alcance). */
     case ExportsCreate = 'exports.create';
+    case EmailsView = 'emails.view';
+    /** Descartar (con motivo) o convertir un correo entrante en Actividad. */
+    case EmailsManage = 'emails.manage';
 }

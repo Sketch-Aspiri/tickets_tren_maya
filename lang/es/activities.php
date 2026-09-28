@@ -6,6 +6,18 @@ return [
     'edit' => 'Editar actividad',
     'pending_title' => 'Actividades',
     'pending_empty' => 'No tienes actividades pendientes asignadas.',
+    'templates' => [
+        'nav' => 'Plantillas',
+        'title' => 'Plantillas de actividades',
+        'intro' => 'Plantillas de recurrencia: no se trabajan directamente, generan las instancias de cada ocurrencia. No aparecen en el listado de actividades.',
+        'tabs_legend' => 'Ver plantillas activas o la papelera',
+        'active' => 'Plantillas activas',
+        'trash' => 'Papelera',
+        'empty' => 'No hay plantillas de recurrencia.',
+        'empty_trash' => 'La papelera de plantillas está vacía.',
+        'restore' => 'Restaurar',
+        'restore_confirm' => '¿Restaurar esta plantilla? Volverá a generar instancias a partir de hoy.',
+    ],
     'export' => [
         'button' => 'Exportar a Excel',
         'sheet' => 'Actividades',
@@ -57,7 +69,6 @@ return [
         'kind' => 'Tipo',
         'kinds' => [
             'single' => 'Normales (sin recurrencia)',
-            'template' => 'Plantillas recurrentes',
             'instance' => 'Instancias generadas',
         ],
         'sort' => 'Ordenar por',
@@ -212,6 +223,7 @@ return [
         'too_many_subtasks' => 'Una actividad admite como máximo :max subtareas.',
         'template_subtask_done' => 'Las subtareas de una plantilla no se marcan: se marcan en cada instancia.',
         'invalid_recurrence' => 'La regla de repetición no es válida.',
+        'restore_not_template' => 'Solo se pueden restaurar plantillas de recurrencia eliminadas.',
     ],
     'command' => [
         'done' => 'Instancias generadas: :created (plantillas revisadas: :templates).',

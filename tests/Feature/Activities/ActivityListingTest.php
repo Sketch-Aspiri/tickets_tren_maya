@@ -46,10 +46,11 @@ class ActivityListingTest extends DatabaseTestCase
         $a = $this->makeActivity($this->teamA);
         $b = $this->makeActivity($this->teamB);
         $assignedAcross = $this->makeActivity($this->teamB, [], $this->coordA);
-        $template = $this->makeActivity($this->teamA, ['recurrence_rule' => ['frequency' => 'daily', 'interval' => 1], 'start_date' => '2030-01-01']);
+        // Las plantillas nunca aparecen en este listado (ni siquiera para el jefe): se gestionan en /activities/templates.
+        $this->makeActivity($this->teamA, ['recurrence_rule' => ['frequency' => 'daily', 'interval' => 1], 'start_date' => '2030-01-01']);
 
-        $this->assertEqualsCanonicalizing([$a->id, $b->id, $assignedAcross->id, $template->id], $this->listedIds($this->jefe));
-        $this->assertEqualsCanonicalizing([$a->id, $assignedAcross->id, $template->id], $this->listedIds($this->coordA));
+        $this->assertEqualsCanonicalizing([$a->id, $b->id, $assignedAcross->id], $this->listedIds($this->jefe));
+        $this->assertEqualsCanonicalizing([$a->id, $assignedAcross->id], $this->listedIds($this->coordA));
         $this->assertEqualsCanonicalizing([$b->id, $assignedAcross->id], $this->listedIds($this->coordB), 'las del equipo B, aunque estén asignadas a otro coordinador');
     }
 
@@ -98,20 +99,29 @@ class ActivityListingTest extends DatabaseTestCase
         $late = $this->makeActivity($this->teamA, ['due_date' => now()->subDays(3)->toDateString()]);
         $this->makeActivity($this->teamA, ['due_date' => now()->addDays(3)->toDateString()]);
         $this->makeActivity($this->teamA, ['due_date' => now()->subDays(3)->toDateString(), 'status' => TicketStatus::Completed]);
+        // Una plantilla cuyo propio `due_date` ya paso, con estado Pendiente (nunca "avanza"), NUNCA cuenta
+        // como vencida: su trabajo lo hacen sus instancias. Este es el bug que corrige esta exclusion.
+        $this->makeActivity($this->teamA, [
+            'due_date' => now()->subDays(3)->toDateString(),
+            'recurrence_rule' => ['frequency' => 'daily', 'interval' => 1],
+            'start_date' => now()->subDays(30)->toDateString(),
+        ]);
 
         $this->assertSame([$late->id], $this->listedIds($this->coordA, ['overdue' => 1]));
     }
 
-    public function test_filter_by_kind_single_template_or_instance(): void
+    public function test_filter_by_kind_single_or_instance_and_templates_are_never_listed(): void
     {
         $single = $this->makeActivity($this->teamA);
         $template = $this->makeActivity($this->teamA, ['recurrence_rule' => ['frequency' => 'daily', 'interval' => 1], 'start_date' => '2030-01-01']);
         $instance = $this->makeActivity($this->teamA, ['parent_activity_id' => $template->id, 'occurrence_date' => '2030-01-02']);
 
         $this->assertSame([$single->id], $this->listedIds($this->coordA, ['kind' => 'single']));
-        $this->assertSame([$template->id], $this->listedIds($this->coordA, ['kind' => 'template']));
         $this->assertSame([$instance->id], $this->listedIds($this->coordA, ['kind' => 'instance']));
-        $this->assertEqualsCanonicalizing([$single->id, $template->id, $instance->id], $this->listedIds($this->coordA));
+        $this->assertEqualsCanonicalizing([$single->id, $instance->id], $this->listedIds($this->coordA), 'las plantillas nunca aparecen en el listado, con o sin filtro');
+
+        // `kind=template` ya no es un valor valido: las plantillas se gestionan en /activities/templates.
+        $this->signIn($this->coordA)->get('/activities?kind=template')->assertInvalid('kind');
     }
 
     public function test_search_matches_title_and_folio_and_escapes_like_wildcards(): void

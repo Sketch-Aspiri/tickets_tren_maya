@@ -14,3 +14,8 @@ Schedule::command('activities:generate-recurring')
     ->dailyAt((string) config('tickets.recurrence.schedule_at'))
     ->timezone((string) config('app.display_timezone'))
     ->withoutOverlapping();
+
+// Ingesta de correo entrante (bandeja "Correos entrantes"): cada `mail_ingestion.interval_minutes` minutos.
+Schedule::command('emails:ingest')
+    ->cron('*/'.(int) config('mail_ingestion.interval_minutes').' * * * *')
+    ->withoutOverlapping();

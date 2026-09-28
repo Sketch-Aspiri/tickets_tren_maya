@@ -61,8 +61,10 @@ class SeedersAndCommandsTest extends DatabaseTestCase
 
         // Sprint 3: las actividades suman permisos (el detalle por rol esta en ActivityModelTest). Sprint 5: el panel
         // (`dashboard.view`) y la exportacion (`exports.create`) son de jefe y coordinador; `audit.view` solo del jefe.
+        // Correos entrantes: bandeja global de revision (`emails.view`/`emails.manage`), jefe/administrador/coordinador;
+        // el empleado no tiene acceso.
         $operational = ['tickets.view', 'tickets.create', 'tickets.work', 'activities.view', 'activities.work'];
-        $managerial = [...$operational, 'tickets.assign', 'tickets.review', 'tickets.manage', 'activities.create', 'activities.assign', 'activities.review', 'activities.manage', 'dashboard.view', 'exports.create'];
+        $managerial = [...$operational, 'tickets.assign', 'tickets.review', 'tickets.manage', 'activities.create', 'activities.assign', 'activities.review', 'activities.manage', 'dashboard.view', 'exports.create', 'emails.view', 'emails.manage'];
 
         $this->assertEqualsCanonicalizing($operational, $granted(UserRole::Empleado));
         $this->assertEqualsCanonicalizing($managerial, $granted(UserRole::Coordinador));
@@ -77,6 +79,13 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->assertNotContains('audit.view', $granted(UserRole::Coordinador));
         $this->assertNotContains('audit.view', $granted(UserRole::Empleado));
         $this->assertNotContains('dashboard.view', $granted(UserRole::Empleado));
+
+        foreach ([UserRole::Administrador, UserRole::JefeZona, UserRole::Coordinador] as $role) {
+            $this->assertContains('emails.view', $granted($role));
+            $this->assertContains('emails.manage', $granted($role));
+        }
+        $this->assertNotContains('emails.view', $granted(UserRole::Empleado));
+        $this->assertNotContains('emails.manage', $granted(UserRole::Empleado));
     }
 
     public function test_seeder_is_idempotent_with_ticket_permissions_and_keeps_extra_grants_out(): void
@@ -86,7 +95,7 @@ class SeedersAndCommandsTest extends DatabaseTestCase
 
         $this->assertSame(count(PermissionName::cases()), Permission::query()->count());
         $this->assertCount(5, Role::findByName(UserRole::Empleado->value)->permissions);
-        $this->assertCount(14, Role::findByName(UserRole::Coordinador->value)->permissions);
+        $this->assertCount(16, Role::findByName(UserRole::Coordinador->value)->permissions);
     }
 
     public function test_roles_and_permissions_seeder_is_idempotent_and_keeps_user_assignments(): void

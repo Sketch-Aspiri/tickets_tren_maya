@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Activity;
 use App\Models\Attachment;
+use App\Models\IncomingEmailAttachment;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Support\AttachmentInspector;
@@ -83,6 +84,65 @@ final class AttachmentService
         } catch (Throwable $exception) {
             // Si algo falló después de escribir el archivo, no se deja huérfano en disco.
             if (is_string($path)) {
+                $disk->delete($path);
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Adopta un adjunto de un correo entrante ya ingerido (IncomingEmailAttachment) como un Attachment
+     * real del ticket/actividad, al convertir el correo (IncomingEmailReviewService::convert()). Copia el
+     * archivo (nunca lo mueve: la fila y el archivo originales de incoming_email_attachments deben seguir
+     * intactos) bajo un nombre nuevo generado por el servidor, con el MISMO tope `max_per_ticket` que
+     * store(). No revalida extensión/MIME/tamaño: el adjunto ya pasó una vez por AttachmentInspector al
+     * ingerir el correo; revalidarlo aquí sería redundante.
+     */
+    public function adopt(User $actor, Ticket|Activity $subject, IncomingEmailAttachment $source): Attachment
+    {
+        $disk = Storage::disk((string) config('tickets.attachments.disk'));
+        $directory = WorkflowSubject::attachmentDirectory($subject);
+        $extension = pathinfo($source->path, PATHINFO_EXTENSION);
+        $path = $directory.'/'.Str::random(40).'.'.$extension;
+        $copied = false;
+
+        try {
+            return DB::transaction(function () use ($actor, $subject, $source, $disk, $path, &$copied): Attachment {
+                // Bloquear el registro serializa las adopciones concurrentes: el tope por registro no se rebasa.
+                $subject::query()->lockForUpdate()->findOrFail($subject->getKey());
+
+                if ($subject->attachments()->count() >= (int) config('tickets.attachments.max_per_ticket')) {
+                    throw BusinessRuleException::because(WorkflowSubject::error($subject, 'too_many_attachments'), ['max' => (int) config('tickets.attachments.max_per_ticket')]);
+                }
+
+                if (! $disk->copy($source->path, $path)) {
+                    throw BusinessRuleException::because(WorkflowSubject::error($subject, 'upload_failed'));
+                }
+
+                $copied = true;
+
+                $attachment = new Attachment([
+                    'user_id' => $actor->getKey(),
+                    'original_name' => $source->original_name,
+                    'path' => $path,
+                    'mime' => $source->mime,
+                    'size' => $source->size,
+                ]);
+                $subject->attachments()->save($attachment);
+
+                $this->audit->record(WorkflowSubject::group($subject), 'attachment_added', $subject, $actor, [], [], [
+                    'folio' => $subject->folio,
+                    'attachment_id' => $attachment->getKey(),
+                    'original_name' => $attachment->original_name,
+                    'source' => 'incoming_email',
+                ]);
+
+                return $attachment;
+            });
+        } catch (Throwable $exception) {
+            // Si algo falló después de copiar el archivo, no se deja huérfano en disco.
+            if ($copied) {
                 $disk->delete($path);
             }
 

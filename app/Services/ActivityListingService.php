@@ -26,8 +26,12 @@ final class ActivityListingService
     /** Columnas por las que se permite ordenar (lista blanca; la validación vive en IndexActivitiesRequest). */
     public const SORTABLE = ['created_at', 'due_date', 'priority', 'status', 'folio', 'title'];
 
-    /** Tipos de actividad del filtro `kind`: normal, plantilla de recurrencia o instancia generada. */
-    public const KINDS = ['single', 'template', 'instance'];
+    /**
+     * Tipos de actividad del filtro `kind`: normal o instancia generada. Las plantillas nunca aparecen en
+     * este listado (su propio `due_date` puede estar vencido con estado Pendiente, ya que nunca "avanza");
+     * se gestionan aparte en `/activities/templates` (ActivityTemplateController).
+     */
+    public const KINDS = ['single', 'instance'];
 
     /**
      * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, due_today?: ?bool, kind?: ?string, q?: ?string, sort?: ?string, direction?: ?string}  $filters
@@ -110,12 +114,37 @@ final class ActivityListingService
     }
 
     /**
+     * Listado propio de plantillas de recurrencia (`/activities/templates`), dentro del alcance del usuario.
+     * `$trashed` pide la papelera (plantillas eliminadas) en vez de las activas. Sin el resto del filtrado
+     * del listado principal: aquí solo se navega, no se buscan/ordenan por criterios de negocio.
+     *
+     * @return LengthAwarePaginator<int, Activity>
+     */
+    public function templatesFor(User $user, bool $trashed = false): LengthAwarePaginator
+    {
+        $query = $trashed ? Activity::onlyTrashed() : Activity::query();
+
+        return $query->visibleTo($user)
+            ->templates()
+            ->withProgress()
+            ->with(['category:id,name', 'team:id,name', 'assignments.user:id,name'])
+            ->orderBy('activities.title')
+            ->paginate((int) config('tickets.activities_per_page'))
+            ->withQueryString();
+    }
+
+    /**
+     * Las plantillas de recurrencia NUNCA aparecen aquí: su propio `due_date` puede quedar vencido con
+     * estado Pendiente (nunca avanza como una actividad normal), lo que las hacía aparecer falsamente
+     * como "vencidas" en este listado y en su filtro `overdue`. Se gestionan en `/activities/templates`.
+     *
      * @return Builder<Activity>
      */
     private function baseQuery(User $user): Builder
     {
         return Activity::query()
             ->visibleTo($user)
+            ->withoutTemplates()
             ->withProgress()
             ->with(['category:id,name', 'team:id,name', 'parent:id,folio', 'assignments.user:id,name']);
     }
@@ -150,9 +179,8 @@ final class ActivityListingService
     private function filterByKind(Builder $query, string $kind): Builder
     {
         return match ($kind) {
-            'template' => $query->templates(),
             'instance' => $query->whereNotNull('activities.parent_activity_id'),
-            'single' => $query->withoutTemplates()->whereNull('activities.parent_activity_id'),
+            'single' => $query->whereNull('activities.parent_activity_id'),
             default => $query,
         };
     }

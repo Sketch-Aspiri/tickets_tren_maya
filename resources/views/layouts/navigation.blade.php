@@ -30,8 +30,12 @@
             </x-sidebar-link>
             {{-- Listado y alta de actividades: solo quien las gestiona (jefe / coordinador). El empleado ve las suyas en "Mis pendientes". --}}
             @can('viewAny', \App\Models\Activity::class)
-                <x-sidebar-link :href="route('activities.index')" :active="request()->routeIs('activities.*')">
+                <x-sidebar-link :href="route('activities.index')" :active="request()->routeIs('activities.*') && ! request()->routeIs('activities.templates.*')">
                     {{ __('common.nav.activities') }}
+                </x-sidebar-link>
+                {{-- Plantillas de recurrencia: nunca aparecen en el listado principal (misma visibilidad que la gestion de actividades). --}}
+                <x-sidebar-link :href="route('activities.templates.index')" :active="request()->routeIs('activities.templates.*')">
+                    {{ __('activities.templates.nav') }}
                 </x-sidebar-link>
             @endcan
         @endcan
@@ -41,6 +45,14 @@
             <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-600">{{ __('common.nav.tracking_section') }}</p>
             <x-sidebar-link :href="route('tracking.index')" :active="request()->routeIs('tracking.*')">
                 {{ __('common.nav.tracking') }}
+            </x-sidebar-link>
+        @endcan
+
+        {{-- Bandeja de correos entrantes: jefe, administrador y coordinador (permiso `emails.view`). --}}
+        @can('viewAny', \App\Models\IncomingEmail::class)
+            <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-600">{{ __('common.nav.emails_section') }}</p>
+            <x-sidebar-link :href="route('incoming-emails.index')" :active="request()->routeIs('incoming-emails.*')">
+                {{ __('common.nav.incoming_emails') }}
             </x-sidebar-link>
         @endcan
 

@@ -40,6 +40,8 @@ return [
         'dashboard_per_minute' => 30,
         'audit_per_minute' => 60,
         'export_per_hour' => 10,
+        // Por usuario autenticado (correos entrantes: descartar/convertir).
+        'email_write_per_minute' => 60,
     ],
 
     /*

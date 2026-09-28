@@ -6,6 +6,7 @@ use App\Http\Controllers\Activities\ActivityAttachmentController;
 use App\Http\Controllers\Activities\ActivityCommentController;
 use App\Http\Controllers\Activities\ActivityController;
 use App\Http\Controllers\Activities\ActivityExportController;
+use App\Http\Controllers\Activities\ActivityTemplateController;
 use App\Http\Controllers\Activities\ActivityTransitionController;
 use App\Http\Controllers\Activities\SubtaskController;
 use App\Http\Controllers\Attachments\AttachmentController;
@@ -14,6 +15,10 @@ use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Dashboard\TrackingPanelController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IncomingEmailAttachmentController;
+use App\Http\Controllers\IncomingEmailController;
+use App\Http\Controllers\IncomingEmailConversionController;
+use App\Http\Controllers\IncomingEmailDiscardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Tickets\TicketAssignmentController;
@@ -92,6 +97,13 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     // Sin bolsa, "tomar" ni "devolver a la bolsa": las actividades se asignan siempre de forma explicita.
     // Exportacion a Excel del listado filtrado (antes del resource: `activities/{activity}` no debe capturarla).
     Route::get('activities/export', ActivityExportController::class)->middleware('throttle:export')->name('activities.export');
+    // Plantillas de recurrencia (nunca en el listado principal): mismo motivo, `activities/templates` va antes
+    // del resource. `restore` necesita `withTrashed()` para que el binding implicito encuentre una fila eliminada.
+    Route::get('activities/templates', [ActivityTemplateController::class, 'index'])->name('activities.templates.index');
+    Route::post('activities/templates/{activity}/restore', [ActivityTemplateController::class, 'restore'])
+        ->middleware('throttle:activity-write')
+        ->withTrashed()
+        ->name('activities.templates.restore');
     Route::post('activities', [ActivityController::class, 'store'])->middleware('throttle:activity-create')->name('activities.store');
     Route::resource('activities', ActivityController::class)->except('store')->middlewareFor(['update', 'destroy'], 'throttle:activity-write');
 
@@ -121,6 +133,21 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
 
     // Visor de la bitacora de auditoria: solo jefe (AuditLogPolicy, permiso `audit.view`). Solo lectura.
     Route::get('audit-log', [AuditLogController::class, 'index'])->middleware('throttle:audit-view')->name('audit.index');
+
+    // Bandeja de correos entrantes (IncomingEmailPolicy: permiso `emails.view`/`emails.manage`, sin
+    // recorte por equipo). Revisar = descartar (con motivo) o convertir en Actividad; nunca se borra.
+    Route::prefix('incoming-emails')->name('incoming-emails.')->group(function () {
+        Route::get('/', [IncomingEmailController::class, 'index'])->name('index');
+        Route::get('{incomingEmail}', [IncomingEmailController::class, 'show'])->name('show');
+        Route::post('{incomingEmail}/discard', [IncomingEmailDiscardController::class, 'store'])
+            ->middleware('throttle:email-write')->name('discard');
+        Route::get('{incomingEmail}/convert', [IncomingEmailConversionController::class, 'create'])->name('convert');
+        Route::post('{incomingEmail}/convert', [IncomingEmailConversionController::class, 'store'])
+            ->middleware('throttle:email-write')->name('convert.store');
+    });
+
+    Route::get('incoming-email-attachments/{incomingEmailAttachment}', [IncomingEmailAttachmentController::class, 'download'])
+        ->middleware('throttle:attachment-download')->name('incoming-email-attachments.download');
 
     // Los adjuntos solo se sirven por aqui (disco privado); nunca hay URL publica.
     Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])

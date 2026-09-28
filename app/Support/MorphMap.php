@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\Attachment;
 use App\Models\Category;
 use App\Models\Comment;
+use App\Models\IncomingEmail;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -38,6 +39,7 @@ final class MorphMap
             'comment' => Comment::class,
             'attachment' => Attachment::class,
             'category' => Category::class,
+            'incoming_email' => IncomingEmail::class,
             'App\Models\User' => User::class,
             'App\Models\Team' => Team::class,
         ];

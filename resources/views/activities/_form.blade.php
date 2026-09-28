@@ -114,8 +114,11 @@
         <p class="text-sm text-gray-700">{{ __('activities.form.assignment_after') }}</p>
     @endif
 
-    {{-- Editor de recurrencia: campos normales; Alpine (recurrenceEditor) solo muestra/oculta segun la frecuencia. --}}
-    @if ($showEditor)
+    {{-- Editor de recurrencia: campos normales; Alpine (recurrenceEditor) solo muestra/oculta segun la
+    frecuencia. Oculto por completo cuando $showRecurrence es false (conversion de correo a actividad:
+    ConvertIncomingEmailRequest nunca acepta recurrencia). Por defecto true: activities/create y
+    activities/edit no pasan esta variable y no cambian de comportamiento. --}}
+    @if (($showRecurrence ?? true) && $showEditor)
         <div x-data="recurrenceEditor" data-recurring="{{ $recurring ? '1' : '0' }}" data-frequency="{{ $frequency }}" class="space-y-4 rounded-md border border-brand-green/10 bg-brand-mist/40 p-4">
             @unless ($isTemplate)
                 <div>
@@ -185,7 +188,10 @@
     @endif
 </div>
 
+{{-- $submitLabel/$cancelUrl: opcionales, para reutilizar este parcial desde otro flujo de creacion (la
+conversion de correo a actividad) con su propio texto de boton y su propio destino de "Cancelar"; por
+defecto (sin pasarlos) el comportamiento es exactamente el de siempre. --}}
 <div class="mt-6 flex items-center gap-3">
-    <x-primary-button>{{ __('common.actions.save') }}</x-primary-button>
-    <x-text-link :href="$isEditing ? route('activities.show', $activity) : route('activities.index')">{{ __('common.actions.cancel') }}</x-text-link>
+    <x-primary-button>{{ $submitLabel ?? __('common.actions.save') }}</x-primary-button>
+    <x-text-link :href="$cancelUrl ?? ($isEditing ? route('activities.show', $activity) : route('activities.index'))">{{ __('common.actions.cancel') }}</x-text-link>
 </div>
