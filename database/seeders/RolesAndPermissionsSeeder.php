@@ -46,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Actividades: el empleado solo ve las suyas y avanza hasta En revision (sin crear ni editar).
             PermissionName::ActivitiesView,
             PermissionName::ActivitiesWork,
+            PermissionName::ChatUse,
         ];
 
         $managerial = [

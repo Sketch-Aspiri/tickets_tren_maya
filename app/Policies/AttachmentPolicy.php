@@ -7,6 +7,7 @@ namespace App\Policies;
 use App\Enums\PermissionName;
 use App\Models\Activity;
 use App\Models\Attachment;
+use App\Models\ChatMessage;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Policies\Concerns\ChecksPermissions;
@@ -36,6 +37,11 @@ class AttachmentPolicy
             return Response::denyAsNotFound();
         }
 
+        // Los mensajes de chat no se editan ni se borran (ni sus adjuntos) en el MVP.
+        if ($attachment->attachable instanceof ChatMessage) {
+            return false;
+        }
+
         return (int) $attachment->user_id === (int) $user->getKey()
             || $this->hasPermission($user, $this->managePermission($attachment));
     }
@@ -48,6 +54,13 @@ class AttachmentPolicy
     private function parentAllows(User $user, Attachment $attachment): bool
     {
         $parent = $attachment->attachable;
+
+        // Un adjunto de chat hereda el alcance de su conversacion (la Policy de Conversation responde 404 fuera de ella).
+        if ($parent instanceof ChatMessage) {
+            $conversation = $parent->conversation;
+
+            return $conversation !== null && Gate::forUser($user)->inspect('view', $conversation)->allowed();
+        }
 
         if (! $parent instanceof Ticket && ! $parent instanceof Activity) {
             return false;

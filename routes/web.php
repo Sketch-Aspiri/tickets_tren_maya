@@ -13,6 +13,10 @@ use App\Http\Controllers\Attachments\AttachmentController;
 use App\Http\Controllers\Audit\AuditLogController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\Categories\CategoryController;
+use App\Http\Controllers\Chat\ChatController;
+use App\Http\Controllers\Chat\ChatMessageController;
+use App\Http\Controllers\Chat\ChatUnreadController;
+use App\Http\Controllers\Chat\ChatUserSearchController;
 use App\Http\Controllers\Dashboard\TrackingPanelController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IncomingEmailAttachmentController;
@@ -148,6 +152,17 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
 
     Route::get('incoming-email-attachments/{incomingEmailAttachment}', [IncomingEmailAttachmentController::class, 'download'])
         ->middleware('throttle:attachment-download')->name('incoming-email-attachments.download');
+
+    // Chat interno (1 a 1 y canal de equipo). Polling JSON; las rutas estaticas van antes de `{conversation}`.
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::post('direct', [ChatController::class, 'startDirect'])->middleware('throttle:chat-start')->name('direct');
+        Route::get('users', ChatUserSearchController::class)->middleware('throttle:chat-search')->name('users');
+        Route::get('unread', ChatUnreadController::class)->middleware('throttle:chat-poll')->name('unread');
+        Route::get('{conversation}', [ChatController::class, 'show'])->name('show');
+        Route::get('{conversation}/messages', [ChatMessageController::class, 'index'])->middleware('throttle:chat-poll')->name('messages.index');
+        Route::post('{conversation}/messages', [ChatMessageController::class, 'store'])->middleware('throttle:chat-send')->name('messages.store');
+    });
 
     // Los adjuntos solo se sirven por aqui (disco privado); nunca hay URL publica.
     Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])

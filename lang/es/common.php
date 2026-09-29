@@ -22,6 +22,7 @@ return [
         'audit' => 'Bitácora',
         'emails_section' => 'Correo',
         'incoming_emails' => 'Correos entrantes',
+        'chat' => 'Chat',
     ],
     'actions' => [
         'save' => 'Guardar',

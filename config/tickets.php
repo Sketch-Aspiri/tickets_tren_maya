@@ -42,6 +42,22 @@ return [
         'export_per_hour' => 10,
         // Por usuario autenticado (correos entrantes: descartar/convertir).
         'email_write_per_minute' => 60,
+        // Por usuario autenticado (chat interno; el poll es frecuente: cada pocos segundos por pestana abierta).
+        'chat_send_per_minute' => 60,
+        'chat_poll_per_minute' => 120,
+        'chat_search_per_minute' => 30,
+        'chat_start_per_hour' => 20,
+    ],
+
+    /*
+    | Chat interno: largo maximo de un mensaje, mensajes del historial inicial, tope por poll y limite de
+    | resultados del buscador de personas.
+    */
+    'chat' => [
+        'message_max_length' => 2000,
+        'initial_messages' => 50,
+        'poll_max_messages' => 100,
+        'user_search_limit' => 20,
     ],
 
     /*

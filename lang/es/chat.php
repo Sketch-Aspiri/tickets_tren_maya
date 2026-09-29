@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Chat',
+    'you' => 'Tú',
+    'conversations' => 'Conversaciones',
+    'no_conversations' => 'Aún no tienes conversaciones. Busca a una persona para iniciar una.',
+    'new_direct' => 'Nuevo chat',
+    'search_label' => 'Buscar persona por nombre',
+    'search_placeholder' => 'Buscar persona…',
+    'no_results' => 'No se encontró a nadie.',
+    'team_channel' => 'equipo',
+    'unread' => 'Mensajes sin leer:',
+    'back' => 'Conversaciones',
+    'select_conversation' => 'Selecciona una conversación o inicia un chat nuevo.',
+    'message_label' => 'Mensaje',
+    'message_placeholder' => 'Escribe un mensaje…',
+    'attach_label' => 'Adjuntar archivo',
+    'send' => 'Enviar',
+    'hint' => 'Texto plano. Escribe un folio (TM-… o ACT-…) para enlazarlo si tienes acceso. Enter envía el mensaje.',
+    'errors' => [
+        'recipient_invalid' => 'No puedes iniciar un chat con esa persona.',
+        'empty_message' => 'Escribe un mensaje o adjunta un archivo.',
+        'upload_failed' => 'No se pudo guardar el archivo. Inténtalo de nuevo.',
+        'generic' => 'No se pudo completar la acción. Inténtalo de nuevo.',
+        'session' => 'Tu sesión expiró. Recarga la página para continuar.',
+    ],
+];

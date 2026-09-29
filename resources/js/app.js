@@ -3,6 +3,7 @@
 // registra aqui con Alpine.data(...) y las vistas solo referencian propiedades y metodos por nombre.
 // Los datos del servidor viajan en atributos `data-*` (texto plano), nunca dentro de expresiones.
 import Alpine from '@alpinejs/csp';
+import { registerChat } from './chat.js';
 
 window.Alpine = Alpine;
 
@@ -155,6 +156,8 @@ Alpine.data('recurrenceEditor', () => ({
         return this.frequency === 'monthly';
     },
 }));
+
+registerChat(Alpine);
 
 Alpine.start();
 

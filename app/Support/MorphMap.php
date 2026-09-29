@@ -7,7 +7,9 @@ namespace App\Support;
 use App\Models\Activity;
 use App\Models\Attachment;
 use App\Models\Category;
+use App\Models\ChatMessage;
 use App\Models\Comment;
+use App\Models\Conversation;
 use App\Models\IncomingEmail;
 use App\Models\Team;
 use App\Models\Ticket;
@@ -40,6 +42,8 @@ final class MorphMap
             'attachment' => Attachment::class,
             'category' => Category::class,
             'incoming_email' => IncomingEmail::class,
+            'conversation' => Conversation::class,
+            'chat_message' => ChatMessage::class,
             'App\Models\User' => User::class,
             'App\Models\Team' => Team::class,
         ];

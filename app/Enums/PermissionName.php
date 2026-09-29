@@ -47,4 +47,6 @@ enum PermissionName: string
     case EmailsView = 'emails.view';
     /** Descartar (con motivo) o convertir un correo entrante en Actividad. */
     case EmailsManage = 'emails.manage';
+    /** Chat interno: mensajes 1 a 1 y canal del propio equipo (todos los roles). */
+    case ChatUse = 'chat.use';
 }

@@ -129,6 +129,10 @@ class AppServiceProvider extends ServiceProvider
             'audit-view' => ['audit_per_minute', 'perMinute'],
             'export' => ['export_per_hour', 'perHour'],
             'email-write' => ['email_write_per_minute', 'perMinute'],
+            'chat-send' => ['chat_send_per_minute', 'perMinute'],
+            'chat-poll' => ['chat_poll_per_minute', 'perMinute'],
+            'chat-search' => ['chat_search_per_minute', 'perMinute'],
+            'chat-start' => ['chat_start_per_hour', 'perHour'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {
