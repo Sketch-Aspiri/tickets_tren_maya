@@ -43,6 +43,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'two_factor_secret',
+        'avatar_path',
         'two_factor_recovery_codes',
         'two_factor_last_timestamp',
     ];
@@ -241,6 +242,19 @@ class User extends Authenticatable
     public function canAccessApplication(): bool
     {
         return $this->isActive() && $this->roleEnum() !== null;
+    }
+
+    /**
+     * URL de la foto de perfil (null sin foto). `v` cambia con cada foto nueva para que el navegador no muestre
+     * la anterior desde su cache; no revela la ruta interna.
+     */
+    public function avatarUrl(): ?string
+    {
+        if ($this->avatar_path === null) {
+            return null;
+        }
+
+        return route('avatars.show', ['user' => $this->getKey(), 'v' => substr(sha1((string) $this->avatar_path), 0, 10)]);
     }
 
     public function requiresTwoFactor(): bool

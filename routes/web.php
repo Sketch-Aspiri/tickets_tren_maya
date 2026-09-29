@@ -12,6 +12,7 @@ use App\Http\Controllers\Activities\SubtaskController;
 use App\Http\Controllers\Attachments\AttachmentController;
 use App\Http\Controllers\Audit\AuditLogController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
+use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Chat\ChatController;
 use App\Http\Controllers\Chat\ChatMessageController;
@@ -52,6 +53,9 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     // `no-store`: tras activar/regenerar el 2FA esta pagina muestra los codigos de recuperacion una vez.
     Route::get('profile', [ProfileController::class, 'edit'])->middleware('no-store')->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile/avatar', [AvatarController::class, 'update'])->middleware('throttle:avatar-upload')->name('profile.avatar.update');
+    Route::delete('profile/avatar', [AvatarController::class, 'destroy'])->middleware('throttle:avatar-upload')->name('profile.avatar.destroy');
+    Route::get('avatars/{user}', [AvatarController::class, 'show'])->middleware('throttle:avatar-view')->name('avatars.show');
 
     Route::delete('two-factor', [TwoFactorSettingsController::class, 'destroy'])
         ->middleware('throttle:two-factor')

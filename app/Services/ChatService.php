@@ -72,7 +72,7 @@ final class ChatService
 
         $conversations = Conversation::query()
             ->visibleTo($user)
-            ->with(['team:id,name', 'participants:id,name'])
+            ->with(['team:id,name', 'participants:id,name,avatar_path'])
             ->orderByRaw('conversations.last_message_at is null')
             ->orderByDesc('conversations.last_message_at')
             ->orderByDesc('conversations.id')
@@ -167,7 +167,7 @@ final class ChatService
                 $conversation->forceFill(['last_message_at' => $message->created_at])->save();
                 $this->markRead($actor, $conversation, (int) $message->getKey());
 
-                return $message->load(['user:id,name', 'attachments']);
+                return $message->load(['user:id,name,avatar_path', 'attachments']);
             });
         } catch (Throwable $exception) {
             // Si algo fallo despues de escribir el archivo, no se deja huerfano en disco.
@@ -229,7 +229,7 @@ final class ChatService
      */
     private function withRelations(Builder $query): Builder
     {
-        return $query->with(['user:id,name', 'attachments']);
+        return $query->with(['user:id,name,avatar_path', 'attachments']);
     }
 
     private function ensureTeamChannels(User $user): void

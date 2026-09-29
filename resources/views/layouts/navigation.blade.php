@@ -101,7 +101,7 @@
 
     <div class="space-y-0.5 border-t border-brand-green/10 bg-brand-mist/60 px-3 py-3">
         <div class="flex items-center gap-3 px-3 pb-2">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-green text-sm font-semibold uppercase text-white" aria-hidden="true">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
+            <x-user-avatar :user="auth()->user()" />
             <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-gray-900">{{ auth()->user()->name }}</p>
                 <p class="truncate text-xs text-gray-600">{{ auth()->user()->roleEnum()?->label() ?? auth()->user()->email }}</p>

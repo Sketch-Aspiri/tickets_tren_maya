@@ -6,6 +6,10 @@
 
     <div class="space-y-4">
         <x-card class="max-w-2xl">
+            @include('profile.partials.update-avatar-form')
+        </x-card>
+
+        <x-card class="max-w-2xl">
             @include('profile.partials.update-profile-information-form')
         </x-card>
 

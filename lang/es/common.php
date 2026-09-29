@@ -53,6 +53,8 @@ return [
         'team-updated' => 'Equipo actualizado.',
         'team-deleted' => 'Equipo eliminado.',
         'profile-updated' => 'Perfil actualizado.',
+        'avatar-updated' => 'Foto de perfil actualizada.',
+        'avatar-removed' => 'Foto de perfil eliminada.',
         'password-updated' => 'Contraseña actualizada.',
         'two-factor-enabled' => 'Verificación en dos pasos activada.',
         'two-factor-disabled' => 'Verificación en dos pasos desactivada.',

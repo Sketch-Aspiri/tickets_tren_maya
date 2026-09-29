@@ -49,6 +49,9 @@ return [
         'chat_start_per_hour' => 20,
         // Centro de notificaciones: la insignia del menu consulta el resumen cada pocos segundos.
         'notifications_poll_per_minute' => 120,
+        // Fotos de perfil: cambiarla es raro; verlas es frecuente (chat y listas cargan varias por pagina).
+        'avatar_upload_per_hour' => 20,
+        'avatar_view_per_minute' => 600,
         'notifications_write_per_minute' => 60,
     ],
 
@@ -56,6 +59,17 @@ return [
     | Chat interno: largo maximo de un mensaje, mensajes del historial inicial, tope por poll y limite de
     | resultados del buscador de personas.
     */
+    /*
+    | Fotos de perfil: se reprocesan a un JPEG cuadrado de `size` px (disco privado, `directory`).
+    | `max_source_dimension` acota el ancho/alto del original ANTES de decodificarlo (evita "bombas" de imagen).
+    */
+    'avatars' => [
+        'directory' => 'avatars',
+        'size' => 256,
+        'max_kilobytes' => (int) env('AVATAR_MAX_KB', 4096),
+        'max_source_dimension' => 6000,
+    ],
+
     'chat' => [
         'message_max_length' => 2000,
         'initial_messages' => 50,

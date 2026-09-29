@@ -102,6 +102,18 @@ class Conversation extends Model
             return (string) $this->team?->name;
         }
 
-        return (string) $this->participants->firstWhere('id', '!=', $viewer->getKey())?->name;
+        return (string) $this->otherParticipant($viewer)?->name;
+    }
+
+    /**
+     * En un chat 1 a 1, la otra persona (requiere `participants` cargados). Null en canales de equipo.
+     */
+    public function otherParticipant(User $viewer): ?User
+    {
+        if ($this->type !== ConversationType::Direct) {
+            return null;
+        }
+
+        return $this->participants->firstWhere('id', '!=', $viewer->getKey());
     }
 }

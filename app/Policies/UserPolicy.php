@@ -8,6 +8,7 @@ use App\Enums\PermissionName;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Policies\Concerns\ChecksPermissions;
+use Illuminate\Auth\Access\Response;
 
 /**
  * Gestion de usuarios: administrador y jefe de zona (permisos `users.manage` / `users.approve`). Las cuentas de
@@ -60,6 +61,21 @@ class UserPolicy
     public function updateProfile(User $user, User $target): bool
     {
         return $user->is($target) && $user->canAccessApplication();
+    }
+
+    /**
+     * Foto de perfil: la ve cualquier cuenta con acceso a la aplicacion (el chat esta abierto a todos los
+     * usuarios activos), siempre que el dueno tambien siga activo. Sin foto o fuera de esto: 404.
+     */
+    public function viewAvatar(User $user, User $target): Response|bool
+    {
+        if (! $user->canAccessApplication()) {
+            return false;
+        }
+
+        return $target->avatar_path !== null && ($user->is($target) || $target->canAccessApplication())
+            ? true
+            : Response::denyAsNotFound();
     }
 
     /**
