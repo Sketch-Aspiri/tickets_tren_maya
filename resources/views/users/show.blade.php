@@ -9,7 +9,7 @@
 <x-app-layout>
     <x-slot name="title">{{ $managedUser->name }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="truncate text-xl font-semibold leading-tight text-brand-green">{{ $managedUser->name }}</h1>
             <x-text-link :href="route('users.index')" class="shrink-0">{{ __('common.actions.back') }}</x-text-link>
         </div>

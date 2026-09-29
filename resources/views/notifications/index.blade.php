@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="title">{{ __('notifications.ui.title') }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('notifications.ui.title') }}</h1>
             @if ($notifications->contains(fn ($item) => $item->read_at === null))
                 <form method="POST" action="{{ route('notifications.read-all') }}">

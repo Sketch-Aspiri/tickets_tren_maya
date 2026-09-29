@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="title">{{ __('teams.title') }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('teams.title') }}</h1>
             @can('create', \App\Models\Team::class)
                 <x-primary-button :href="route('teams.create')">
@@ -43,7 +43,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">{{ __('common.empty') }}</td></tr>
+                <tr><td colspan="4" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
             @endforelse
         </tbody>
     </x-table>

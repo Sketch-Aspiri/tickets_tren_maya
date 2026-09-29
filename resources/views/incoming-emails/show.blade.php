@@ -6,7 +6,7 @@
 <x-app-layout>
     <x-slot name="title">{{ \Illuminate\Support\Str::limit($email->subject, 60) }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div class="min-w-0">
                 <p class="text-xs text-gray-700">{{ __('emails.show.subject') }}</p>
                 <h1 class="truncate text-xl font-semibold leading-tight text-brand-green">{{ $email->subject }}</h1>
@@ -86,7 +86,7 @@
                             @csrf
                             <p class="text-sm text-gray-700">{{ __('emails.show.discard_confirm') }}</p>
                             <x-input-label for="discard_reason" class="mt-4" :value="__('emails.show.discard_reason_label')" />
-                            <textarea id="discard_reason" name="reason" rows="4" maxlength="1000" required class="mt-1 block min-h-[44px] w-full rounded-md border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('reason') }}</textarea>
+                            <textarea id="discard_reason" name="reason" rows="4" maxlength="1000" required class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('reason') }}</textarea>
                             <x-input-error :messages="$errors->get('reason')" class="mt-2" />
                             <div class="mt-6 flex justify-end gap-3">
                                 <x-secondary-button x-on:click="close">{{ __('common.actions.cancel') }}</x-secondary-button>

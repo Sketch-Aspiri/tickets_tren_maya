@@ -75,7 +75,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">{{ __('common.empty') }}</td></tr>
+                <tr><td colspan="6" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
             @endforelse
         </tbody>
     </x-table>

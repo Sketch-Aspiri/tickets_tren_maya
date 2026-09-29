@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="title">{{ __('activities.templates.title') }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('activities.templates.title') }}</h1>
             <x-text-link :href="route('activities.index')">{{ __('activities.show.back') }}</x-text-link>
         </div>

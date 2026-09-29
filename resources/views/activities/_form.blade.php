@@ -44,7 +44,7 @@
 
     <div>
         <x-input-label for="description" :value="__('activities.form.description')" />
-        <textarea id="description" name="description" rows="6" maxlength="5000" required class="mt-1 block min-h-[44px] w-full rounded-md border-gray-500 shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('description', $activity->description) }}</textarea>
+        <textarea id="description" name="description" rows="6" maxlength="5000" required class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('description', $activity->description) }}</textarea>
         <x-input-error :messages="$errors->get('description')" class="mt-2" />
     </div>
 

@@ -7,7 +7,7 @@
 <x-app-layout>
     <x-slot name="title">{{ __('tickets.pending_title') }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('tickets.pending_title') }}</h1>
             @if ($dueToday)
                 <x-primary-button :href="route('tickets.pending', $scopeQuery)" aria-current="true" :title="__('tickets.pending_due_today_clear')">{{ __('tickets.pending_due_today') }} ✕</x-primary-button>

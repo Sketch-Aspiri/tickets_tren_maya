@@ -10,7 +10,7 @@
         <div class="{{ $active ? 'hidden lg:block' : '' }} space-y-4">
             <x-card :title="__('chat.new_direct')" x-data="chatUserSearch" data-url="{{ route('chat.users') }}">
                 <label for="chat-user-q" class="sr-only">{{ __('chat.search_label') }}</label>
-                <input id="chat-user-q" type="search" maxlength="60" autocomplete="off" placeholder="{{ __('chat.search_placeholder') }}" x-on:input.debounce.300ms="search" x-model="query" class="block min-h-[44px] w-full rounded-md border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">
+                <input id="chat-user-q" type="search" maxlength="60" autocomplete="off" placeholder="{{ __('chat.search_placeholder') }}" x-on:input.debounce.300ms="search" x-model="query" class="block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">
                 <ul class="mt-2 space-y-1" aria-live="polite">
                     <template x-for="user in results" :key="user.id">
                         <li>
@@ -56,7 +56,7 @@
 
                         <form x-ref="form" x-on:submit.prevent="send" class="mt-3 space-y-2" enctype="multipart/form-data">
                             <label for="chat-body" class="sr-only">{{ __('chat.message_label') }}</label>
-                            <textarea id="chat-body" name="body" rows="2" maxlength="{{ config('tickets.chat.message_max_length') }}" placeholder="{{ __('chat.message_placeholder') }}" x-on:keydown.enter="sendOnEnter" class="block min-h-[44px] w-full rounded-md border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal"></textarea>
+                            <textarea id="chat-body" name="body" rows="2" maxlength="{{ config('tickets.chat.message_max_length') }}" placeholder="{{ __('chat.message_placeholder') }}" x-on:keydown.enter="sendOnEnter" class="block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal"></textarea>
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <label for="chat-file" class="sr-only">{{ __('chat.attach_label') }}</label>

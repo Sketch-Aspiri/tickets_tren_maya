@@ -24,6 +24,7 @@ return [
         'incoming_emails' => 'Correos entrantes',
         'chat' => 'Chat',
         'notifications' => 'Notificaciones',
+        'main' => 'Navegación principal',
     ],
     'actions' => [
         'save' => 'Guardar',
@@ -90,5 +91,10 @@ return [
         'review_pending' => 'Revisar solicitudes',
         'coming_soon' => 'Consulta tus pendientes en «Mis pendientes».',
         'open_tracking' => 'Abrir el panel de seguimiento',
+        'quick_access' => 'Accesos rápidos',
+        'hint_pending' => 'Tickets y actividades que tienes asignados.',
+        'hint_new_ticket' => 'Registra una solicitud y envíala al equipo que la atiende.',
+        'hint_chat' => 'Conversa con tu equipo y con otros usuarios.',
+        'hint_tracking' => 'Indicadores, carga de trabajo y tiempos de cierre.',
     ],
 ];

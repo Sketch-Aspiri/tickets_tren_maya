@@ -53,7 +53,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="{{ $showTeam ? 8 : 7 }}" class="px-4 py-6 text-center text-gray-600">{{ $emptyMessage ?? __('common.empty') }}</td></tr>
+            <tr><td colspan="{{ $showTeam ? 8 : 7 }}" class="p-0"><x-empty-state :title="$emptyMessage ?? __('common.empty')" /></td></tr>
         @endforelse
     </tbody>
 </x-table>

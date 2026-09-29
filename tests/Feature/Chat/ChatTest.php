@@ -273,8 +273,8 @@ class ChatTest extends DatabaseTestCase
         $html = $this->signIn($this->ana)->getJson(route('chat.list'))->assertOk()->json('data.html');
 
         $this->assertStringContainsString(route('chat.show', $visible), $html);
-        $this->assertStringContainsString($this->beto->name, $html);
-        $this->assertStringNotContainsString($this->carla->name, $html);
+        $this->assertStringContainsString(e($this->beto->name), $html);
+        $this->assertStringNotContainsString(e($this->carla->name), $html);
     }
 
     public function test_image_attachment_has_an_inline_preview_only_for_participants(): void

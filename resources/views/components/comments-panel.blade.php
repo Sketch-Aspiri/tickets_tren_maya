@@ -15,7 +15,7 @@
         <form method="POST" action="{{ $storeUrl }}" class="mt-4">
             @csrf
             <x-input-label for="body" :value="__('tickets.comment.label')" />
-            <textarea id="body" name="body" rows="3" maxlength="{{ config('tickets.comment_max_length') }}" required aria-describedby="body_hint" class="mt-1 block min-h-[44px] w-full rounded-md border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('body') }}</textarea>
+            <textarea id="body" name="body" rows="3" maxlength="{{ config('tickets.comment_max_length') }}" required aria-describedby="body_hint" class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('body') }}</textarea>
             <p id="body_hint" class="mt-1 text-xs text-gray-600">{{ __('tickets.comment.plain_text_hint') }}</p>
             <x-input-error :messages="$errors->get('body')" class="mt-2" />
             <x-primary-button class="mt-3">{{ __('tickets.comment.submit') }}</x-primary-button>

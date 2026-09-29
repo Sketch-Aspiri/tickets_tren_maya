@@ -10,8 +10,8 @@
             </a>
 
             <main class="w-full sm:max-w-md">
-                <div class="overflow-hidden rounded-xl border border-brand-green/10 bg-white shadow-lg shadow-brand-green/5">
-                    <div class="h-1 bg-brand-mint" aria-hidden="true"></div>
+                <div class="overflow-hidden rounded-2xl border border-brand-green/10 bg-white shadow-lg shadow-brand-green/5">
+                    <div class="h-1.5 bg-brand-green" aria-hidden="true"></div>
                     <div class="px-6 py-6 sm:px-8 sm:py-8">
                         {{ $slot }}
                     </div>

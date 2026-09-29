@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="title">{{ __('activities.title') }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('activities.title') }}</h1>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
                 {{-- Alterna el filtro "vencen hoy" conservando el resto de filtros. Activo = boton resaltado que lo quita. --}}

@@ -10,7 +10,7 @@
 <x-app-layout>
     <x-slot name="title">{{ $ticket->folio }}</x-slot>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div class="min-w-0">
                 <p class="font-mono text-xs text-gray-700">{{ $ticket->folio }}</p>
                 <h1 class="truncate text-xl font-semibold leading-tight text-brand-green">{{ $ticket->title }}</h1>
@@ -136,7 +136,7 @@
                         @csrf
                         <input type="hidden" name="status" value="{{ $target->value }}">
                         <x-input-label :for="$formId.'_comment'" :value="__('tickets.actions.comment_label')" />
-                        <textarea id="{{ $formId }}_comment" name="comment" rows="2" maxlength="{{ config('tickets.comment_max_length') }}" @required($needsComment) aria-describedby="{{ $formId }}_hint" class="mt-1 block min-h-[44px] w-full rounded-md border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal"></textarea>
+                        <textarea id="{{ $formId }}_comment" name="comment" rows="2" maxlength="{{ config('tickets.comment_max_length') }}" @required($needsComment) aria-describedby="{{ $formId }}_hint" class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal"></textarea>
                         <p id="{{ $formId }}_hint" class="mb-3 mt-1 text-xs text-gray-600">{{ $needsComment ? __('tickets.actions.comment_required_hint') : __('tickets.actions.comment_optional_hint') }}</p>
                         @if ($target === \App\Enums\TicketStatus::Cancelled || ($ticket->status === \App\Enums\TicketStatus::InReview && $target === \App\Enums\TicketStatus::InProgress))
                             <x-danger-button>{{ $actionLabel }}</x-danger-button>
