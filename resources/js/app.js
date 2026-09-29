@@ -157,6 +157,77 @@ Alpine.data('recurrenceEditor', () => ({
     },
 }));
 
+// Selector de asignados: casillas de colaboradores con filtro local por nombre, contador y exclusion del
+// responsable elegido. Es una mejora progresiva: sin JavaScript las casillas y el <select> funcionan igual.
+// data-max (tope de colaboradores) y data-counter (plantilla "{count} ... {max}") vienen del servidor.
+Alpine.data('assigneePicker', () => ({
+    ready: false,
+    count: 0,
+    max: 10,
+    query: '',
+    noResults: false,
+
+    init() {
+        this.max = Number(this.$el.dataset.max) || 10;
+        this.ready = true;
+        this.sync();
+    },
+
+    boxes() {
+        return [...this.$el.querySelectorAll('input[data-assignee]')];
+    },
+
+    responsibleValue() {
+        return this.$el.querySelector('select[data-responsible]')?.value ?? '';
+    },
+
+    // Reglas: el responsable no puede ser colaborador; al llegar al tope se bloquean las casillas sin marcar.
+    sync() {
+        const responsible = this.responsibleValue();
+        const boxes = this.boxes();
+
+        boxes.forEach((box) => {
+            if (responsible !== '' && box.value === responsible) {
+                box.checked = false;
+            }
+        });
+
+        this.count = boxes.filter((box) => box.checked).length;
+
+        boxes.forEach((box) => {
+            const isResponsible = responsible !== '' && box.value === responsible;
+            box.disabled = isResponsible || (!box.checked && this.count >= this.max);
+            const row = box.closest('[data-row]');
+            row?.classList.toggle('opacity-50', box.disabled);
+            row?.querySelector('[data-responsible-tag]')?.classList.toggle('hidden', !isResponsible);
+        });
+    },
+
+    onChange() {
+        this.sync();
+    },
+
+    onFilter(event) {
+        this.query = event.target.value.trim().toLowerCase();
+        let shown = 0;
+
+        this.boxes().forEach((box) => {
+            const row = box.closest('[data-row]');
+            const matches = this.query === '' || row.textContent.toLowerCase().includes(this.query);
+            row.classList.toggle('hidden', !matches);
+            if (matches) {
+                shown += 1;
+            }
+        });
+
+        this.noResults = shown === 0;
+    },
+
+    get counterText() {
+        return (this.$el.dataset.counter ?? '').replace('{count}', String(this.count)).replace('{max}', String(this.max));
+    },
+}));
+
 registerChat(Alpine);
 
 Alpine.start();

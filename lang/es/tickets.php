@@ -46,6 +46,10 @@ return [
             'source' => 'Origen',
         ],
     ],
+    'list' => [
+        'quick_status' => 'Filtrar por estado',
+        'all_statuses' => 'Todos',
+    ],
     'columns' => [
         'folio' => 'Folio',
         'title' => 'Título',

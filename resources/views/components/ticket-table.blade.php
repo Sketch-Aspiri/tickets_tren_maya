@@ -22,13 +22,18 @@
             @php
                 $responsible = $ticket->assignments->firstWhere('role', \App\Enums\AssignmentRole::Responsable);
             @endphp
-            <tr>
-                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-700">{{ $ticket->folio }}</td>
+            <tr class="{{ $ticket->isOverdue() ? 'bg-red-50/60' : '' }}">
+                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-700 {{ $ticket->isOverdue() ? 'border-l-4 border-red-600' : 'border-l-4 border-transparent' }}">{{ $ticket->folio }}</td>
                 <td class="px-4 py-3">
                     <a href="{{ route('tickets.show', $ticket) }}" class="inline-flex min-h-[44px] max-w-[11rem] items-center font-medium text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal sm:max-w-md">
                         <span class="line-clamp-2">{{ $ticket->title }}</span>
                     </a>
                     {{-- En pantallas angostas la prioridad y el vencimiento van bajo el titulo. --}}
+                    <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                        @if (! $responsible && ! $ticket->status->isFinal())
+                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">{{ __('tickets.show.bag') }}</span>
+                        @endif
+                    </div>
                     <div class="mt-1 flex flex-wrap items-center gap-1.5 md:hidden">
                         <x-priority-badge :priority="$ticket->priority" />
                         @if ($ticket->isOverdue())
@@ -42,7 +47,7 @@
                 @if ($showTeam)
                     <td class="hidden px-4 py-3 xl:table-cell">{{ $ticket->team->name }}</td>
                 @endif
-                <td class="hidden whitespace-nowrap px-4 py-3 md:table-cell">
+                <td class="hidden whitespace-nowrap px-4 py-3 md:table-cell {{ $ticket->isOverdue() ? 'font-semibold text-red-800' : '' }}">
                     {{ $ticket->due_date?->format('d/m/Y') ?? __('common.none') }}
                     @if ($ticket->isOverdue())
                         <x-overdue-badge class="ms-1" />

@@ -24,13 +24,17 @@
         </div>
     </x-slot>
 
-    {{-- Datos --}}
-    <x-card :title="__('tickets.show.details')">
+    {{-- Estado y siguiente paso: flujo, accion principal (incluye "Tomar ticket" si esta en la bolsa) y acciones
+         secundarias segun Policy (la autorizacion real esta en Policy + TicketService). --}}
+    <x-card :title="__('workflow.title')" id="estado">
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <x-status-badge :status="$ticket->status" />
             <x-priority-badge :priority="$ticket->priority" />
             @if ($ticket->isOverdue())
                 <x-overdue-badge />
+            @endif
+            @if ($ticket->assignments->isEmpty() && ! $ticket->status->isFinal())
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">{{ __('tickets.show.bag') }}</span>
             @endif
         </div>
 
@@ -38,6 +42,13 @@
             <p class="mb-4 rounded-md border-l-4 border-red-600 bg-red-50 p-3 text-sm font-medium text-red-900">{{ __('tickets.show.overdue_hint') }}</p>
         @endif
 
+        <x-workflow-stepper :status="$ticket->status" class="mb-5" />
+
+        <x-workflow-actions :item="$ticket" :transitions="$transitions" />
+    </x-card>
+
+    {{-- Datos --}}
+    <x-card :title="__('tickets.show.details')">
         <dl class="grid gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('tickets.columns.category') }}</dt><dd class="font-medium">{{ $ticket->category?->name ?? __('tickets.form.no_category') }}</dd></div>
             <div><dt class="text-gray-600">{{ __('tickets.columns.team') }}</dt><dd class="font-medium">{{ $ticket->team->name }}</dd></div>
@@ -70,42 +81,12 @@
             </ul>
         @endif
 
-        @can('take', $ticket)
-            @if ($ticket->assignments->isEmpty() && ! $ticket->status->isFinal())
-                <form method="POST" action="{{ route('tickets.take', $ticket) }}" class="mt-4">
-                    @csrf
-                    <p class="mb-2 text-sm text-gray-700">{{ __('tickets.actions.take_hint') }}</p>
-                    <x-primary-button>{{ __('tickets.actions.take') }}</x-primary-button>
-                </form>
-            @endif
-        @endcan
-
         @can('assign', $ticket)
             @if (! $ticket->status->isFinal())
                 <form method="POST" action="{{ route('tickets.assignments.update', $ticket) }}" class="mt-5 grid gap-4 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
                     @csrf
                     @method('PUT')
-                    <div>
-                        <x-input-label for="responsible_id" :value="__('tickets.assign.responsible')" />
-                        <x-select-input id="responsible_id" name="responsible_id" class="mt-1 block w-full" required>
-                            <option value="">{{ __('tickets.assign.select_responsible') }}</option>
-                            @foreach ($assignableUsers as $candidate)
-                                <option value="{{ $candidate->id }}" @selected($selectedResponsible === $candidate->id)>{{ $candidate->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <x-input-error :messages="$errors->get('responsible_id')" class="mt-2" />
-                    </div>
-                    <div>
-                        <x-input-label for="collaborator_ids" :value="__('tickets.assign.collaborators')" />
-                        <x-select-input id="collaborator_ids" name="collaborator_ids[]" class="mt-1 block w-full" multiple size="4" aria-describedby="collaborators_hint">
-                            @foreach ($assignableUsers as $candidate)
-                                <option value="{{ $candidate->id }}" @selected(in_array($candidate->id, $selectedCollaborators, true))>{{ $candidate->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <p id="collaborators_hint" class="mt-1 text-xs text-gray-600">{{ __('tickets.assign.collaborators_hint') }}</p>
-                        <x-input-error :messages="$errors->get('collaborator_ids')" class="mt-2" />
-                        <x-input-error :messages="$errors->get('collaborator_ids.*')" class="mt-2" />
-                    </div>
+                    <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('tickets.assign.responsible')" :select-responsible="__('tickets.assign.select_responsible')" :collaborators-label="__('tickets.assign.collaborators')" id-prefix="assign" />
                     <div class="sm:col-span-2">
                         <x-primary-button>{{ __('tickets.assign.submit') }}</x-primary-button>
                     </div>
@@ -121,33 +102,6 @@
             @endif
         @endcan
     </x-card>
-
-    {{-- Acciones de estado: solo las que este usuario puede ejecutar (la autorizacion real esta en Policy + TicketService). --}}
-    @if (count($transitions) > 0)
-        <x-card :title="__('tickets.actions.title')">
-            <div class="grid gap-4 lg:grid-cols-2">
-                @foreach ($transitions as $target)
-                    @php
-                        $needsComment = $ticket->status->requiresCommentWhenMovingTo($target);
-                        $formId = 'transition_'.$target->value;
-                        $actionLabel = __('tickets.actions.transition.'.$target->actionLabelKeyFrom($ticket->status));
-                    @endphp
-                    <form method="POST" action="{{ route('tickets.transition', $ticket) }}" class="rounded-md border border-brand-green/10 p-3">
-                        @csrf
-                        <input type="hidden" name="status" value="{{ $target->value }}">
-                        <x-input-label :for="$formId.'_comment'" :value="__('tickets.actions.comment_label')" />
-                        <textarea id="{{ $formId }}_comment" name="comment" rows="2" maxlength="{{ config('tickets.comment_max_length') }}" @required($needsComment) aria-describedby="{{ $formId }}_hint" class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal"></textarea>
-                        <p id="{{ $formId }}_hint" class="mb-3 mt-1 text-xs text-gray-600">{{ $needsComment ? __('tickets.actions.comment_required_hint') : __('tickets.actions.comment_optional_hint') }}</p>
-                        @if ($target === \App\Enums\TicketStatus::Cancelled || ($ticket->status === \App\Enums\TicketStatus::InReview && $target === \App\Enums\TicketStatus::InProgress))
-                            <x-danger-button>{{ $actionLabel }}</x-danger-button>
-                        @else
-                            <x-primary-button>{{ $actionLabel }}</x-primary-button>
-                        @endif
-                    </form>
-                @endforeach
-            </div>
-        </x-card>
-    @endif
 
     <x-history-panel :item="$ticket" :created-label="__('tickets.show.history_created')" />
 

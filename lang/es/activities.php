@@ -177,6 +177,7 @@ return [
         'template_hint' => 'Las subtareas de la plantilla se copian a cada instancia, sin marcar.',
         'closed_hint' => 'La actividad está cerrada: reábrela para cambiar sus subtareas.',
         'assigned_to' => 'Responsable: :name',
+        'mine' => 'Asignada a ti',
     ],
     'assign' => [
         'title' => 'Asignación',
@@ -185,6 +186,11 @@ return [
         'collaborators' => 'Colaboradores',
         'collaborators_hint' => 'Opcional. Mantén presionada la tecla Ctrl (o Cmd) para elegir varios.',
         'submit' => 'Guardar asignación',
+    ],
+    'list' => [
+        'quick_status' => 'Filtrar por estado',
+        'all_statuses' => 'Todas',
+        'subtasks_short' => ':done/:total subtareas',
     ],
     'actions' => [
         'title' => 'Acciones',

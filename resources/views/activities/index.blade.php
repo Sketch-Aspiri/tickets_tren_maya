@@ -24,6 +24,19 @@
         </div>
     </x-slot>
 
+    {{-- Atajos por estado (GET, sin JavaScript): conservan el resto de filtros. --}}
+    @php
+        $chipFilters = array_filter(\Illuminate\Support\Arr::except($filters, ['status', 'page']), fn ($value) => $value !== null && $value !== false && $value !== '');
+        $activeStatus = $filters['status'] ?? null;
+        $chipBase = 'inline-flex min-h-[44px] items-center rounded-full border px-4 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2';
+    @endphp
+    <nav aria-label="{{ __('activities.list.quick_status') }}" class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        <a href="{{ route('activities.index', $chipFilters) }}" @if (! $activeStatus) aria-current="true" @endif class="{{ $chipBase }} shrink-0 {{ ! $activeStatus ? 'border-brand-green bg-brand-green text-white' : 'border-brand-teal bg-white text-brand-green hover:bg-brand-mist' }}">{{ __('activities.list.all_statuses') }}</a>
+        @foreach ($statuses as $chipStatus)
+            <a href="{{ route('activities.index', [...$chipFilters, 'status' => $chipStatus->value]) }}" @if ($activeStatus === $chipStatus->value) aria-current="true" @endif class="{{ $chipBase }} shrink-0 {{ $activeStatus === $chipStatus->value ? 'border-brand-green bg-brand-green text-white' : 'border-brand-teal bg-white text-brand-green hover:bg-brand-mist' }}">{{ $chipStatus->label() }}</a>
+        @endforeach
+    </nav>
+
     <x-card>
         <form method="GET" action="{{ route('activities.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             @if ($dueToday)

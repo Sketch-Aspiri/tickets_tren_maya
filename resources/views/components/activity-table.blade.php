@@ -24,8 +24,8 @@
             @php
                 $responsible = $activity->assignments->firstWhere('role', \App\Enums\AssignmentRole::Responsable);
             @endphp
-            <tr>
-                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-700">{{ $activity->folio }}</td>
+            <tr class="{{ $activity->isOverdue() ? 'bg-red-50/60' : '' }}">
+                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-700 {{ $activity->isOverdue() ? 'border-l-4 border-red-600' : 'border-l-4 border-transparent' }}">{{ $activity->folio }}</td>
                 <td class="px-4 py-3">
                     <a href="{{ route('activities.show', $activity) }}" class="inline-flex min-h-[44px] max-w-[11rem] items-center font-medium text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal sm:max-w-md">
                         <span class="line-clamp-2">{{ $activity->title }}</span>
@@ -48,7 +48,7 @@
                 @if ($showTeam)
                     <td class="hidden px-4 py-3 xl:table-cell">{{ $activity->team->name }}</td>
                 @endif
-                <td class="hidden whitespace-nowrap px-4 py-3 md:table-cell">
+                <td class="hidden whitespace-nowrap px-4 py-3 md:table-cell {{ $activity->isOverdue() ? 'font-semibold text-red-800' : '' }}">
                     {{ $activity->due_date?->format('d/m/Y') ?? __('common.none') }}
                     @if ($activity->isOverdue())
                         <x-overdue-badge class="ms-1" />
@@ -59,6 +59,7 @@
                         {{ __('common.none') }}
                     @else
                         <x-progress-bar :percent="$activity->progressPercent()" class="w-36" />
+                        <p class="mt-0.5 text-xs text-gray-700">{{ __('activities.list.subtasks_short', ['done' => $activity->subtasksDoneCount(), 'total' => $activity->subtasksTotalCount()]) }}</p>
                     @endif
                 </td>
                 <td class="px-2 py-3 text-right sm:px-4">

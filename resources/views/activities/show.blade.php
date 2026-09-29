@@ -32,8 +32,9 @@
         </div>
     </x-slot>
 
-    {{-- Datos --}}
-    <x-card :title="__('activities.show.details')">
+    {{-- Estado y siguiente paso: flujo, accion principal y acciones secundarias segun Policy (la autorizacion real esta
+         en Policy + ActivityService; aqui solo se muestra lo que este usuario puede ejecutar). --}}
+    <x-card :title="__('workflow.title')" id="estado">
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <x-status-badge :status="$activity->status" />
             <x-priority-badge :priority="$activity->priority" />
@@ -49,8 +50,19 @@
 
         @if ($isTemplate)
             <p class="mb-4 rounded-md border-l-4 border-sky-600 bg-sky-50 p-3 text-sm text-sky-950">{{ __('activities.show.template_hint') }}</p>
+        @else
+            <x-workflow-stepper :status="$activity->status" class="mb-5" />
+            <div class="mb-5">
+                <x-progress-bar :percent="$percent" class="max-w-md" />
+                <p class="mt-1 text-xs text-gray-700">{{ __('activities.show.progress_summary', ['done' => $activity->subtasksDoneCount(), 'total' => $activity->subtasksTotalCount()]) }}</p>
+            </div>
         @endif
 
+        <x-workflow-actions :item="$activity" :transitions="$transitions" />
+    </x-card>
+
+    {{-- Datos --}}
+    <x-card :title="__('activities.show.details')">
         @if ($activity->isInstance() && $activity->occurrence_date)
             <p class="mb-4 text-sm text-gray-800">
                 {{ __('activities.show.instance_of', ['date' => $activity->occurrence_date->format('d/m/Y')]) }}
@@ -92,11 +104,6 @@
         {{-- Contenido de usuario: siempre escapado; whitespace-pre-line conserva los saltos de linea sin interpretar HTML. --}}
         <p class="whitespace-pre-line break-words text-sm text-gray-900">{{ $activity->description }}</p>
 
-        @unless ($isTemplate)
-            <h3 class="mb-1 mt-5 text-sm font-semibold text-gray-800">{{ __('activities.show.progress') }}</h3>
-            <x-progress-bar :percent="$percent" class="max-w-md" />
-            <p class="mt-1 text-xs text-gray-700">{{ __('activities.show.progress_summary', ['done' => $activity->subtasksDoneCount(), 'total' => $activity->subtasksTotalCount()]) }}</p>
-        @endunless
     </x-card>
 
     {{-- Asignados --}}
@@ -119,27 +126,7 @@
                 <form method="POST" action="{{ route('activities.assignments.update', $activity) }}" class="mt-5 grid gap-4 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
                     @csrf
                     @method('PUT')
-                    <div>
-                        <x-input-label for="responsible_id" :value="__('activities.assign.responsible')" />
-                        <x-select-input id="responsible_id" name="responsible_id" class="mt-1 block w-full" required>
-                            <option value="">{{ __('activities.assign.select_responsible') }}</option>
-                            @foreach ($assignableUsers as $candidate)
-                                <option value="{{ $candidate->id }}" @selected($selectedResponsible === $candidate->id)>{{ $candidate->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <x-input-error :messages="$errors->get('responsible_id')" class="mt-2" />
-                    </div>
-                    <div>
-                        <x-input-label for="collaborator_ids" :value="__('activities.assign.collaborators')" />
-                        <x-select-input id="collaborator_ids" name="collaborator_ids[]" class="mt-1 block w-full" multiple size="4" aria-describedby="collaborators_hint">
-                            @foreach ($assignableUsers as $candidate)
-                                <option value="{{ $candidate->id }}" @selected(in_array($candidate->id, $selectedCollaborators, true))>{{ $candidate->name }}</option>
-                            @endforeach
-                        </x-select-input>
-                        <p id="collaborators_hint" class="mt-1 text-xs text-gray-600">{{ __('activities.assign.collaborators_hint') }}</p>
-                        <x-input-error :messages="$errors->get('collaborator_ids')" class="mt-2" />
-                        <x-input-error :messages="$errors->get('collaborator_ids.*')" class="mt-2" />
-                    </div>
+                    <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('activities.assign.responsible')" :select-responsible="__('activities.assign.select_responsible')" :collaborators-label="__('activities.assign.collaborators')" id-prefix="assign" />
                     <div class="sm:col-span-2">
                         <x-primary-button>{{ __('activities.assign.submit') }}</x-primary-button>
                     </div>
@@ -158,43 +145,62 @@
             <p class="mb-3 text-sm text-gray-700">{{ __('activities.subtasks.closed_hint') }}</p>
         @endif
 
+        @if (! $isTemplate && $activity->subtasks->isNotEmpty())
+            <div class="mb-3">
+                <x-progress-bar :percent="$percent" class="max-w-md" />
+                <p class="mt-1 text-xs text-gray-700">{{ __('activities.show.progress_summary', ['done' => $activity->subtasksDoneCount(), 'total' => $activity->subtasksTotalCount()]) }}</p>
+            </div>
+        @endif
+
         @forelse ($activity->subtasks as $subtask)
             @php
                 $canMark = ! $isFinal && ! $isTemplate
                     && ($subtaskAbilities['markAll'] || ($subtaskAbilities['work'] && (int) $subtask->assigned_to === (int) $user->id));
                 $canEdit = ! $isFinal && $subtaskAbilities['manage'];
+                $isMine = (int) $subtask->assigned_to === (int) $user->id;
             @endphp
-            <div class="border-b border-brand-green/10 py-3 last:border-0">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="min-w-0">
+            <div class="border-b border-brand-green/10 py-3 last:border-0 {{ $isMine && ! $subtask->done ? '-mx-2 rounded-lg bg-brand-mist/70 px-2' : '' }}">
+                <div class="flex items-start gap-3">
+                    {{-- Casilla grande (44 px): el formulario envia siempre `done` explicito (1 = marcar, 0 = desmarcar). --}}
+                    @if ($canMark)
+                        <form method="POST" action="{{ route('activities.subtasks.done', [$activity, $subtask]) }}" class="shrink-0">
+                            @csrf
+                            <input type="hidden" name="done" value="{{ $subtask->done ? '0' : '1' }}">
+                            <button type="submit" class="flex h-11 w-11 items-center justify-center rounded-lg border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2 motion-reduce:transition-none {{ $subtask->done ? 'border-brand-green bg-brand-green text-white hover:bg-brand-green-dark' : 'border-gray-500 bg-white text-transparent hover:border-brand-green hover:bg-brand-mist hover:text-brand-green/40' }}">
+                                <x-icon name="check" class="h-6 w-6" />
+                                <span class="sr-only">{{ $subtask->done ? __('activities.subtasks.mark_undone') : __('activities.subtasks.mark_done') }}</span>
+                            </button>
+                        </form>
+                    @else
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 {{ $subtask->done ? 'border-brand-green bg-brand-green/10 text-brand-green' : 'border-gray-300 bg-gray-50 text-transparent' }}" aria-hidden="true">
+                            <x-icon name="check" class="h-6 w-6" />
+                        </span>
+                    @endif
+
+                    <div class="min-w-0 flex-1 pt-0.5">
                         <p class="break-words font-medium {{ $subtask->done ? 'text-gray-600 line-through' : 'text-gray-900' }}">{{ $subtask->title }}</p>
-                        <p class="text-xs text-gray-700">
+                        <p class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-700">
                             <span class="font-semibold">{{ $subtask->done ? __('activities.subtasks.done') : __('activities.subtasks.pending') }}</span>
                             @if ($subtask->assignee)
-                                · {{ __('activities.subtasks.assigned_to', ['name' => $subtask->assignee->name]) }}
+                                <span>· {{ __('activities.subtasks.assigned_to', ['name' => $subtask->assignee->name]) }}</span>
+                            @endif
+                            @if ($isMine)
+                                <span class="rounded-full bg-brand-green px-2 py-0.5 text-[11px] font-semibold text-white">{{ __('activities.subtasks.mine') }}</span>
                             @endif
                         </p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        @if ($canMark)
-                            <form method="POST" action="{{ route('activities.subtasks.done', [$activity, $subtask]) }}">
-                                @csrf
-                                <input type="hidden" name="done" value="{{ $subtask->done ? '0' : '1' }}">
-                                <x-secondary-button type="submit">{{ $subtask->done ? __('activities.subtasks.mark_undone') : __('activities.subtasks.mark_done') }}</x-secondary-button>
-                            </form>
-                        @endif
-                        @if ($canEdit)
-                            <form method="POST" action="{{ route('activities.subtasks.destroy', [$activity, $subtask]) }}" x-data="confirmSubmit" data-confirm="{{ __('activities.subtasks.remove_confirm') }}" x-on:submit="onSubmit">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('activities.subtasks.remove') }}</button>
-                            </form>
-                        @endif
-                    </div>
+
+                    @if ($canEdit)
+                        <form method="POST" action="{{ route('activities.subtasks.destroy', [$activity, $subtask]) }}" class="shrink-0" x-data="confirmSubmit" data-confirm="{{ __('activities.subtasks.remove_confirm') }}" x-on:submit="onSubmit">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="inline-flex min-h-[44px] items-center px-2 text-sm font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('activities.subtasks.remove') }}</button>
+                        </form>
+                    @endif
                 </div>
 
                 @if ($canEdit)
-                    <details class="mt-1">
+                    <details class="ms-14 mt-1">
                         <summary class="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-brand-teal underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('activities.subtasks.edit') }}</summary>
                         <form method="POST" action="{{ route('activities.subtasks.update', [$activity, $subtask]) }}" class="mt-2 grid gap-3 sm:grid-cols-2">
                             @csrf
@@ -247,33 +253,6 @@
             </form>
         @endif
     </x-card>
-
-    {{-- Acciones de estado: solo las que este usuario puede ejecutar (la autorizacion real esta en Policy + ActivityService). --}}
-    @if (count($transitions) > 0)
-        <x-card :title="__('activities.actions.title')">
-            <div class="grid gap-4 lg:grid-cols-2">
-                @foreach ($transitions as $target)
-                    @php
-                        $needsComment = $activity->status->requiresCommentWhenMovingTo($target);
-                        $formId = 'transition_'.$target->value;
-                        $actionLabel = __('activities.actions.transition.'.$target->actionLabelKeyFrom($activity->status));
-                    @endphp
-                    <form method="POST" action="{{ route('activities.transition', $activity) }}" class="rounded-md border border-brand-green/10 p-3">
-                        @csrf
-                        <input type="hidden" name="status" value="{{ $target->value }}">
-                        <x-input-label :for="$formId.'_comment'" :value="__('activities.actions.comment_label')" />
-                        <textarea id="{{ $formId }}_comment" name="comment" rows="2" maxlength="{{ config('tickets.comment_max_length') }}" @required($needsComment) aria-describedby="{{ $formId }}_hint" class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal"></textarea>
-                        <p id="{{ $formId }}_hint" class="mb-3 mt-1 text-xs text-gray-600">{{ $needsComment ? __('activities.actions.comment_required_hint') : __('activities.actions.comment_optional_hint') }}</p>
-                        @if ($target === \App\Enums\TicketStatus::Cancelled || ($activity->status === \App\Enums\TicketStatus::InReview && $target === \App\Enums\TicketStatus::InProgress))
-                            <x-danger-button>{{ $actionLabel }}</x-danger-button>
-                        @else
-                            <x-primary-button>{{ $actionLabel }}</x-primary-button>
-                        @endif
-                    </form>
-                @endforeach
-            </div>
-        </x-card>
-    @endif
 
     <x-history-panel :item="$activity" :created-label="__('activities.show.history_created')" />
 

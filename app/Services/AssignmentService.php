@@ -44,7 +44,8 @@ final class AssignmentService
             ->whereHas('roles')
             ->when(! $actor->seesAllTeams(), fn ($query) => $query->memberOfAny($actor->teamIds()))
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->with('teams:id,name')
+            ->get(['id', 'name', 'avatar_path']);
     }
 
     /**

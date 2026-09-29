@@ -88,27 +88,7 @@
     {{-- Asignacion inicial (solo al crear; despues se cambia desde el detalle). --}}
     @if (! $isEditing)
         <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <x-input-label for="responsible_id" :value="__('activities.form.responsible')" />
-                <x-select-input id="responsible_id" name="responsible_id" class="mt-1 block w-full" required>
-                    <option value="">{{ __('activities.form.select_responsible') }}</option>
-                    @foreach ($assignableUsers as $candidate)
-                        <option value="{{ $candidate->id }}" @selected($selectedResponsible === $candidate->id)>{{ $candidate->name }}</option>
-                    @endforeach
-                </x-select-input>
-                <x-input-error :messages="$errors->get('responsible_id')" class="mt-2" />
-            </div>
-            <div>
-                <x-input-label for="collaborator_ids" :value="__('activities.form.collaborators')" />
-                <x-select-input id="collaborator_ids" name="collaborator_ids[]" class="mt-1 block w-full" multiple size="4" aria-describedby="collaborators_hint">
-                    @foreach ($assignableUsers as $candidate)
-                        <option value="{{ $candidate->id }}" @selected(in_array($candidate->id, $selectedCollaborators, true))>{{ $candidate->name }}</option>
-                    @endforeach
-                </x-select-input>
-                <p id="collaborators_hint" class="mt-1 text-xs text-gray-600">{{ __('activities.form.collaborators_hint') }}</p>
-                <x-input-error :messages="$errors->get('collaborator_ids')" class="mt-2" />
-                <x-input-error :messages="$errors->get('collaborator_ids.*')" class="mt-2" />
-            </div>
+            <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('activities.form.responsible')" :select-responsible="__('activities.form.select_responsible')" :collaborators-label="__('activities.form.collaborators')" id-prefix="new" />
         </div>
     @else
         <p class="text-sm text-gray-700">{{ __('activities.form.assignment_after') }}</p>
