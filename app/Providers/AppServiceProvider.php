@@ -11,6 +11,8 @@ use App\Models\IncomingEmail;
 use App\Policies\AuditLogPolicy;
 use App\Policies\DashboardPolicy;
 use App\Policies\IncomingEmailPolicy;
+use App\Services\Cloud\CloudFileUploader;
+use App\Services\Cloud\MicrosoftGraphClient;
 use App\Support\EnvironmentSecurityCheck;
 use App\Support\MorphMap;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(MailboxClient::class, WebklexMailboxClient::class);
+        $this->app->bind(CloudFileUploader::class, MicrosoftGraphClient::class);
     }
 
     public function boot(): void

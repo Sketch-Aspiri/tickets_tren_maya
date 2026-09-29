@@ -167,6 +167,23 @@ return [
     ],
 
     /*
+    | Excel en la nube (Microsoft 365, via Microsoft Graph): `exports:sync-cloud` reemplaza cada hora un archivo
+    | en OneDrive/SharePoint con TODOS los tickets y actividades (sin descripciones). Desactivado por defecto.
+    | Credenciales de una app de Entra ID con permiso de aplicacion `Sites.Selected` (ver decision 66).
+    | `path`: ruta del archivo dentro de la biblioteca (`drive_id`). `max_rows`: tope de filas por hoja.
+    */
+    'cloud_sync' => [
+        'enabled' => (bool) env('CLOUD_SYNC_ENABLED', false),
+        'tenant_id' => env('CLOUD_SYNC_TENANT_ID'),
+        'client_id' => env('CLOUD_SYNC_CLIENT_ID'),
+        'client_secret' => env('CLOUD_SYNC_CLIENT_SECRET'),
+        'drive_id' => env('CLOUD_SYNC_DRIVE_ID'),
+        'path' => env('CLOUD_SYNC_PATH', 'Reportes/tickets-y-actividades.xlsx'),
+        'max_rows' => (int) env('CLOUD_SYNC_MAX_ROWS', 20000),
+        'timeout_seconds' => 60,
+    ],
+
+    /*
     | Adjuntos: disco PRIVADO (storage/app/private, nunca public/). Un tipo solo se acepta si la
     | extension esta en la lista blanca Y el MIME detectado por el contenido (finfo) corresponde a
     | esa extension. `max_kilobytes` y `max_per_ticket` (por ticket o por actividad) son ajustables.

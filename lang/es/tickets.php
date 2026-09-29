@@ -18,6 +18,14 @@ return [
     'pending_empty' => 'No tienes pendientes asignados. Revisa la bolsa de tu equipo para tomar un ticket.',
     'pending_due_today' => 'Vencen hoy',
     'pending_due_today_clear' => 'Quitar el filtro y ver todos los pendientes',
+    'cloud_sync' => [
+        'info_sheet' => 'Info',
+        'updated_at' => 'Actualizado',
+        'ticket_count' => 'Tickets',
+        'activity_count' => 'Actividades',
+        'read_only' => 'Archivo de solo lectura: el sistema lo reemplaza cada hora; los cambios hechos aquí se pierden.',
+        'truncated' => 'Aviso: se recortó a :max filas por hoja.',
+    ],
     'export' => [
         'button' => 'Exportar a Excel',
         'sheet' => 'Tickets',
