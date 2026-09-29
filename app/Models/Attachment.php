@@ -49,6 +49,24 @@ class Attachment extends Model
     }
 
     /**
+     * Solo png/jpg se previsualizan en linea; se decide por la extension guardada por el servidor (lista blanca
+     * validada contra el MIME real al subir), nunca por el nombre original.
+     */
+    public function previewMime(): ?string
+    {
+        return match (strtolower(pathinfo($this->path, PATHINFO_EXTENSION))) {
+            'png' => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            default => null,
+        };
+    }
+
+    public function isPreviewableImage(): bool
+    {
+        return $this->previewMime() !== null;
+    }
+
+    /**
      * @return MorphTo<Model, $this>
      */
     public function attachable(): MorphTo

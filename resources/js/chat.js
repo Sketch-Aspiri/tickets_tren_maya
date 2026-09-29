@@ -4,6 +4,7 @@
 const POLL_MS = 4000;
 const POLL_MAX_MS = 30000;
 const UNREAD_MS = 20000;
+const LIST_MS = 8000;
 
 const JSON_HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
 
@@ -16,7 +17,14 @@ async function readJson(response) {
 }
 
 export function registerChat(Alpine) {
+    // IMPORTANTE (Alpine): toda propiedad se declara aqui. Una propiedad nueva asignada desde un componente
+    // anidado se escribe en el componente RAIZ (p. ej. el menu lateral) y la comparten todos los hermanos.
     Alpine.data('chat', () => ({
+        pollUrl: '',
+        sendUrl: '',
+        csrf: '',
+        genericError: '',
+        sessionError: '',
         lastId: 0,
         error: '',
         sending: false,
@@ -182,6 +190,7 @@ export function registerChat(Alpine) {
 
     // Insignia de mensajes sin leer del menu lateral.
     Alpine.data('chatUnread', () => ({
+        url: '',
         count: 0,
 
         init() {
@@ -212,8 +221,73 @@ export function registerChat(Alpine) {
         },
     }));
 
+    // Lista de conversaciones: se vuelve a pedir al servidor (HTML ya escapado) para ver mensajes sin leer y
+    // chats nuevos sin recargar la pagina.
+    Alpine.data('chatList', () => ({
+        url: '',
+        delay: LIST_MS,
+
+        init() {
+            this.url = this.$el.dataset.url;
+            this.schedule();
+        },
+
+        schedule() {
+            setTimeout(() => this.refresh(), this.delay);
+        },
+
+        async refresh() {
+            if (!document.hidden) {
+                try {
+                    const response = await fetch(this.url, { headers: JSON_HEADERS, credentials: 'same-origin' });
+
+                    if (response.status === 429) {
+                        this.delay = Math.min(this.delay * 2, POLL_MAX_MS);
+                    } else if (response.ok) {
+                        const body = await readJson(response);
+                        this.delay = LIST_MS;
+
+                        if (body !== null && body.success) {
+                            this.$refs.list.innerHTML = body.data.html;
+                        }
+                    }
+                } catch {
+                    this.delay = Math.min(this.delay * 2, POLL_MAX_MS);
+                }
+            }
+
+            this.schedule();
+        },
+    }));
+
+    // Visor de imagenes: un clic en una miniatura (`a[data-preview]`) la abre a pantalla completa; Escape o clic cierran.
+    Alpine.data('imageViewer', () => ({
+        isOpen: false,
+        src: '',
+        alt: '',
+
+        openPreview(event) {
+            const link = event.target.closest('a[data-preview]');
+
+            if (link === null) {
+                return;
+            }
+
+            event.preventDefault();
+            this.src = link.getAttribute('href');
+            this.alt = link.dataset.name || '';
+            this.isOpen = true;
+        },
+
+        close() {
+            this.isOpen = false;
+            this.src = '';
+        },
+    }));
+
     // Buscador de personas para iniciar un chat 1 a 1.
     Alpine.data('chatUserSearch', () => ({
+        url: '',
         query: '',
         results: [],
         searched: false,

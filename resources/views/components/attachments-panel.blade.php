@@ -8,10 +8,12 @@
 
 {{-- Adjuntos de un ticket o una actividad: solo se descargan por AttachmentController (disco privado + Policy).
      `attachments.user` ya cargado; el nombre del archivo es texto de usuario: siempre escapado. --}}
-<x-card :title="__('tickets.show.attachments')" id="adjuntos">
+<x-card :title="__('tickets.show.attachments')" id="adjuntos" x-data="imageViewer" x-on:click="openPreview">
+    <x-image-viewer />
     @forelse ($item->attachments as $attachment)
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-green/10 py-2 text-sm last:border-0">
             <div class="min-w-0">
+                <x-attachment-preview :attachment="$attachment" />
                 <a href="{{ route('attachments.download', $attachment) }}" class="inline-flex min-h-[44px] items-center break-all font-medium text-brand-teal underline underline-offset-2 hover:text-brand-green focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ $attachment->original_name }}</a>
                 <p class="text-xs text-gray-600">{{ number_format($attachment->size / 1024, 1) }} KB · {{ $attachment->user->name }} · <x-local-datetime :value="$attachment->created_at" /></p>
             </div>

@@ -23,6 +23,7 @@ return [
         'emails_section' => 'Correo',
         'incoming_emails' => 'Correos entrantes',
         'chat' => 'Chat',
+        'notifications' => 'Notificaciones',
     ],
     'actions' => [
         'save' => 'Guardar',
@@ -66,6 +67,7 @@ return [
         'ticket-unassigned' => 'El ticket volvió a la bolsa del equipo.',
         'ticket-taken' => 'Tomaste el ticket: ahora eres el responsable.',
         'comment-added' => 'Comentario agregado.',
+        'notifications-read' => 'Notificaciones marcadas como leídas.',
         'attachment-added' => 'Archivo adjuntado.',
         'activity-created' => 'Actividad creada.',
         'activity-updated' => 'Actividad actualizada.',

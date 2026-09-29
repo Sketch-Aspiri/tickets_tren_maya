@@ -56,6 +56,13 @@
             </x-sidebar-link>
         @endcan
 
+        <x-sidebar-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
+            <span class="flex w-full items-center justify-between gap-2" x-data="chatUnread" data-url="{{ route('notifications.summary') }}">
+                {{ __('common.nav.notifications') }}
+                <span x-show="hasUnread" x-cloak x-text="count" class="inline-flex min-w-[1.5rem] justify-center rounded-full bg-brand-green px-2 py-0.5 text-xs font-semibold text-white"></span>
+            </span>
+        </x-sidebar-link>
+
         @can('viewAny', \App\Models\Conversation::class)
             <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-600">{{ __('common.nav.chat') }}</p>
             <x-sidebar-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">

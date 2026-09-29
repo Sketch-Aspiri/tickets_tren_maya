@@ -38,6 +38,28 @@ class AttachmentController extends Controller
         ]);
     }
 
+    /**
+     * Previsualizacion en linea: SOLO imagenes png/jpg (el resto responde 404). El tipo lo fija el servidor
+     * (no el navegador), con `nosniff` y una CSP que anula cualquier contenido activo.
+     */
+    public function preview(Attachment $attachment): StreamedResponse
+    {
+        $this->authorize('view', $attachment);
+
+        abort_unless($attachment->isPreviewableImage(), 404);
+
+        $disk = Storage::disk((string) config('tickets.attachments.disk'));
+
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->response($attachment->path, $attachment->original_name, [
+            'Content-Type' => $attachment->previewMime(),
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; style-src 'none'; sandbox",
+            'Cache-Control' => 'private, max-age=600',
+        ], 'inline');
+    }
+
     public function destroy(DeleteAttachmentRequest $request, Attachment $attachment): RedirectResponse
     {
         $this->authorize('delete', $attachment);

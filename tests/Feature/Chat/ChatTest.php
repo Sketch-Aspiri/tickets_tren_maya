@@ -264,6 +264,53 @@ class ChatTest extends DatabaseTestCase
         $this->assertStringNotContainsString('texto privado', json_encode($entry->properties));
     }
 
+    public function test_conversation_list_endpoint_returns_only_visible_conversations_with_unread(): void
+    {
+        $visible = $this->direct($this->ana, $this->beto);
+        $this->direct($this->beto, $this->carla);
+        $this->signIn($this->beto)->postJson(route('chat.messages.store', $visible), ['body' => 'nuevo']);
+
+        $html = $this->signIn($this->ana)->getJson(route('chat.list'))->assertOk()->json('data.html');
+
+        $this->assertStringContainsString(route('chat.show', $visible), $html);
+        $this->assertStringContainsString($this->beto->name, $html);
+        $this->assertStringNotContainsString($this->carla->name, $html);
+    }
+
+    public function test_image_attachment_has_an_inline_preview_only_for_participants(): void
+    {
+        Storage::fake('local');
+        $conversation = $this->direct($this->ana, $this->beto);
+
+        $response = $this->signIn($this->ana)->post(route('chat.messages.store', $conversation), [
+            'attachment' => UploadedFile::fake()->image('foto.png', 40, 40),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $attachment = ChatMessage::query()->firstOrFail()->attachments()->firstOrFail();
+        $this->assertStringContainsString('<img src="'.route('attachments.preview', $attachment).'"', $response->json('data.html'));
+
+        $preview = $this->signIn($this->beto)->get(route('attachments.preview', $attachment))->assertOk();
+        $preview->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertSame('image/png', $preview->headers->get('Content-Type'));
+        $this->assertStringContainsString('inline', (string) $preview->headers->get('Content-Disposition'));
+
+        $this->signIn($this->carla)->get(route('attachments.preview', $attachment))->assertNotFound();
+    }
+
+    public function test_non_image_attachment_has_no_preview(): void
+    {
+        Storage::fake('local');
+        $conversation = $this->direct($this->ana, $this->beto);
+
+        $response = $this->signIn($this->ana)->post(route('chat.messages.store', $conversation), [
+            'attachment' => UploadedFile::fake()->createWithContent('nota.txt', 'x'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $attachment = ChatMessage::query()->firstOrFail()->attachments()->firstOrFail();
+        $this->assertStringNotContainsString('<img', $response->json('data.html'));
+        $this->signIn($this->ana)->get(route('attachments.preview', $attachment))->assertNotFound();
+    }
+
     // ---- Busqueda de personas ----
 
     public function test_user_search_returns_only_active_users_with_role_and_no_email(): void

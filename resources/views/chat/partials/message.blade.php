@@ -6,6 +6,7 @@
             <p class="mt-1 whitespace-pre-line break-words">{{ $body }}</p>
         @endif
         @foreach ($message->attachments as $attachment)
+            <x-attachment-preview :attachment="$attachment" />
             <p class="mt-1">
                 <a href="{{ route('attachments.download', $attachment) }}" class="inline-flex min-h-[44px] items-center break-all font-medium text-brand-teal underline underline-offset-2 hover:text-brand-green focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ $attachment->original_name }}</a>
                 <span class="text-xs text-gray-600">({{ number_format($attachment->size / 1024, 1) }} KB)</span>

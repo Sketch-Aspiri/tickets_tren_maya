@@ -47,6 +47,9 @@ return [
         'chat_poll_per_minute' => 120,
         'chat_search_per_minute' => 30,
         'chat_start_per_hour' => 20,
+        // Centro de notificaciones: la insignia del menu consulta el resumen cada pocos segundos.
+        'notifications_poll_per_minute' => 120,
+        'notifications_write_per_minute' => 60,
     ],
 
     /*

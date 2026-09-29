@@ -11,6 +11,7 @@ use App\Models\Activity;
 use App\Models\Assignment;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Notifications\WorkItemAssigned;
 use App\Support\WorkflowSubject;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -74,8 +75,36 @@ final class AssignmentService
 
             $this->audit->record(WorkflowSubject::group($locked), $before === [] ? 'assigned' : 'reassigned', $locked, $actor, ['assignments' => $before], ['assignments' => $this->snapshot($locked)], ['folio' => $locked->folio]);
 
+            $this->notifyNewAssignees($locked, $actor, $desired, array_column($before, 'user_id'));
+
             return $locked;
         });
+    }
+
+    /**
+     * Avisa dentro del sistema solo a quien se SUMA a la asignacion (no a quien ya la tenia ni a quien asigna).
+     *
+     * @param  array<int, AssignmentRole>  $desired  user_id => rol
+     * @param  list<int>  $previousUserIds
+     */
+    private function notifyNewAssignees(Ticket|Activity $subject, User $actor, array $desired, array $previousUserIds): void
+    {
+        $newIds = array_values(array_diff(array_keys($desired), $previousUserIds, [(int) $actor->getKey()]));
+
+        if ($newIds === []) {
+            return;
+        }
+
+        foreach (User::query()->whereKey($newIds)->get() as $user) {
+            $user->notify(new WorkItemAssigned(
+                $subject instanceof Activity ? 'activity' : 'ticket',
+                (int) $subject->getKey(),
+                (string) $subject->folio,
+                (string) $subject->title,
+                $desired[$user->getKey()]->value,
+                $actor->name,
+            ));
+        }
     }
 
     /**

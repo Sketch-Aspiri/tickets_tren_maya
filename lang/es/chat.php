@@ -17,6 +17,8 @@ return [
     'message_placeholder' => 'Escribe un mensaje…',
     'attach_label' => 'Adjuntar archivo',
     'send' => 'Enviar',
+    'preview' => 'Vista previa de imagen',
+    'close_preview' => 'Cerrar vista previa',
     'hint' => 'Texto plano. Escribe un folio (TM-… o ACT-…) para enlazarlo si tienes acceso. Enter envía el mensaje.',
     'errors' => [
         'recipient_invalid' => 'No puedes iniciar un chat con esa persona.',

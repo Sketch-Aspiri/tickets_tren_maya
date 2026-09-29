@@ -23,6 +23,7 @@ use App\Http\Controllers\IncomingEmailAttachmentController;
 use App\Http\Controllers\IncomingEmailController;
 use App\Http\Controllers\IncomingEmailConversionController;
 use App\Http\Controllers\IncomingEmailDiscardController;
+use App\Http\Controllers\Notifications\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Tickets\TicketAssignmentController;
@@ -153,11 +154,20 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::get('incoming-email-attachments/{incomingEmailAttachment}', [IncomingEmailAttachmentController::class, 'download'])
         ->middleware('throttle:attachment-download')->name('incoming-email-attachments.download');
 
+    // Notificaciones del propio usuario (asignaciones, avisos y mensajes de chat sin leer).
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('summary', [NotificationController::class, 'summary'])->middleware('throttle:notifications-poll')->name('summary');
+        Route::post('read-all', [NotificationController::class, 'readAll'])->middleware('throttle:notifications-write')->name('read-all');
+        Route::get('{notification}', [NotificationController::class, 'open'])->middleware('throttle:notifications-write')->name('open');
+    });
+
     // Chat interno (1 a 1 y canal de equipo). Polling JSON; las rutas estaticas van antes de `{conversation}`.
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/', [ChatController::class, 'index'])->name('index');
         Route::post('direct', [ChatController::class, 'startDirect'])->middleware('throttle:chat-start')->name('direct');
         Route::get('users', ChatUserSearchController::class)->middleware('throttle:chat-search')->name('users');
+        Route::get('list', [ChatController::class, 'list'])->middleware('throttle:chat-poll')->name('list');
         Route::get('unread', ChatUnreadController::class)->middleware('throttle:chat-poll')->name('unread');
         Route::get('{conversation}', [ChatController::class, 'show'])->name('show');
         Route::get('{conversation}/messages', [ChatMessageController::class, 'index'])->middleware('throttle:chat-poll')->name('messages.index');
@@ -168,6 +178,10 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::get('attachments/{attachment}', [AttachmentController::class, 'download'])
         ->middleware('throttle:attachment-download')
         ->name('attachments.download');
+    // Previsualizacion en linea SOLO de imagenes png/jpg (mismo permiso que la descarga).
+    Route::get('attachments/{attachment}/preview', [AttachmentController::class, 'preview'])
+        ->middleware('throttle:attachment-download')
+        ->name('attachments.preview');
     Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])
         ->middleware('throttle:ticket-write')
         ->name('attachments.destroy');

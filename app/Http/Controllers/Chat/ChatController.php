@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ChatService;
 use App\Support\ChatMessageFormatter;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,22 @@ class ChatController extends Controller
         $this->authorize('viewAny', Conversation::class);
 
         return $this->render($request->user(), null);
+    }
+
+    /**
+     * Fragmento HTML de la lista de conversaciones (lo pide el polling de la pagina de chat).
+     */
+    public function list(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Conversation::class);
+
+        $html = view('chat.partials.conversation-list', [
+            'conversations' => $this->chat->listFor($request->user()),
+            'activeId' => $request->integer('active') ?: null,
+        ])->render();
+
+        return response()->json(['success' => true, 'data' => ['html' => $html], 'error' => null, 'meta' => null])
+            ->header('Cache-Control', 'private, no-store');
     }
 
     public function show(Request $request, Conversation $conversation): View

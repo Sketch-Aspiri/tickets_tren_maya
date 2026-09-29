@@ -133,6 +133,8 @@ class AppServiceProvider extends ServiceProvider
             'chat-poll' => ['chat_poll_per_minute', 'perMinute'],
             'chat-search' => ['chat_search_per_minute', 'perMinute'],
             'chat-start' => ['chat_start_per_hour', 'perHour'],
+            'notifications-poll' => ['notifications_poll_per_minute', 'perMinute'],
+            'notifications-write' => ['notifications_write_per_minute', 'perMinute'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {

@@ -4,7 +4,8 @@
         <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('chat.title') }}</h1>
     </x-slot>
 
-    <div class="grid gap-4 lg:grid-cols-[20rem_1fr]">
+    <div class="grid gap-4 lg:grid-cols-[20rem_1fr]" x-data="imageViewer" x-on:click="openPreview">
+        <x-image-viewer />
         {{-- Lista de conversaciones. En movil solo se muestra si no hay una conversacion abierta. --}}
         <div class="{{ $active ? 'hidden lg:block' : '' }} space-y-4">
             <x-card :title="__('chat.new_direct')" x-data="chatUserSearch" data-url="{{ route('chat.users') }}">
@@ -24,25 +25,9 @@
                 <p x-show="noResults" x-cloak class="mt-2 text-sm text-gray-700">{{ __('chat.no_results') }}</p>
             </x-card>
 
-            <x-card :title="__('chat.conversations')">
-                <ul class="space-y-1">
-                    @forelse ($conversations as $conversation)
-                        <li>
-                            <a href="{{ route('chat.show', $conversation) }}" @if ($active && $active->is($conversation)) aria-current="page" @endif class="flex min-h-[44px] items-center justify-between gap-2 rounded-md px-3 text-sm font-medium hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal {{ $active && $active->is($conversation) ? 'bg-brand-mist text-brand-green' : 'text-gray-800' }}">
-                                <span class="min-w-0 truncate">
-                                    {{ $conversation->titleFor(auth()->user()) }}
-                                    @if ($conversation->type === \App\Enums\ConversationType::Team)
-                                        <span class="text-xs font-normal text-gray-600">({{ __('chat.team_channel') }})</span>
-                                    @endif
-                                </span>
-                                @if ($conversation->unread_count > 0)
-                                    <span class="inline-flex min-w-[1.5rem] justify-center rounded-full bg-brand-green px-2 py-0.5 text-xs font-semibold text-white"><span class="sr-only">{{ __('chat.unread') }}</span>{{ $conversation->unread_count }}</span>
-                                @endif
-                            </a>
-                        </li>
-                    @empty
-                        <li class="text-sm text-gray-700">{{ __('chat.no_conversations') }}</li>
-                    @endforelse
+            <x-card :title="__('chat.conversations')" x-data="chatList" data-url="{{ route('chat.list', ['active' => $active?->getKey()]) }}">
+                <ul x-ref="list" class="space-y-1">
+                    @include('chat.partials.conversation-list', ['conversations' => $conversations, 'activeId' => $active?->getKey()])
                 </ul>
             </x-card>
         </div>
