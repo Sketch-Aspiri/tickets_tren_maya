@@ -16,6 +16,8 @@ return [
         'team' => 'Mi equipo',
     ],
     'pending_empty' => 'No tienes pendientes asignados. Revisa la bolsa de tu equipo para tomar un ticket.',
+    'pending_due_today' => 'Vencen hoy',
+    'pending_due_today_clear' => 'Quitar el filtro y ver todos los pendientes',
     'export' => [
         'button' => 'Exportar a Excel',
         'sheet' => 'Tickets',
@@ -79,7 +81,7 @@ return [
         'due_date_hint' => 'Opcional. No puede ser anterior a hoy.',
         'team' => 'Equipo',
         'select_team' => 'Elige un equipo',
-        'team_hint' => 'Como jefe de zona no perteneces a un equipo: elige a cuál corresponde el ticket.',
+        'team_hint' => 'Puedes enviar el ticket a tu equipo o a otro (por ejemplo, TI); ese equipo lo atenderá.',
         'inactive_category' => '(inactiva)',
     ],
     'show' => [

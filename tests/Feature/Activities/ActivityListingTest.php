@@ -50,7 +50,8 @@ class ActivityListingTest extends DatabaseTestCase
         $this->makeActivity($this->teamA, ['recurrence_rule' => ['frequency' => 'daily', 'interval' => 1], 'start_date' => '2030-01-01']);
 
         $this->assertEqualsCanonicalizing([$a->id, $b->id, $assignedAcross->id], $this->listedIds($this->jefe));
-        $this->assertEqualsCanonicalizing([$a->id, $assignedAcross->id], $this->listedIds($this->coordA));
+        // Este listado ya no incluye lo asignado fuera del equipo propio (a diferencia de `visibleTo`).
+        $this->assertEqualsCanonicalizing([$a->id], $this->listedIds($this->coordA));
         $this->assertEqualsCanonicalizing([$b->id, $assignedAcross->id], $this->listedIds($this->coordB), 'las del equipo B, aunque estén asignadas a otro coordinador');
     }
 

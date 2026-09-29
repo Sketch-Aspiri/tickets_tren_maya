@@ -30,12 +30,14 @@ class TicketPendingController extends Controller
 
         $user = $request->user();
         $scope = $request->pendingScope();
+        $dueToday = $request->dueToday();
 
         return view('tickets.pending', [
-            'tickets' => $this->tickets->pendingFor($user, $scope),
-            'activities' => $this->activities->pendingFor($user, $scope),
+            'tickets' => $this->tickets->pendingFor($user, $scope, $dueToday),
+            'activities' => $this->activities->pendingFor($user, $scope, $dueToday),
             'scope' => $scope,
             'scopes' => PendingScope::canUseTeam($user) ? PendingScope::cases() : [],
+            'dueToday' => $dueToday,
         ]);
     }
 }

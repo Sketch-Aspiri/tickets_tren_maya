@@ -11,6 +11,7 @@ use App\Enums\TicketStatus;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Support\ListingQuery;
+use App\Support\LocalTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -55,12 +56,18 @@ final class TicketListingService
     /**
      * Alcance por rol (`visibleTo`) + filtros validados. Ningun filtro puede ensanchar el alcance.
      *
+     * En este listado (y en su exportación, que reutiliza los mismos filtros) coordinador y empleado ven
+     * SOLO lo de su(s) equipo(s): a diferencia de `visibleTo`, aquí no cuenta lo asignado explícitamente
+     * fuera de su equipo (eso sigue viéndose en "Mis pendientes", que usa `baseQuery` directamente). Jefe y
+     * administrador (`seesAllTeams`) no llevan esta restricción.
+     *
      * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, unassigned?: ?bool, q?: ?string}  $filters
      * @return Builder<Ticket>
      */
     private function filtered(User $user, array $filters): Builder
     {
         return $this->baseQuery($user)
+            ->when(! $user->seesAllTeams(), fn (Builder $q) => $q->whereIn('tickets.team_id', $user->teamIdsQuery()))
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('tickets.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('tickets.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('tickets.category_id', $id))
@@ -81,7 +88,7 @@ final class TicketListingService
      *
      * @return LengthAwarePaginator<int, Ticket>
      */
-    public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine): LengthAwarePaginator
+    public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine, bool $dueToday = false): LengthAwarePaginator
     {
         $query = $this->baseQuery($user)->open();
 
@@ -89,6 +96,10 @@ final class TicketListingService
             $query->whereIn('tickets.team_id', $user->teamIdsQuery());
         } else {
             $query->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
+        }
+
+        if ($dueToday) {
+            $query->whereDate('tickets.due_date', LocalTime::today());
         }
 
         ListingQuery::orderByDateNullsLast($query, 'tickets.due_date', 'asc');

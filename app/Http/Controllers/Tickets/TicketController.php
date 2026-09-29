@@ -12,6 +12,7 @@ use App\Http\Requests\Tickets\IndexTicketsRequest;
 use App\Http\Requests\Tickets\StoreTicketRequest;
 use App\Http\Requests\Tickets\UpdateTicketRequest;
 use App\Models\Category;
+use App\Models\Team;
 use App\Models\Ticket;
 use App\Services\AssignmentService;
 use App\Services\CategoryService;
@@ -120,12 +121,15 @@ class TicketController extends Controller
      */
     private function formData(Request $request, Ticket $ticket): array
     {
+        $user = $request->user();
+
         return [
             'ticket' => $ticket,
             'priorities' => Priority::cases(),
             'categories' => $this->categories->selectable($ticket->category_id),
-            // Elige el equipo del ticket nuevo quien tiene alcance global o varios equipos.
-            'teams' => $ticket->exists ? collect() : $request->user()->selectableTeams(),
+            // Un ticket nuevo puede mandarse a cualquier equipo (p. ej. al de TI), no solo al del creador.
+            'teams' => $ticket->exists ? collect() : Team::query()->orderBy('name')->get(['id', 'name']),
+            'defaultTeamId' => $ticket->exists ? null : ($user->teamIds()[0] ?? null),
         ];
     }
 }

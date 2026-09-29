@@ -213,12 +213,12 @@ class ActivityExportTest extends DatabaseTestCase
         $this->assertSame([$b->folio], $this->exportedFolios($this->coordB));
     }
 
-    public function test_a_coordinator_also_exports_what_was_assigned_to_them_like_the_listing(): void
+    public function test_a_coordinator_does_not_export_what_is_assigned_outside_their_team_like_the_listing(): void
     {
-        $outside = $this->makeActivity($this->teamB, [], $this->coordA);
+        $this->makeActivity($this->teamB, [], $this->coordA);
         $this->makeActivity($this->teamB);
 
-        $this->assertSame([$outside->folio], $this->exportedFolios($this->coordA));
+        $this->assertSame([], $this->exportedFolios($this->coordA));
     }
 
     public function test_a_coordinator_cannot_widen_the_export_with_a_foreign_team_filter(): void

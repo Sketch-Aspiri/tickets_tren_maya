@@ -25,6 +25,7 @@ class PendingTicketsRequest extends FormRequest
             'page' => ['nullable', 'integer', 'min:1'],
             'activities_page' => ['nullable', 'integer', 'min:1'],
             'scope' => ['nullable', 'string', Rule::in(PendingScope::values())],
+            'due_today' => ['nullable', 'boolean'],
         ];
     }
 
@@ -35,5 +36,10 @@ class PendingTicketsRequest extends FormRequest
     public function pendingScope(): PendingScope
     {
         return PendingScope::resolve($this->validated('scope'), $this->user());
+    }
+
+    public function dueToday(): bool
+    {
+        return $this->boolean('due_today');
     }
 }

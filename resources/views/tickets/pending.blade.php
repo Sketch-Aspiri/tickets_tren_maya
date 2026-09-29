@@ -1,18 +1,27 @@
 @php
     $isTeam = $scope === \App\Enums\PendingScope::Team;
+    // Conserva el scope (mine/team) al alternar "vencen hoy", y viceversa; sin JavaScript.
+    $scopeQuery = $isTeam ? ['scope' => $scope->value] : [];
 @endphp
 
 <x-app-layout>
     <x-slot name="title">{{ __('tickets.pending_title') }}</x-slot>
     <x-slot name="header">
-        <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('tickets.pending_title') }}</h1>
+        <div class="flex items-center justify-between gap-4">
+            <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('tickets.pending_title') }}</h1>
+            @if ($dueToday)
+                <x-primary-button :href="route('tickets.pending', $scopeQuery)" aria-current="true" :title="__('tickets.pending_due_today_clear')">{{ __('tickets.pending_due_today') }} ✕</x-primary-button>
+            @else
+                <x-secondary-button :href="route('tickets.pending', [...$scopeQuery, 'due_today' => 1])">{{ __('tickets.pending_due_today') }}</x-secondary-button>
+            @endif
+        </div>
     </x-slot>
 
     {{-- Alternar entre lo propio y lo del equipo: solo coordinadores (enlaces GET, sin JavaScript). --}}
     @if ($scopes !== [])
         <nav aria-label="{{ __('tickets.pending_scope.legend') }}" class="inline-flex overflow-hidden rounded-md border border-brand-teal bg-white shadow-sm">
             @foreach ($scopes as $option)
-                <a href="{{ route('tickets.pending', ['scope' => $option->value]) }}"
+                <a href="{{ route('tickets.pending', [...($dueToday ? ['due_today' => 1] : []), 'scope' => $option->value]) }}"
                    @if ($option === $scope) aria-current="page" @endif
                    class="inline-flex min-h-[44px] items-center px-5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-teal {{ $option === $scope ? 'bg-brand-green text-white' : 'text-brand-green hover:bg-brand-mist' }}">
                     {{ $option->label() }}

@@ -7,9 +7,11 @@ namespace Tests\Feature\Tickets;
 use App\Enums\AssignmentRole;
 use App\Enums\Priority;
 use App\Enums\TicketStatus;
+use App\Models\Activity;
 use App\Models\Category;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\LocalTime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -60,9 +62,19 @@ class TicketListingTest extends DatabaseTestCase
             $this->listedIds($this->jefe),
         );
         $this->assertEqualsCanonicalizing([$bagA->id, $createdByEmp->id, $assignedToPeer->id], $this->listedIds($this->coordA));
-        $this->assertEqualsCanonicalizing([$bagA->id, $createdByEmp->id, $assignedToEmp->id], $this->listedIds($this->empA1));
+        // A diferencia de "Mis pendientes", este listado NO incluye lo asignado fuera del equipo propio.
+        $this->assertEqualsCanonicalizing([$bagA->id, $createdByEmp->id], $this->listedIds($this->empA1));
         $this->assertEqualsCanonicalizing([$bagA->id, $createdByEmp->id, $assignedToPeer->id], $this->listedIds($this->empA2), 'A2 ve la bolsa y lo suyo; el ticket de A1 esta en bolsa');
         $this->assertEqualsCanonicalizing([$teamB->id], $this->listedIds($this->empB1));
+    }
+
+    public function test_listing_excludes_what_is_assigned_outside_the_users_own_team(): void
+    {
+        $ownTeam = $this->makeTicket($this->teamA, $this->coordA);
+        $assignedOutside = Ticket::factory()->forTeam($this->teamB)->createdBy($this->coordB)->assignedTo($this->coordA)->create();
+
+        $this->assertEqualsCanonicalizing([$ownTeam->id], $this->listedIds($this->coordA));
+        $this->assertEqualsCanonicalizing([$ownTeam->id, $assignedOutside->id], Ticket::query()->visibleTo($this->coordA)->pluck('id')->all(), 'sigue visible por su folio/enlace directo');
     }
 
     public function test_filters_can_never_widen_the_scope(): void
@@ -346,6 +358,30 @@ class TicketListingTest extends DatabaseTestCase
 
         $this->assertSame([$inReview->id], $this->listedIds($this->coordA, [], '/tickets/pending'));
         $this->assertSame([$outsideScope->id], $this->listedIds($this->empA1, [], '/tickets/pending'), 'lo asignado a mi siempre es visible');
+    }
+
+    public function test_pending_due_today_filter_applies_to_both_sections(): void
+    {
+        $today = LocalTime::today();
+        $ticketDueToday = Ticket::factory()->forTeam($this->teamA)->dueOn($today)->assignedTo($this->empA1)->create();
+        Ticket::factory()->forTeam($this->teamA)->dueOn('2030-01-01')->assignedTo($this->empA1)->create();
+        $activityDueToday = Activity::factory()->forTeam($this->teamA)->dueOn($today)->assignedTo($this->empA1)->create();
+        Activity::factory()->forTeam($this->teamA)->dueOn('2030-01-01')->assignedTo($this->empA1)->create();
+
+        $response = $this->signIn($this->empA1)->get('/tickets/pending?due_today=1')->assertOk();
+
+        $this->assertSame([$ticketDueToday->id], $response->viewData('tickets')->getCollection()->pluck('id')->all());
+        $this->assertSame([$activityDueToday->id], collect($response->viewData('activities')->items())->pluck('id')->all());
+    }
+
+    public function test_the_pending_due_today_button_toggles_the_filter_and_keeps_the_scope(): void
+    {
+        $this->signIn($this->coordA)->get('/tickets/pending?scope=team')->assertOk()
+            ->assertSee(__('tickets.pending_due_today'))
+            ->assertSee(e(route('tickets.pending', ['scope' => 'team', 'due_today' => 1])), false);
+
+        $this->signIn($this->coordA)->get('/tickets/pending?scope=team&due_today=1')->assertOk()
+            ->assertSee(e(route('tickets.pending', ['scope' => 'team'])), false);
     }
 
     public function test_pending_page_shows_an_empty_message_and_is_paginated(): void

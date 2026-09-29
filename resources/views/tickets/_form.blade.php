@@ -5,6 +5,7 @@
     $selectedPriority = old('priority', $ticket->priority?->value);
     $selectedCategory = old('category_id', $ticket->category_id);
     $dueDate = old('due_date', $ticket->due_date?->toDateString());
+    $selectedTeam = old('team_id', $defaultTeamId ?? null);
 @endphp
 
 <div class="space-y-4">
@@ -14,7 +15,7 @@
             <x-select-input id="team_id" name="team_id" class="mt-1 block w-full" required aria-describedby="team_id_hint">
                 <option value="">{{ __('tickets.form.select_team') }}</option>
                 @foreach ($teams as $team)
-                    <option value="{{ $team->id }}" @selected((int) old('team_id') === $team->id)>{{ $team->name }}</option>
+                    <option value="{{ $team->id }}" @selected((int) $selectedTeam === $team->id)>{{ $team->name }}</option>
                 @endforeach
             </x-select-input>
             <p id="team_id_hint" class="mt-1 text-xs text-gray-600">{{ __('tickets.form.team_hint') }}</p>

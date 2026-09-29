@@ -77,9 +77,32 @@ class TicketCrudTest extends DatabaseTestCase
         $this->assertSame('Falla en la impresora', $activity->attribute_changes['attributes']['title']);
     }
 
-    public function test_coordinator_ignores_a_team_id_sent_in_the_request(): void
+    public function test_employee_can_send_a_ticket_to_another_teams_bag(): void
+    {
+        $response = $this->signIn($this->empA1)->post('/tickets', $this->payload(['team_id' => $this->teamB->id]));
+
+        $response->assertSessionHasNoErrors();
+        $ticket = Ticket::query()->firstOrFail();
+        $this->assertSame($this->teamB->id, $ticket->team_id);
+        $this->assertSame($this->empA1->id, $ticket->created_by);
+        $this->assertTrue($ticket->assignments()->doesntExist(), 'nace en la bolsa del equipo destino');
+
+        // Sigue viéndolo por ser el creador, aunque el ticket ya no sea de su equipo.
+        $this->signIn($this->empA1)->get(route('tickets.show', $ticket))->assertOk();
+        // El coordinador del equipo destino lo ve en la bolsa de su equipo.
+        $this->signIn($this->coordB)->get(route('tickets.show', $ticket))->assertOk();
+    }
+
+    public function test_coordinator_can_send_a_ticket_to_another_team(): void
     {
         $this->signIn($this->coordA)->post('/tickets', $this->payload(['team_id' => $this->teamB->id]))->assertSessionHasNoErrors();
+
+        $this->assertSame($this->teamB->id, Ticket::query()->firstOrFail()->team_id);
+    }
+
+    public function test_ticket_without_a_team_id_defaults_to_the_creators_own_team(): void
+    {
+        $this->signIn($this->empA1)->post('/tickets', $this->payload())->assertSessionHasNoErrors();
 
         $this->assertSame($this->teamA->id, Ticket::query()->firstOrFail()->team_id);
     }
@@ -97,10 +120,11 @@ class TicketCrudTest extends DatabaseTestCase
         $this->assertSame($this->jefe->id, $ticket->created_by);
     }
 
-    public function test_create_form_shows_the_team_selector_only_to_the_jefe(): void
+    public function test_create_form_shows_the_team_selector_to_everyone(): void
     {
         $this->signIn($this->jefe)->get('/tickets/create')->assertOk()->assertSee('name="team_id"', false);
-        $this->signIn($this->empA1)->get('/tickets/create')->assertOk()->assertDontSee('name="team_id"', false);
+        $this->signIn($this->empA1)->get('/tickets/create')->assertOk()->assertSee('name="team_id"', false)
+            ->assertSee($this->teamB->name);
     }
 
     public function test_validation_of_required_fields_and_limits(): void
@@ -138,7 +162,6 @@ class TicketCrudTest extends DatabaseTestCase
             'id' => 4242,
             'folio' => 'HACK-0001',
             'status' => 'completed',
-            'team_id' => $this->teamB->id,
             'created_by' => $this->jefe->id,
             'source' => 'email',
             'completed_at' => '2020-01-01 00:00:00',

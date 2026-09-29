@@ -64,12 +64,18 @@ final class ActivityListingService
     /**
      * Alcance por rol (`visibleTo`) + filtros validados. Ningun filtro puede ensanchar el alcance.
      *
+     * En este listado (y en su exportación, que reutiliza los mismos filtros) coordinador y empleado ven
+     * SOLO lo de su(s) equipo(s): a diferencia de `visibleTo`, aquí no cuenta lo asignado explícitamente
+     * fuera de su equipo (eso sigue viéndose en "Mis pendientes", que usa `baseQuery` directamente). Jefe y
+     * administrador (`seesAllTeams`) no llevan esta restricción.
+     *
      * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, due_today?: ?bool, kind?: ?string, q?: ?string}  $filters
      * @return Builder<Activity>
      */
     private function filtered(User $user, array $filters): Builder
     {
         return $this->baseQuery($user)
+            ->when(! $user->seesAllTeams(), fn (Builder $q) => $q->whereIn('activities.team_id', $user->teamIdsQuery()))
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('activities.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('activities.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('activities.category_id', $id))
@@ -91,7 +97,7 @@ final class ActivityListingService
      *
      * @return LengthAwarePaginator<int, Activity>
      */
-    public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine): LengthAwarePaginator
+    public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine, bool $dueToday = false): LengthAwarePaginator
     {
         $query = $this->baseQuery($user)
             ->withoutTemplates()
@@ -103,6 +109,10 @@ final class ActivityListingService
             $query->where(fn (Builder $mine) => $mine
                 ->assignedTo($user)
                 ->orWhere(fn (Builder $subtask) => $subtask->hasSubtaskFor($user, true)));
+        }
+
+        if ($dueToday) {
+            $this->filterDueToday($query);
         }
 
         ListingQuery::orderByDateNullsLast($query, 'activities.due_date', 'asc');

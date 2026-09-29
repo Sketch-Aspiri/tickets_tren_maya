@@ -176,6 +176,23 @@ class User extends Authenticatable
     }
 
     /**
+     * Equipo para un TICKET nuevo: a diferencia de `workTeamIdFor` (actividades), cualquier usuario puede
+     * enviar un ticket a CUALQUIER equipo (p. ej. un empleado manda un ticket al equipo de TI), no solo a
+     * los suyos; `$requested` ya viene validado como un equipo existente (Form Request). Sin equipo pedido,
+     * se usa el único propio; con varios equipos o alcance global no hay equipo por defecto y debe elegirlo.
+     */
+    public function ticketTeamIdFor(?int $requested): ?int
+    {
+        if ($requested !== null) {
+            return $requested;
+        }
+
+        $own = $this->teamIds();
+
+        return count($own) === 1 ? $own[0] : null;
+    }
+
+    /**
      * Usuarios activos con el rol dado (unica definicion de "activo con rol" para consultas).
      *
      * @param  Builder<User>  $query
