@@ -28,14 +28,14 @@ class AssistantTest extends DatabaseTestCase
     {
         $html = $this->dashboardAs($this->empA1);
 
-        $this->assertStringContainsString('temayin.webp', $html);
+        $this->assertStringContainsString('temayin-soporte.jpg', $html);
         $this->assertStringContainsString(e(__('assistant.avatar_alt')), $html);
         $this->assertStringContainsString(e(__('assistant.faqs.create_ticket.q')), $html);
     }
 
     public function test_widget_is_not_rendered_on_guest_pages(): void
     {
-        $this->get('/login')->assertOk()->assertDontSee('temayin.webp');
+        $this->get('/login')->assertOk()->assertDontSee('temayin-soporte.jpg');
     }
 
     public function test_employee_does_not_see_manager_or_admin_questions(): void

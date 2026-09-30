@@ -17,7 +17,7 @@
                  x-on:keydown.escape.window="close"
                  class="mb-3 flex max-h-[70vh] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-xl border border-brand-green/10 bg-white shadow-xl focus:outline-none">
             <header class="flex items-center gap-3 bg-brand-green px-4 py-3 text-white">
-                <img src="{{ asset('temayin.webp') }}" alt="" width="40" height="40" class="h-10 w-10 shrink-0 rounded-full bg-white object-cover">
+                <img src="{{ asset('temayin-soporte.jpg') }}" alt="" width="40" height="40" class="h-10 w-10 shrink-0 rounded-full bg-white object-cover">
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold">{{ __('assistant.name') }}</p>
                     <p class="text-xs text-white/80">{{ __('assistant.subtitle') }}</p>
@@ -55,7 +55,7 @@
         <div class="flex justify-end">
             <button type="button" x-ref="toggle" x-on:click="toggle" x-bind:aria-expanded="toggleExpanded" aria-controls="temayin-panel" aria-label="{{ __('assistant.open') }}"
                     class="h-14 w-14 overflow-hidden rounded-full border-2 border-white bg-white shadow-lg transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2 motion-reduce:transition-none">
-                <img src="{{ asset('temayin.webp') }}" alt="{{ __('assistant.avatar_alt') }}" width="56" height="56" class="h-full w-full object-cover">
+                <img src="{{ asset('temayin-soporte.jpg') }}" alt="{{ __('assistant.avatar_alt') }}" width="56" height="56" class="h-full w-full object-cover">
             </button>
         </div>
     </div>
