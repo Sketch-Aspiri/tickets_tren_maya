@@ -42,7 +42,7 @@
             <p class="mb-4 rounded-md border-l-4 border-red-600 bg-red-50 p-3 text-sm font-medium text-red-900">{{ __('tickets.show.overdue_hint') }}</p>
         @endif
 
-        <x-workflow-stepper :status="$ticket->status" class="mb-5" />
+        <x-workflow-stepper :status="$ticket->status" :rejection="$ticket->latestRejection()" class="mb-5" />
 
         <x-workflow-actions :item="$ticket" :transitions="$transitions" />
     </x-card>

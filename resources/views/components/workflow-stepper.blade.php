@@ -1,7 +1,8 @@
-@props(['status'])
+@props(['status', 'rejection' => null])
 
 @php
     /** @var \App\Enums\TicketStatus $status */
+    /** @var \App\Models\StatusHistory|null $rejection Resultado de latestRejection() (HasWorkflow). */
     $steps = [
         \App\Enums\TicketStatus::Pending,
         \App\Enums\TicketStatus::InProgress,
@@ -19,7 +20,8 @@
         {{ __('workflow.cancelled') }}
     </p>
 @else
-    <ol {{ $attributes->merge(['class' => 'flex items-start']) }} aria-label="{{ __('workflow.label') }}">
+    <div {{ $attributes }}>
+    <ol class="flex items-start" aria-label="{{ __('workflow.label') }}">
         @foreach ($steps as $index => $step)
             @php
                 $state = $index < $current || ($index === $current && $step === \App\Enums\TicketStatus::Completed) ? 'done' : ($index === $current ? 'current' : 'todo');
@@ -33,6 +35,7 @@
                     'done' => 'font-medium text-brand-green',
                     default => 'text-gray-600',
                 };
+                $isRejectedStep = $rejection !== null && $step === \App\Enums\TicketStatus::InProgress && $state === 'current';
                 $stateText = match ($state) {
                     'done' => __('workflow.step_done'),
                     'current' => __('workflow.step_current'),
@@ -54,7 +57,30 @@
                     {{ $step->label() }}
                     <span class="sr-only">({{ $stateText }})</span>
                 </span>
+                @if ($isRejectedStep)
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900 ring-1 ring-inset ring-amber-300">
+                        <x-icon name="arrow-uturn-left" class="h-3 w-3" />
+                        {{ __('workflow.rejected.badge') }}
+                    </span>
+                @endif
             </li>
         @endforeach
     </ol>
+
+    @if ($rejection)
+        <div class="mt-4 rounded-md border-l-4 border-amber-600 bg-amber-50 p-3 text-sm text-amber-950" role="note">
+            <p class="flex items-start gap-2 font-semibold">
+                <x-icon name="arrow-uturn-left" class="mt-0.5 h-4 w-4" />
+                <span>{{ __('workflow.rejected.title') }}</span>
+            </p>
+            <p class="mt-1">
+                {{ __('workflow.rejected.by', ['name' => $rejection->user?->name ?? __('workflow.rejected.unknown_user')]) }}
+                <span aria-hidden="true">·</span>
+                {{ __('workflow.rejected.when') }}: <x-local-datetime :value="$rejection->created_at" />
+            </p>
+            <p class="mt-2 font-medium">{{ __('workflow.rejected.reason') }}</p>
+            <p class="whitespace-pre-line break-words">{{ filled($rejection->comment) ? $rejection->comment : __('workflow.rejected.no_reason') }}</p>
+        </div>
+    @endif
+    </div>
 @endif

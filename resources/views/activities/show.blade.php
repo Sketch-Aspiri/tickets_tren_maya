@@ -51,7 +51,7 @@
         @if ($isTemplate)
             <p class="mb-4 rounded-md border-l-4 border-sky-600 bg-sky-50 p-3 text-sm text-sky-950">{{ __('activities.show.template_hint') }}</p>
         @else
-            <x-workflow-stepper :status="$activity->status" class="mb-5" />
+            <x-workflow-stepper :status="$activity->status" :rejection="$activity->latestRejection()" class="mb-5" />
             <div class="mb-5">
                 <x-progress-bar :percent="$percent" class="max-w-md" />
                 <p class="mt-1 text-xs text-gray-700">{{ __('activities.show.progress_summary', ['done' => $activity->subtasksDoneCount(), 'total' => $activity->subtasksTotalCount()]) }}</p>

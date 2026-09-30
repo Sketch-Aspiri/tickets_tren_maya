@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models\Concerns;
 
 use App\Enums\TicketStatus;
+use App\Models\StatusHistory;
 use App\Support\LocalTime;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -36,6 +37,28 @@ trait HasWorkflow
     public function scopeOpen(Builder $query): Builder
     {
         return $query->whereNotIn($query->getModel()->getTable().'.status', TicketStatus::finalValues());
+    }
+
+    /**
+     * Rechazo vigente: el estado es En proceso y el último movimiento del historial fue En revisión -> En proceso
+     * (su comentario es el motivo). Deja de existir con cualquier movimiento posterior. Reutiliza `statusHistories`
+     * si ya está cargada; si no, hace una sola consulta.
+     */
+    public function latestRejection(): ?StatusHistory
+    {
+        if ($this->status !== TicketStatus::InProgress) {
+            return null;
+        }
+
+        $latest = $this->relationLoaded('statusHistories')
+            ? $this->statusHistories->sortByDesc('id')->first()
+            : $this->statusHistories()->with('user:id,name')->latest('id')->first();
+
+        return $latest !== null
+            && $latest->from_status === TicketStatus::InReview
+            && $latest->to_status === TicketStatus::InProgress
+                ? $latest
+                : null;
     }
 
     public function isOverdue(): bool

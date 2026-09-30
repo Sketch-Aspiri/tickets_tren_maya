@@ -16,6 +16,14 @@ return [
         'no_alerts' => 'No tienes avisos.',
         'unread' => 'Sin leer:',
         'generic' => 'Aviso del sistema.',
+        'work_item_commented' => [
+            'ticket' => ':by comentó en el ticket :folio — :title',
+            'activity' => ':by comentó en la actividad :folio — :title',
+        ],
+        'work_item_rejected' => [
+            'ticket' => ':by rechazó el ticket :folio — :title; regresó a En proceso. Revisa el motivo en el historial.',
+            'activity' => ':by rechazó la actividad :folio — :title; regresó a En proceso. Revisa el motivo en el historial.',
+        ],
         'assigned' => [
             'ticket' => ':by te asignó el ticket :folio — :title',
             'activity' => ':by te asignó la actividad :folio — :title',

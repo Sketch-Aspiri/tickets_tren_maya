@@ -36,6 +36,7 @@ final class ActivityService
         private readonly AssignmentService $assignments,
         private readonly RecurrenceService $recurrence,
         private readonly StatusTransitioner $transitioner,
+        private readonly WorkItemNotifier $notifier,
     ) {}
 
     /**
@@ -152,14 +153,25 @@ final class ActivityService
             throw BusinessRuleException::because('activities.errors.template_transition');
         }
 
-        /** @var Activity */
-        return $this->transitioner->transition(
+        $isRejection = false;
+
+        /** @var Activity $updated */
+        $updated = $this->transitioner->transition(
             $actor,
             $activity,
             $to,
             $comment,
-            fn (Ticket|Activity $locked, TicketStatus $from, TicketStatus $target) => $this->assertNoPendingSubtasks($locked, $target),
+            function (Ticket|Activity $locked, TicketStatus $from, TicketStatus $target) use (&$isRejection): void {
+                $this->assertNoPendingSubtasks($locked, $target);
+                $isRejection = $from === TicketStatus::InReview && $target === TicketStatus::InProgress;
+            },
         );
+
+        if ($isRejection) {
+            $this->notifier->rejected($actor, $updated);
+        }
+
+        return $updated;
     }
 
     /**

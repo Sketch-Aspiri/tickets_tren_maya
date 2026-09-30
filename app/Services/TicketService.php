@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\TicketSource;
 use App\Enums\TicketStatus;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Activity;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Arr;
@@ -27,6 +28,7 @@ final class TicketService
     public function __construct(
         private readonly FolioGenerator $folios,
         private readonly StatusTransitioner $transitioner,
+        private readonly WorkItemNotifier $notifier,
     ) {}
 
     /**
@@ -97,8 +99,24 @@ final class TicketService
      */
     public function transition(User $actor, Ticket $ticket, TicketStatus $to, ?string $comment = null): Ticket
     {
-        /** @var Ticket */
-        return $this->transitioner->transition($actor, $ticket, $to, $comment);
+        $isRejection = false;
+
+        /** @var Ticket $updated */
+        $updated = $this->transitioner->transition(
+            $actor,
+            $ticket,
+            $to,
+            $comment,
+            function (Ticket|Activity $locked, TicketStatus $from, TicketStatus $target) use (&$isRejection): void {
+                $isRejection = $from === TicketStatus::InReview && $target === TicketStatus::InProgress;
+            },
+        );
+
+        if ($isRejection) {
+            $this->notifier->rejected($actor, $updated);
+        }
+
+        return $updated;
     }
 
     /**

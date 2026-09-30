@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class CommentService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly WorkItemNotifier $notifier,
+    ) {}
 
     public function add(User $actor, Ticket|Activity $subject, string $body): Comment
     {
@@ -29,6 +32,8 @@ final class CommentService
                 'folio' => $subject->folio,
                 'comment_id' => $comment->getKey(),
             ]);
+
+            $this->notifier->commented($actor, $subject);
 
             return $comment;
         });

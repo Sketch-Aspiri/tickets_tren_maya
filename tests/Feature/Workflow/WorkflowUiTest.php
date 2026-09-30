@@ -6,6 +6,7 @@ namespace Tests\Feature\Workflow;
 
 use App\Enums\AssignmentRole;
 use App\Enums\TicketStatus;
+use App\Models\Activity;
 use App\Models\Ticket;
 use App\Models\User;
 use Tests\Concerns\BuildsActivityScenario;
@@ -104,6 +105,49 @@ class WorkflowUiTest extends DatabaseTestCase
         $this->assertStringNotContainsString('transition_in_review_comment', $html);
         $this->assertStringContainsString('transition_blocked_hint', $html);
         $this->assertStringContainsString(__('workflow.blocked', ['count' => 1]), $html);
+    }
+
+    private function addHistory(Ticket|Activity $item, TicketStatus $from, TicketStatus $to, ?string $comment = null): void
+    {
+        $item->statusHistories()->create([
+            'from_status' => $from,
+            'to_status' => $to,
+            'user_id' => $this->coordA->id,
+            'comment' => $comment,
+        ]);
+    }
+
+    public function test_rejected_ticket_shows_notice_and_reason_until_a_later_move(): void
+    {
+        $ticket = $this->makeTicket($this->teamA, null, ['status' => TicketStatus::InProgress]);
+        $this->assignResponsible($ticket, $this->empA1);
+
+        $this->assertStringNotContainsString(__('workflow.rejected.badge'), $this->ticketPage($ticket, $this->empA1));
+
+        $this->addHistory($ticket, TicketStatus::InReview, TicketStatus::InProgress, "Falta el anexo <b>2</b>\nCorregir");
+        $html = $this->ticketPage($ticket, $this->empA1);
+        $this->assertStringContainsString(__('workflow.rejected.badge'), $html);
+        $this->assertStringContainsString('Falta el anexo &lt;b&gt;2&lt;/b&gt;', $html);
+        $this->assertStringNotContainsString('<b>2</b>', $html);
+        $this->assertStringContainsString($this->coordA->name, $html);
+
+        $this->addHistory($ticket, TicketStatus::InProgress, TicketStatus::InReview);
+        $ticket->forceFill(['status' => TicketStatus::InReview])->save();
+        $this->assertStringNotContainsString(__('workflow.rejected.badge'), $this->ticketPage($ticket, $this->coordA));
+    }
+
+    public function test_rejected_activity_shows_notice_and_reason_until_a_later_move(): void
+    {
+        $activity = $this->makeActivity($this->teamA, ['status' => TicketStatus::InProgress], $this->empA1);
+        $this->addHistory($activity, TicketStatus::InReview, TicketStatus::InProgress, 'Revisar cifras');
+
+        $html = $this->signIn($this->empA1)->get("/activities/{$activity->id}")->assertOk()->getContent();
+        $this->assertStringContainsString(__('workflow.rejected.badge'), $html);
+        $this->assertStringContainsString('Revisar cifras', $html);
+
+        $this->addHistory($activity, TicketStatus::InProgress, TicketStatus::InProgress, 'nota');
+        $html = $this->signIn($this->empA1)->get("/activities/{$activity->id}")->assertOk()->getContent();
+        $this->assertStringNotContainsString(__('workflow.rejected.badge'), $html);
     }
 
     public function test_assignee_picker_posts_the_same_fields_and_marks_selected_people(): void

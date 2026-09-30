@@ -40,6 +40,12 @@
                                     @case(\App\Notifications\WorkItemAssigned::TYPE)
                                         {{ __('notifications.ui.assigned.'.($data['kind'] ?? 'ticket'), ['folio' => $data['folio'] ?? '', 'title' => $data['title'] ?? '', 'by' => $data['assigned_by'] ?? '']) }}
                                         @break
+                                    @case(\App\Notifications\WorkItemCommented::TYPE)
+                                        {{ __('notifications.ui.work_item_commented.'.($data['kind'] ?? 'ticket'), ['folio' => $data['folio'] ?? '', 'title' => $data['title'] ?? '', 'by' => $data['by'] ?? '']) }}
+                                        @break
+                                    @case(\App\Notifications\WorkItemRejected::TYPE)
+                                        {{ __('notifications.ui.work_item_rejected.'.($data['kind'] ?? 'ticket'), ['folio' => $data['folio'] ?? '', 'title' => $data['title'] ?? '', 'by' => $data['by'] ?? '']) }}
+                                        @break
                                     @case('user_pending_approval')
                                         {{ __('notifications.new_user_pending.line', ['name' => $data['name'] ?? '', 'email' => $data['email'] ?? '']) }}
                                         @break

@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Notifications\WorkItemAssigned;
+use App\Notifications\WorkItemCommented;
+use App\Notifications\WorkItemRejected;
 use Illuminate\Notifications\DatabaseNotification;
 
 /**
@@ -39,6 +41,9 @@ final class NotificationCenter
             WorkItemAssigned::TYPE => ($data['kind'] ?? null) === 'activity'
                 ? route('activities.show', (int) $data['id'])
                 : route('tickets.show', (int) $data['id']),
+            WorkItemCommented::TYPE, WorkItemRejected::TYPE => (($data['kind'] ?? null) === 'activity'
+                ? route('activities.show', (int) $data['id'])
+                : route('tickets.show', (int) $data['id'])),
             'user_pending_approval' => route('users.show', (int) $data['user_id']),
             'incoming_email_pending' => route('incoming-emails.index'),
             default => route('notifications.index'),
