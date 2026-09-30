@@ -4,6 +4,7 @@
 // Los datos del servidor viajan en atributos `data-*` (texto plano), nunca dentro de expresiones.
 import Alpine from '@alpinejs/csp';
 import { registerChat } from './chat.js';
+import { registerTemayin } from './temayin.js';
 
 window.Alpine = Alpine;
 
@@ -229,6 +230,7 @@ Alpine.data('assigneePicker', () => ({
 }));
 
 registerChat(Alpine);
+registerTemayin(Alpine);
 
 Alpine.start();
 

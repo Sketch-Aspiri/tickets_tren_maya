@@ -35,5 +35,7 @@
                 </main>
             </div>
         </div>
+
+        <x-temayin-assistant />
     </body>
 </html>
