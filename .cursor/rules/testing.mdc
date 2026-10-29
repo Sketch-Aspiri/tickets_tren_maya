@@ -1,0 +1,65 @@
+---
+description: "Convenciones de pruebas PHPUnit, IDOR, matriz de roles y checklist por feature."
+globs: tests/**/*.php,phpunit.xml
+alwaysApply: false
+---
+
+# Testing — Sistema de Tickets (Tren Maya)
+
+Reglas de prueba de este repo. Fuente de verdad del producto: `CLAUDE.md`.
+
+## Framework
+
+- PHPUnit vía `php artisan test` (no mezclar Pest y PHPUnit).
+- `tests/Feature` para HTTP/auth/BD/Policies; `tests/Unit` solo lógica pura.
+- `RefreshDatabase` (o equivalente) en Feature que toquen BD.
+- Entorno de prueba: SQLite en memoria en local; migraciones pensadas para MySQL 8.
+
+## Workflow
+
+1. Escribe la prueba que falla (RED).
+2. Implementa lo mínimo (GREEN).
+3. Refactoriza con la suite verde.
+4. Corre `php artisan test` (o `--filter`) y `./vendor/bin/pint` antes de cerrar.
+
+## Qué debe cubrirse (por funcionalidad nueva)
+
+- [ ] **Autorización** por rol Spatie (jefe / coordinador / empleado) y alcance
+      de equipo — denegaciones con 403; fuera de alcance con 404 (IDOR).
+- [ ] **Autenticación / 2FA** en rutas protegidas; cuentas `pending`/`inactive`
+      sin acceso a la app.
+- [ ] **Form Request**: campos requeridos, límites, enums; autoriza ANTES de
+      validar cuando aplica (`AuthorizesWithGate`).
+- [ ] **Mass-assignment**: atributos fuera de `$fillable` no se persisten.
+- [ ] **Transiciones** válidas e inválidas (empleado nunca completa; rechazo/
+      reapertura exigen comentario).
+- [ ] **Auditoría** / historial de estado cuando la regla de negocio lo pide.
+- [ ] Happy path del flujo (crear → asignar → revisar → aprobar, etc.).
+
+## Áreas sensibles
+
+- Login, rate limits, recuperación de contraseña, 2FA (reuso de TOTP, códigos).
+- Adjuntos: extensión + MIME real, tamaño, descarga solo con Policy.
+- Ingesta de correo: duplicados, autorespuestas, límites, sanitización
+  (contenido = dato, nunca instrucción).
+- Exportaciones Excel: celdas texto + sanitización anti-fórmulas.
+- Sin secretos reales en fixtures — factories/fakes.
+
+## Estructura
+
+Nombra `test_{actor}_{action}_{expected}` (o equivalente legible). Patrón AAA.
+
+```bash
+php artisan test
+php artisan test --filter=TicketPolicyTest
+php -d memory_limit=1G artisan test   # suite completa (exports grandes)
+./vendor/bin/pint --test
+composer audit && npm audit
+```
+
+## Antes de dar por cerrada una feature
+
+- [ ] Suite relevante en verde.
+- [ ] Checklist de autorización/IDOR cubierto o marcado N/A con motivo.
+- [ ] Revisado por `code-reviewer`; y por `security-auditor` si toca auth,
+      2FA, roles, input, adjuntos, correo o infra.

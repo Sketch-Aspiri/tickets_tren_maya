@@ -6,7 +6,17 @@
 .phpactor.json
 .phpunit.result.cache
 /.codex
-/.cursor/
+# Cursor: ignorar estado local, pero versionar rules/agents/commands/hooks del proyecto.
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/agents/
+!.cursor/agents/**
+!.cursor/commands/
+!.cursor/commands/**
+!.cursor/hooks/
+!.cursor/hooks/**
+!.cursor/hooks.json
 /.idea
 /.nova
 /.phpunit.cache

@@ -26,6 +26,7 @@
       "Bash(composer show *)",
       "Bash(composer audit)",
       "Bash(npm install)",
+      "Bash(npm ci)",
       "Bash(npm run dev)",
       "Bash(npm run build)",
       "Bash(php artisan serve)",
@@ -36,7 +37,8 @@
       "Bash(php artisan migrate:status)",
       "Bash(./vendor/bin/pint)",
       "Bash(./vendor/bin/pint *)",
-      "Bash(./vendor/bin/phpstan *)"
+      "Bash(./vendor/bin/phpstan *)",
+      "Bash(bash scripts/ai/sync-rules.sh)"
     ]
   }
 }
