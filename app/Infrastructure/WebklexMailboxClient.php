@@ -10,7 +10,9 @@ use App\Contracts\MailboxMessage;
 use Carbon\CarbonImmutable;
 use Webklex\PHPIMAP\Address;
 use Webklex\PHPIMAP\Attachment as ImapAttachment;
+use Throwable;
 use Webklex\PHPIMAP\ClientManager;
+use Webklex\PHPIMAP\IMAP;
 use Webklex\PHPIMAP\Message as ImapMessage;
 
 /**
@@ -38,9 +40,39 @@ final class WebklexMailboxClient implements MailboxClient
             return [];
         }
 
-        $messages = $folder->query()->whereUnseen()->get();
+        // Solo los UID (barato). El cuerpo y los adjuntos se descargan de uno en uno, después de comprobar el
+        // tamaño: bajar todo con ->get() agotaba la memoria con un solo correo enorme sin leer, y como el
+        // proceso moría antes de marcarlo, bloqueaba la ingesta de todos los correos nuevos.
+        $uids = $folder->query()->whereUnseen()->search()->values()->all();
+        $maxPerRun = (int) config('mail_ingestion.max_per_run');
+        $maxBytes = (int) config('mail_ingestion.max_email_kb') * 1024;
+        $connection = $client->getConnection();
 
-        return $messages->map(fn (ImapMessage $message): MailboxMessage => $this->toDto($message))->all();
+        if ($maxPerRun > 0) {
+            $uids = array_slice($uids, 0, $maxPerRun);
+        }
+
+        $messages = [];
+
+        foreach ($uids as $uid) {
+            try {
+                $size = (int) ($connection->sizes([(int) $uid], IMAP::ST_UID)->validatedData()[$uid] ?? 0);
+
+                if ($maxBytes > 0 && $size > $maxBytes) {
+                    // Demasiado grande para ingerirlo: se marca como leído sin descargarlo.
+                    $connection->store(['\\Seen'], (int) $uid, (int) $uid, '+', true, IMAP::ST_UID);
+
+                    continue;
+                }
+
+                $messages[] = $this->toDto($folder->query()->getMessageByUid($uid));
+            } catch (Throwable $exception) {
+                // Un correo problemático no debe impedir leer el resto del buzón.
+                report($exception);
+            }
+        }
+
+        return $messages;
     }
 
     public function markAsRead(MailboxMessage $message): void
