@@ -17,6 +17,11 @@
 |   el remitente (defensa en profundidad contra un remitente que rota direcciones para inundar la bandeja
 |   de revision). Los mensajes por encima de este numero se quedan sin leer para la siguiente corrida.
 | `per_page`: filas por página del listado de la bandeja.
+| `lookback_days`: ventana de lectura. Se leen los correos recibidos en los últimos N días, leídos o no
+|   (un correo abierto a mano en el buzón ya no se pierde); el dedup por Message-ID evita repetirlos. Si la
+|   ingesta estuvo caída más de N días, lo anterior a la ventana no se recupera solo.
+| `ignore_before`: fecha (AAAA-MM-DD) antes de la cual nunca se lee, aunque caiga en la ventana. Sirve para
+|   ignorar el correo histórico que había en el buzón al cambiar a lectura por fecha.
 */
 
 return [
@@ -27,4 +32,6 @@ return [
     'max_per_sender_per_hour' => (int) env('MAIL_INGESTION_MAX_PER_SENDER_PER_HOUR', 20),
     'max_per_run' => (int) env('MAIL_INGESTION_MAX_PER_RUN', 200),
     'per_page' => 15,
+    'lookback_days' => (int) env('MAIL_INGESTION_LOOKBACK_DAYS', 7),
+    'ignore_before' => env('MAIL_INGESTION_IGNORE_BEFORE'),
 ];

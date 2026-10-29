@@ -10,6 +10,7 @@ use App\Contracts\MailboxMessage;
 use App\Enums\IncomingEmailStatus;
 use App\Models\IncomingEmail;
 use App\Support\AttachmentInspector;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -17,8 +18,8 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Ingesta de correo entrante (bandeja "Correos entrantes"): descarga los mensajes no leídos del buzón
- * configurado y los deja pendientes de revisión humana (`IncomingEmail`, status `PendingReview`). Aísla
+ * Ingesta de correo entrante (bandeja "Correos entrantes"): descarga los mensajes recientes (ventana por
+ * fecha, ver windowStart()) aún no ingeridos del buzón configurado y los deja pendientes de revisión humana (`IncomingEmail`, status `PendingReview`). Aísla
  * los fallos por mensaje (mismo patrón que RecurrenceService::generateAll(): try/catch + report(), sin
  * abortar el lote) y nunca borra ni edita nada existente.
  *
@@ -42,8 +43,13 @@ final class EmailIngestionService
      */
     public function ingest(): array
     {
-        $messages = $this->mailbox->fetchUnseenMessages();
         $maxPerRun = (int) config('mail_ingestion.max_per_run');
+        // Se pide uno más que el tope para poder avisar (`capped`) de que quedaron mensajes por procesar.
+        $messages = $this->mailbox->fetchMessagesSince(
+            $this->windowStart(),
+            $maxPerRun > 0 ? $maxPerRun + 1 : 0,
+            fn (string $messageId): bool => IncomingEmail::query()->where('message_id', $messageId)->exists(),
+        );
 
         $result = [
             'fetched' => count($messages),
@@ -72,6 +78,26 @@ final class EmailIngestionService
         }
 
         return $result;
+    }
+
+    /**
+     * Inicio de la ventana de lectura: hace `lookback_days` días, pero nunca antes de `ignore_before` (fecha
+     * a partir de la cual se empezó a leer por fecha; lo anterior es correo histórico que no se ingiere).
+     */
+    private function windowStart(): CarbonImmutable
+    {
+        $start = CarbonImmutable::now()->subDays(max(1, (int) config('mail_ingestion.lookback_days')));
+        $ignoreBefore = config('mail_ingestion.ignore_before');
+
+        if (is_string($ignoreBefore) && $ignoreBefore !== '') {
+            $floor = CarbonImmutable::parse($ignoreBefore);
+
+            if ($floor->greaterThan($start)) {
+                return $floor;
+            }
+        }
+
+        return $start;
     }
 
     /**

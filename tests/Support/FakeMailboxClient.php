@@ -6,6 +6,7 @@ namespace Tests\Support;
 
 use App\Contracts\MailboxClient;
 use App\Contracts\MailboxMessage;
+use Carbon\CarbonInterface;
 
 /**
  * Doble de prueba de MailboxClient (sin buzon IMAP real): entrega una lista fija de mensajes y solo
@@ -22,8 +23,20 @@ final class FakeMailboxClient implements MailboxClient
      */
     public function __construct(private array $messages) {}
 
-    public function fetchUnseenMessages(): array
+    /** Argumentos de la última llamada a fetchMessagesSince(), para afirmar la ventana y el tope pedidos. */
+    public ?CarbonInterface $lastSince = null;
+
+    public ?int $lastLimit = null;
+
+    /**
+     * Devuelve la lista fija tal cual (sin filtrar por $isKnown ni recortar a $limit) para que las pruebas
+     * del servicio sigan cubriendo su propio dedup y su tope por corrida.
+     */
+    public function fetchMessagesSince(CarbonInterface $since, int $limit, callable $isKnown): array
     {
+        $this->lastSince = $since;
+        $this->lastLimit = $limit;
+
         return $this->messages;
     }
 

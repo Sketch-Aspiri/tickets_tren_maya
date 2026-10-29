@@ -155,6 +155,42 @@ class EmailIngestionServiceTest extends DatabaseTestCase
         $this->assertDatabaseMissing('incoming_emails', ['message_id' => 'msg-cap-3']);
     }
 
+    // --- Ventana de lectura por fecha (lookback_days / ignore_before) --------------------------------------
+
+    public function test_reads_the_lookback_window_and_asks_for_one_more_than_the_cap(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 29)->setTime(12, 0));
+        config(['mail_ingestion.lookback_days' => 7, 'mail_ingestion.ignore_before' => null, 'mail_ingestion.max_per_run' => 200]);
+
+        $mailbox = new FakeMailboxClient([]);
+        $this->service($mailbox)->ingest();
+
+        $this->assertSame('2026-10-22', $mailbox->lastSince?->toDateString());
+        $this->assertSame(201, $mailbox->lastLimit);
+    }
+
+    public function test_ignore_before_raises_the_start_of_the_window(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 29)->setTime(12, 0));
+        config(['mail_ingestion.lookback_days' => 7, 'mail_ingestion.ignore_before' => '2026-10-29']);
+
+        $mailbox = new FakeMailboxClient([]);
+        $this->service($mailbox)->ingest();
+
+        $this->assertSame('2026-10-29', $mailbox->lastSince?->toDateString());
+    }
+
+    public function test_ignore_before_older_than_the_window_does_not_widen_it(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 29)->setTime(12, 0));
+        config(['mail_ingestion.lookback_days' => 7, 'mail_ingestion.ignore_before' => '2026-01-01']);
+
+        $mailbox = new FakeMailboxClient([]);
+        $this->service($mailbox)->ingest();
+
+        $this->assertSame('2026-10-22', $mailbox->lastSince?->toDateString());
+    }
+
     public function test_max_per_run_is_not_capped_when_fetched_messages_are_within_the_limit(): void
     {
         config(['mail_ingestion.max_per_run' => 200, 'mail_ingestion.max_per_sender_per_hour' => 100]);

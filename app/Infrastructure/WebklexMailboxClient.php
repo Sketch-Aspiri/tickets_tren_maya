@@ -8,9 +8,10 @@ use App\Contracts\MailboxAttachment;
 use App\Contracts\MailboxClient;
 use App\Contracts\MailboxMessage;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Throwable;
 use Webklex\PHPIMAP\Address;
 use Webklex\PHPIMAP\Attachment as ImapAttachment;
-use Throwable;
 use Webklex\PHPIMAP\ClientManager;
 use Webklex\PHPIMAP\IMAP;
 use Webklex\PHPIMAP\Message as ImapMessage;
@@ -27,9 +28,10 @@ final class WebklexMailboxClient implements MailboxClient
     public function __construct(private readonly ClientManager $manager) {}
 
     /**
+     * @param  callable(string): bool  $isKnown
      * @return list<MailboxMessage>
      */
-    public function fetchUnseenMessages(): array
+    public function fetchMessagesSince(CarbonInterface $since, int $limit, callable $isKnown): array
     {
         $client = $this->manager->account();
         $client->connect();
@@ -40,34 +42,41 @@ final class WebklexMailboxClient implements MailboxClient
             return [];
         }
 
-        // Solo los UID (barato). El cuerpo y los adjuntos se descargan de uno en uno, después de comprobar el
-        // tamaño: bajar todo con ->get() agotaba la memoria con un solo correo enorme sin leer, y como el
-        // proceso moría antes de marcarlo, bloqueaba la ingesta de todos los correos nuevos.
-        $uids = $folder->query()->whereUnseen()->search()->values()->all();
-        $maxPerRun = (int) config('mail_ingestion.max_per_run');
-        $maxBytes = (int) config('mail_ingestion.max_email_kb') * 1024;
-        $connection = $client->getConnection();
+        $uids = array_map('intval', $folder->query()->since($since)->search()->values()->all());
 
-        if ($maxPerRun > 0) {
-            $uids = array_slice($uids, 0, $maxPerRun);
+        if ($uids === []) {
+            return [];
         }
+
+        // Tamaños y cabeceras de toda la ventana en dos peticiones (sin cuerpos ni adjuntos, y sin marcar
+        // como leído: RFC822.HEADER no cambia flags). Solo se descarga completo lo que no se ingirió antes y
+        // cabe en el límite: bajar todo con ->get() agotaba la memoria con un solo correo enorme.
+        $connection = $client->getConnection();
+        $sizes = $connection->sizes($uids, IMAP::ST_UID)->validatedData();
+        $headers = $connection->headers($uids, 'RFC822', IMAP::ST_UID)->validatedData();
+        $maxBytes = (int) config('mail_ingestion.max_email_kb') * 1024;
 
         $messages = [];
 
         foreach ($uids as $uid) {
+            if ($limit > 0 && count($messages) >= $limit) {
+                break;
+            }
+
+            $messageId = $this->messageIdFromRawHeader((string) ($headers[$uid] ?? ''));
+
+            if ($messageId !== null && $isKnown($messageId)) {
+                continue;
+            }
+
+            if ($maxBytes > 0 && (int) ($sizes[$uid] ?? 0) > $maxBytes) {
+                continue;
+            }
+
             try {
-                $size = (int) ($connection->sizes([(int) $uid], IMAP::ST_UID)->validatedData()[$uid] ?? 0);
-
-                if ($maxBytes > 0 && $size > $maxBytes) {
-                    // Demasiado grande para ingerirlo: se marca como leído sin descargarlo.
-                    $connection->store(['\\Seen'], (int) $uid, (int) $uid, '+', true, IMAP::ST_UID);
-
-                    continue;
-                }
-
                 $messages[] = $this->toDto($folder->query()->getMessageByUid($uid));
             } catch (Throwable $exception) {
-                // Un correo problemático no debe impedir leer el resto del buzón.
+                // Un correo problemático no debe impedir leer el resto de la ventana.
                 report($exception);
             }
         }
@@ -80,6 +89,19 @@ final class WebklexMailboxClient implements MailboxClient
         if ($message->native instanceof ImapMessage) {
             $message->native->setFlag('Seen');
         }
+    }
+
+    /**
+     * `Message-ID` de las cabeceras crudas, sin `<>` (igual que lo devuelve el paquete y como se guarda en
+     * `incoming_emails.message_id`), o `null` si no viene.
+     */
+    private function messageIdFromRawHeader(string $rawHeader): ?string
+    {
+        if (preg_match('/^Message-ID:\s*<?([^>\s]+)>?/mi', $rawHeader, $matches) !== 1) {
+            return null;
+        }
+
+        return $this->headerValue($matches[1]);
     }
 
     private function toDto(ImapMessage $message): MailboxMessage
@@ -100,7 +122,9 @@ final class WebklexMailboxClient implements MailboxClient
             precedence: $this->headerAttribute($message, 'precedence'),
             attachments: $message->getAttachments()
                 ->map(fn (ImapAttachment $attachment): MailboxAttachment => new MailboxAttachment(
-                    originalName: (string) ($attachment->getName() ?: ($attachment->getFilename() ?: 'archivo')),
+                    // Outlook manda nombres con acentos como palabras RFC 2047 (`=?iso-8859-1?Q?...pdf?=`);
+                    // sin decodificar, la extensión queda en `.pdf?=` y el adjunto (y el correo) se rechaza.
+                    originalName: $this->decodeHeaderText((string) ($attachment->getName() ?: ($attachment->getFilename() ?: 'archivo'))),
                     content: (string) $attachment->getContent(),
                 ))
                 ->values()
