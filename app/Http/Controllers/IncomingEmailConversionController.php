@@ -37,8 +37,8 @@ class IncomingEmailConversionController extends Controller
         // => Priority::Medium])), con titulo/descripcion pre-llenados desde el correo de origen.
         $activity = new Activity([
             'priority' => Priority::Medium,
-            'title' => $incomingEmail->subject,
-            'description' => $incomingEmail->body,
+            'title' => mb_substr($incomingEmail->subject, 0, 255),
+            'description' => mb_substr($incomingEmail->body, 0, 5000),
         ]);
 
         return view('incoming-emails.convert', [

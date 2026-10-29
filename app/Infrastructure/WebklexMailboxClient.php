@@ -60,8 +60,8 @@ final class WebklexMailboxClient implements MailboxClient
         return new MailboxMessage(
             messageId: $this->headerValue($message->getMessageId()->first()),
             fromEmail: $from?->mail ?? '',
-            fromName: $from?->personal !== null && $from?->personal !== '' ? $from->personal : null,
-            subject: (string) ($message->getSubject()->first() ?? ''),
+            fromName: $from?->personal !== null && $from?->personal !== '' ? $this->decodeHeaderText($from->personal) : null,
+            subject: $this->decodeHeaderText((string) ($message->getSubject()->first() ?? '')),
             date: CarbonImmutable::instance($message->getDate()->toDate()),
             body: $this->extractPlainTextBody($message),
             autoSubmitted: $this->headerAttribute($message, 'auto_submitted'),
@@ -90,13 +90,43 @@ final class WebklexMailboxClient implements MailboxClient
         }
 
         if ($message->hasHTMLBody()) {
-            $text = strip_tags($message->getHTMLBody());
-            $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
-
-            return trim((string) preg_replace('/\s+/u', ' ', $text));
+            return $this->htmlToText($message->getHTMLBody());
         }
 
         return '';
+    }
+
+    /**
+     * strip_tags() conserva el CONTENIDO de <style>, <script> y <head> (CSS, @font-face...), que en
+     * correos de marketing es la mayor parte del texto; se eliminan esos bloques y los comentarios
+     * condicionales antes, y los cortes de bloque se convierten en saltos de línea para conservar párrafos.
+     */
+    private function htmlToText(string $html): string
+    {
+        $html = (string) preg_replace('#<(head|style|script|title)\b[^>]*>.*?</\1\s*>#isu', ' ', $html);
+        $html = (string) preg_replace('/<!--.*?-->/su', ' ', $html);
+        $html = (string) preg_replace('#<br\s*/?>|</(p|div|tr|li|h[1-6]|table)\s*>#iu', "\n", $html);
+
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = (string) preg_replace('/[ \t\x{00A0}]+/u', ' ', $text);
+        $text = (string) preg_replace('/ ?\n ?/u', "\n", $text);
+
+        return trim((string) preg_replace('/\n{3,}/u', "\n\n", $text));
+    }
+
+    /**
+     * Decodifica palabras codificadas RFC 2047 (`=?UTF-8?B?...?=`) que el paquete deja sin decodificar
+     * cuando vienen varias separadas por espacio; si ya viene en claro, no cambia nada.
+     */
+    private function decodeHeaderText(string $value): string
+    {
+        if (! str_contains($value, '=?')) {
+            return $value;
+        }
+
+        $decoded = mb_decode_mimeheader($value);
+
+        return $decoded !== '' ? $decoded : $value;
     }
 
     private function headerAttribute(ImapMessage $message, string $name): ?string
