@@ -1,0 +1,78 @@
+# Server Conventions — Sistema de Tickets (Tren Maya)
+
+Infra compartida con el dashboard (misma VPS CloudPanel), pero **sitio,
+usuario de sistema, BD MySQL y `.env` propios**. Fuente de verdad:
+`CLAUDE.md` §4 y §12. Este proyecto **no** es VPN-only: acceso público
+HTTPS con 2FA en roles altos, rate limiting, aprobación de cuentas y
+fail2ban (decisión abierta #1 / registro #3). Las reglas VPN del dashboard
+**no aplican** aquí.
+
+## Non-negotiables
+
+- [ ] MySQL solo en `127.0.0.1` — nunca bind `0.0.0.0` ni abrir 3306.
+- [ ] SSH solo por llave (`PasswordAuthentication no`).
+- [ ] `.env` fuera de git; `.env.example` con placeholders al día.
+- [ ] `APP_DEBUG=false` en staging/producción; `APP_URL` https; cookies
+      `secure` fuera de local/testing.
+- [ ] Usuario de sistema, BD y usuario MySQL **propios** (permisos solo
+      sobre su BD); dominio/subdominio propio.
+- [ ] HTTPS (Let's Encrypt); cabeceras de seguridad (HSTS fuera de local,
+      X-Frame-Options, X-Content-Type-Options, CSP del app).
+
+## Baseline
+
+| Capa | Elección |
+|---|---|
+| OS | Ubuntu 24.04 LTS |
+| Web | Nginx vía CloudPanel |
+| PHP | 8.3+ (FPM) |
+| BD | MySQL 8 local |
+| Colas | `database` + Supervisor (`queue:work`) |
+| Cron | `* * * * * php artisan schedule:run` |
+| Host | Misma VPS Hostinger KVM 2 que el dashboard |
+
+## `.env`
+
+- Secretos solo en el servidor. Rotar si se filtraron.
+- Leer config vía `config('...')`, nunca `env()` en código de app
+  (rompe con `config:cache`).
+- Claves nuevas → actualizar `.env.example`.
+
+## Deploy (sitio de CloudPanel de este app)
+
+```bash
+git pull
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan migrate --force
+php artisan db:seed --class=RolesAndPermissionsSeeder --force   # cuando haya permisos nuevos
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+php artisan queue:restart
+```
+
+Confirmar host/entorno antes de `migrate --force`. Tras permisos nuevos el
+seeder de roles es obligatorio (si no, 403 a todos).
+
+## Scheduler / queues / backups
+
+- Una sola entrada cron → `schedule:run` (ingesta, recurrencia, notify:due,
+  cloud sync condicional).
+- Workers bajo Supervisor; respaldo opcional `queue:work --stop-when-empty`.
+- Backups diarios cifrados de la BD y de `storage/app/private`; probar
+  restauración.
+
+## Logs
+
+- Sin contraseñas, secretos 2FA, tokens ni cuerpos de auth en logs.
+- Eventos de auth y mutaciones sensibles vía activitylog.
+
+## Anti-patrones
+
+| Evitar | Por qué |
+|---|---|
+| Abrir MySQL o SSH por contraseña | Rompe el aislamiento del servidor |
+| Commitear `.env` | Filtración de secretos |
+| `chmod -R 777` | Superficie innecesaria |
+| `APP_DEBUG=true` en staging/prod | Filtra stack/secretos |
+| Deploy/migrate sin confirmar entorno | Riesgo de tocar prod |
+| Mezclar BD/usuario con el dashboard | Rompe la separación obligatoria |

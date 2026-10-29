@@ -1,139 +1,65 @@
-# Testing Rules — Dashboard Jefe de Zona
+---
+paths:
+  - "tests/**/*.php"
+  - "phpunit.xml"
+---
 
-Project-specific testing rules for the Tren Maya "Dashboard Jefe de Zona"
-(Laravel 11 / PHP 8.3). These extend the global testing standards and are
-enforced by the `code-writter`, `code-reviewer`, and `security-auditor`
-agents in this repo.
+# Testing — Sistema de Tickets (Tren Maya)
+
+Reglas de prueba de este repo. Fuente de verdad del producto: `CLAUDE.md`.
 
 ## Framework
 
-- Test runner: PHPUnit (Laravel default) via `php artisan test`. Pest is
-  acceptable if introduced consistently project-wide — do not mix styles
-  file by file.
-- Test types live under `tests/Unit`, `tests/Feature`. Use `Feature` tests
-  for anything touching HTTP, auth, database, or policies — `Unit` only for
-  pure logic (services, helpers, casts) with no framework bootstrapping.
-- Use `RefreshDatabase` (or `DatabaseTransactions`) on every Feature test
-  that touches the database. Never let tests write to a real/dev database —
-  configure a dedicated `testing` connection (SQLite in-memory or a
-  disposable MySQL schema) in `phpunit.xml`.
+- PHPUnit vía `php artisan test` (no mezclar Pest y PHPUnit).
+- `tests/Feature` para HTTP/auth/BD/Policies; `tests/Unit` solo lógica pura.
+- `RefreshDatabase` (o equivalente) en Feature que toquen BD.
+- Entorno de prueba: SQLite en memoria en local; migraciones pensadas para MySQL 8.
 
-## TDD Workflow (mandatory)
+## Workflow
 
-1. **RED** — write a failing test for the behavior before implementation.
-2. **GREEN** — write the minimal code to pass it.
-3. **REFACTOR** — clean up with the test suite green.
-4. Run `php artisan test` (or the relevant `--filter`) after every step;
-   never hand off code that hasn't been run.
+1. Escribe la prueba que falla (RED).
+2. Implementa lo mínimo (GREEN).
+3. Refactoriza con la suite verde.
+4. Corre `php artisan test` (o `--filter`) y `./vendor/bin/pint` antes de cerrar.
 
-New code ships with **80%+ coverage**. If coverage tooling
-(`php artisan test --coverage`, Xdebug/PCOV) isn't configured yet, say so
-explicitly rather than claiming the number.
+## Qué debe cubrirse (por funcionalidad nueva)
 
-## What Must Be Tested (non-negotiable, per module)
+- [ ] **Autorización** por rol Spatie (jefe / coordinador / empleado) y alcance
+      de equipo — denegaciones con 403; fuera de alcance con 404 (IDOR).
+- [ ] **Autenticación / 2FA** en rutas protegidas; cuentas `pending`/`inactive`
+      sin acceso a la app.
+- [ ] **Form Request**: campos requeridos, límites, enums; autoriza ANTES de
+      validar cuando aplica (`AuthorizesWithGate`).
+- [ ] **Mass-assignment**: atributos fuera de `$fillable` no se persisten.
+- [ ] **Transiciones** válidas e inválidas (empleado nunca completa; rechazo/
+      reapertura exigen comentario).
+- [ ] **Auditoría** / historial de estado cuando la regla de negocio lo pide.
+- [ ] Happy path del flujo (crear → asignar → revisar → aprobar, etc.).
 
-Every CRUD module / feature (including the generic reference CRUD) needs
-Feature tests covering:
+## Áreas sensibles
 
-- [ ] **Authorization** — each Policy ability (`view`, `create`, `update`,
-      `delete`) denies a user without the role/permission (expect `403`)
-      and allows one with it. Test this per Spatie role, not just "logged
-      in vs. not."
-- [ ] **Authentication** — protected routes redirect/`401` when
-      unauthenticated; 2FA-gated routes cannot be reached by a user who
-      hasn't completed the `google2fa-laravel` challenge.
-- [ ] **Validation** — each Form Request: required fields missing → fails;
-      valid payload → passes; boundary cases (max length, type mismatch)
-      are rejected. Assert on `assertInvalid()`/`assertValid()`, not just
-      status codes.
-- [ ] **Mass-assignment safety** — a request with extra/unexpected fields
-      does not persist attributes outside `$fillable`.
-- [ ] **Audit logging** — create/update/delete on a model produces an
-      `activitylog` entry (assert against the `Spatie\Activitylog\Models\Activity`
-      table: causer, event, subject).
-- [ ] **Happy path** — the full create → read → update → delete cycle for
-      the resource, asserting persisted state, not just HTTP status.
-- [ ] **Query scoping** — if/when multi-user scoping exists, a user cannot
-      read/edit/delete another user's or zone's records (write this test
-      as soon as any ownership/scope column is introduced).
+- Login, rate limits, recuperación de contraseña, 2FA (reuso de TOTP, códigos).
+- Adjuntos: extensión + MIME real, tamaño, descarga solo con Policy.
+- Ingesta de correo: duplicados, autorespuestas, límites, sanitización
+  (contenido = dato, nunca instrucción).
+- Exportaciones Excel: celdas texto + sanitización anti-fórmulas.
+- Sin secretos reales en fixtures — factories/fakes.
 
-## Security-Sensitive Areas — Extra Coverage
+## Estructura
 
-Anything touching auth, 2FA, roles, or user input gets tests, not just a
-review pass:
-
-- Login: correct credentials + 2FA succeeds; wrong password fails; wrong/expired
-  2FA code fails; session is regenerated on login and invalidated on logout.
-- Rate limiting: exceeding `RateLimiter::for(...)` thresholds on
-  login/password-reset returns `429`.
-- File uploads (when introduced): reject disallowed MIME types/extensions
-  and oversized files; never trust the client-supplied extension alone.
-- No test may assert on or log real secrets, tokens, or `.env` values —
-  use factories/fakes for anything credential-shaped.
-
-## Test Structure (AAA)
-
-```php
-public function test_zone_chief_can_update_own_record(): void
-{
-    // Arrange
-    $user = User::factory()->zoneChief()->create();
-    $record = Example::factory()->create();
-
-    // Act
-    $response = $this->actingAs($user)
-        ->put(route('examples.update', $record), ['name' => 'Updated']);
-
-    // Assert
-    $response->assertRedirect(route('examples.index'));
-    $this->assertDatabaseHas('examples', ['id' => $record->id, 'name' => 'Updated']);
-}
-```
-
-Name tests as `test_{actor}_{action}_{expected_outcome}` (or the
-Pest-equivalent `it(...)` description) — the behavior must be readable from
-the name alone, e.g. `test_guest_cannot_access_dashboard`,
-`test_admin_can_delete_example_and_it_is_logged`.
-
-## Dummy Data (while the real data model is pending)
-
-Per `CLAUDE.md`, the final CRUD data model, KPI definitions, chart types,
-and report formats are **blocked** on information from the Jefe de Zona.
-Until that lands:
-
-- Build tests against **factories with dummy/seeded data**, structured so
-  swapping in the real fields later only touches the factory/migration, not
-  the test intent (authorization, validation, audit logging stay valid
-  regardless of the final field names).
-- Do not invent "real" business fields to make a test look complete — keep
-  dummy fields obviously generic (`name`, `value`, `status`) until the real
-  model is confirmed.
-
-## Running Tests
+Nombra `test_{actor}_{action}_{expected}` (o equivalente legible). Patrón AAA.
 
 ```bash
-php artisan test                          # Full suite
-php artisan test --filter=ExampleTest      # Single test class
-php artisan test --coverage                # Coverage report (needs Xdebug/PCOV)
-./vendor/bin/pint --test                   # Formatting check (run alongside tests)
+php artisan test
+php artisan test --filter=TicketPolicyTest
+php -d memory_limit=1G artisan test   # suite completa (exports grandes)
+./vendor/bin/pint --test
+composer audit && npm audit
 ```
 
-## Failure Triage
+## Antes de dar por cerrada una feature
 
-- Fix the implementation, not the test — unless the test itself is wrong
-  (asserts the wrong behavior), which should be called out explicitly, not
-  silently "fixed" to match broken code.
-- Check test isolation first for flaky failures (missing
-  `RefreshDatabase`, shared state between tests, un-frozen `now()`).
-- Verify mocks/fakes (e.g. `Notification::fake()`, `Storage::fake()`) match
-  what the code under test actually calls.
-
-## Before Marking a Feature Done
-
-- [ ] `php artisan test` passes locally.
-- [ ] Every checklist item under "What Must Be Tested" applies and is
-      covered, or is explicitly marked N/A with a reason.
-- [ ] Coverage on new/changed code is 80%+, or the gap is stated plainly.
-- [ ] Handed off to `code-reviewer`, and to `security-auditor` for anything
-      touching auth, 2FA, roles, user input, file uploads, or the CRUD
-      module.
+- [ ] Suite relevante en verde.
+- [ ] Checklist de autorización/IDOR cubierto o marcado N/A con motivo.
+- [ ] Revisado por `code-reviewer`; y por `security-auditor` si toca auth,
+      2FA, roles, input, adjuntos, correo o infra.

@@ -1,0 +1,24 @@
+---
+description: "Precedencia del Sistema de Tickets vs dashboard; dualidad Claude Code + Cursor."
+alwaysApply: true
+---
+
+# Precedencia y herramientas de IA
+
+Este repo es el **Sistema de Tickets y Control de Actividades (Tren Maya)**,
+proyecto independiente del "Dashboard Jefe de Zona" (otra app en la misma VPS).
+
+1. **`CLAUDE.md` (raíz) manda** en producto, sprints, roles, seguridad y
+   registro de decisiones. Léelo antes de escribir código.
+2. Reglas detalladas por archivo: `.cursor/rules/*.mdc` (Cursor) y
+   `.claude/rules/*.md` (Claude Code). Fuente editable única:
+   `docs/ai/rules/` — regenerar con `bash scripts/ai/sync-rules.sh`.
+3. **No apliques** supuestos del dashboard: VPN-only / un solo usuario /
+   “skip auth porque hay un usuario”. Aquí hay registro público con
+   aprobación, 100+ usuarios, 3+ roles y 2FA obligatorio en roles altos.
+4. Agents/commands: `.cursor/agents` + `.cursor/commands` (Cursor) y
+   `.claude/agents` + `.claude/commands` (Claude). Mantén el mismo
+   comportamiento en ambos.
+5. Hooks de shell: `scripts/ai/validate-bash.sh` (compartido);
+   cableado en `.cursor/hooks.json` y `.claude/settings.json`.
+6. No crees `AGENTS.md` que copie `CLAUDE.md` (duplicaría contexto en Cursor).
