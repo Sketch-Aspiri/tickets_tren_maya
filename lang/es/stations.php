@@ -9,6 +9,8 @@ return [
         'status' => 'Estado',
         'coordinations' => 'Coordinaciones',
     ],
+    'users' => 'Usuarios de esta estación',
+    'teams_count' => '{0} Sin equipos|{1} 1 equipo|[2,*] :count equipos',
     'active' => 'Activa',
     'inactive' => 'Inactiva',
     'form' => [

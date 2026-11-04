@@ -21,7 +21,7 @@
         <tbody class="divide-y divide-brand-green/10">
             @forelse ($stations as $station)
                 <tr>
-                    <td class="px-4 py-3 font-medium text-gray-900">{{ $station->name }}</td>
+                    <td class="px-4 py-3 font-medium"><a href="{{ route('stations.show', $station) }}" class="text-brand-green hover:underline">{{ $station->name }}</a></td>
                     <td class="px-4 py-3">
                         @if ($station->active)
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-mint/20 px-2.5 py-0.5 text-xs font-medium text-brand-green"><span class="h-1.5 w-1.5 rounded-full bg-brand-teal" aria-hidden="true"></span>{{ __('stations.active') }}</span>

@@ -25,7 +25,7 @@
             @forelse ($coordinations as $coordination)
                 <tr>
                     <td class="px-4 py-3 font-medium text-gray-900">
-                        {{ $coordination->name }}
+                        <a href="{{ route('coordinations.show', $coordination) }}" class="text-brand-green hover:underline">{{ $coordination->name }}</a>
                         <p class="text-xs font-normal text-gray-600 sm:hidden">{{ $coordination->station->name }}</p>
                     </td>
                     <td class="hidden px-4 py-3 sm:table-cell">{{ $coordination->station->name }}</td>

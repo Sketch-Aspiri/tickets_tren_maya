@@ -21,7 +21,9 @@ return [
         'too_many_attachments_to_convert' => 'Este correo tiene mas adjuntos de los que la actividad puede recibir (maximo :max). Elimina alguno antes de convertirlo.',
     ],
     'index' => [
+        'mailboxes' => 'Bandejas',
         'columns' => [
+            'mailbox' => 'Bandeja',
             'sender' => 'Remitente',
             'subject' => 'Asunto',
             'received_at' => 'Recibido',

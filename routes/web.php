@@ -78,11 +78,11 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
         Route::post('{user}/deactivate', [UserStatusController::class, 'deactivate'])->name('deactivate');
     });
 
-    Route::resource('teams', TeamController::class)->except('show');
+    Route::resource('teams', TeamController::class);
 
     // Estructura organizacional: solo administrador (permiso `org.manage`, StationPolicy / CoordinationPolicy).
-    Route::resource('stations', StationController::class)->except('show');
-    Route::resource('coordinations', CoordinationController::class)->except('show');
+    Route::resource('stations', StationController::class);
+    Route::resource('coordinations', CoordinationController::class);
     Route::get('mailboxes', [MailboxController::class, 'index'])->name('mailboxes.index');
     Route::get('coordinations/{coordination}/mailbox', [MailboxController::class, 'edit'])->name('mailboxes.edit');
     Route::put('coordinations/{coordination}/mailbox', [MailboxController::class, 'update'])->name('mailboxes.update');

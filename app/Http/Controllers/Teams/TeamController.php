@@ -28,6 +28,21 @@ class TeamController extends Controller
         return view('teams.index', ['teams' => $this->teams->paginate(request()->user())]);
     }
 
+    public function show(Team $team): View
+    {
+        $this->authorize('view', $team);
+
+        $users = $team->members()
+            ->with(['roles:id,name', 'teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name', 'coordinations:id,name,station_id', 'coordinations.station:id,name'])
+            ->orderBy('name')
+            ->paginate((int) config('tickets.users_per_page'));
+
+        return view('teams.show', [
+            'team' => $team->load(['coordination.station', 'coordinator:id,name']),
+            'users' => $users,
+        ]);
+    }
+
     public function create(): View
     {
         $this->authorize('create', Team::class);

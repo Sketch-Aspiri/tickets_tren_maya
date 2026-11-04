@@ -21,6 +21,11 @@ class CoordinationPolicy
         return $this->hasPermission($user, PermissionName::OrgManage);
     }
 
+    public function view(User $user, Coordination $coordination): bool
+    {
+        return $this->hasPermission($user, PermissionName::OrgManage);
+    }
+
     public function create(User $user): bool
     {
         return $this->hasPermission($user, PermissionName::OrgManage);

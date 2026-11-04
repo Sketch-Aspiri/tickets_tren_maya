@@ -12,6 +12,7 @@ return [
         'teams' => 'Equipos',
         'bosses' => 'Jefes de zona',
     ],
+    'users' => 'Usuarios de esta coordinación',
     'active' => 'Activa',
     'inactive' => 'Inactiva',
     'form' => [

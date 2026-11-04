@@ -53,6 +53,8 @@
             <tr>
                 <th class="px-4 py-3">{{ __('users.index.columns.name') }}</th>
                 <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.role') }}</th>
+                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.station') }}</th>
+                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.coordination') }}</th>
                 <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.teams') }}</th>
                 <th class="px-4 py-3">{{ __('users.index.columns.status') }}</th>
                 <th class="hidden px-4 py-3 lg:table-cell">{{ __('users.index.columns.registered') }}</th>
@@ -67,6 +69,9 @@
                         <p class="max-w-[6.5rem] truncate text-xs text-gray-500 sm:max-w-xs">{{ $listedUser->email }}</p>
                     </td>
                     <td class="hidden px-4 py-3 md:table-cell"><x-role-badge :role="$listedUser->roleEnum()" /></td>
+                    @php $places = $listedUser->workplaces(); @endphp
+                    <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->seesAllTeams() ? __('common.all') : ($places->pluck('station.name')->unique()->implode(', ') ?: '—') }}</td>
+                    <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->seesAllTeams() ? __('common.all') : ($places->pluck('name')->implode(', ') ?: '—') }}</td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->teams->isEmpty() ? __('users.index.no_team') : $listedUser->teams->pluck('name')->sort()->implode(', ') }}</td>
                     <td class="px-4 py-3"><x-status-badge :status="$listedUser->status" /></td>
                     <td class="hidden px-4 py-3 lg:table-cell"><x-local-datetime :value="$listedUser->created_at" /></td>
@@ -75,7 +80,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
+                <tr><td colspan="8" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
             @endforelse
         </tbody>
     </x-table>

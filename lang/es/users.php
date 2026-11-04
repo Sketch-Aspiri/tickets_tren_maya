@@ -10,6 +10,8 @@ return [
             'role' => 'Rol',
             'team' => 'Equipo',
             'teams' => 'Equipos',
+            'station' => 'Estación',
+            'coordination' => 'Coordinación',
             'status' => 'Estado',
             'registered' => 'Registro',
         ],

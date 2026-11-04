@@ -47,7 +47,7 @@ final class UserService
     {
         return User::query()
             ->when($actor, fn (Builder $q, User $viewer) => $q->manageableBy($viewer))
-            ->with(['roles:id,name', 'teams:id,name'])
+            ->with(['roles:id,name', 'teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name', 'coordinations:id,name,station_id', 'coordinations.station:id,name'])
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('status', $status))
             ->when($filters['role'] ?? null, fn (Builder $q, string $role) => $q->role($role))
             ->when($filters['team_id'] ?? null, fn (Builder $q, int $teamId) => $q->memberOfAny([$teamId]))

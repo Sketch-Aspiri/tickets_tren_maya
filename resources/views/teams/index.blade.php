@@ -25,7 +25,7 @@
             @forelse ($teams as $team)
                 <tr>
                     <td class="px-4 py-3 font-medium text-gray-900">
-                        {{ $team->name }}
+                        <a href="{{ route('teams.show', $team) }}" class="text-brand-green hover:underline">{{ $team->name }}</a>
                         <p class="text-xs font-normal sm:hidden {{ $team->coordinator ? 'text-gray-600' : 'italic text-gray-700' }}">{{ __('teams.columns.coordinator') }}: {{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }}</p>
                     </td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $team->coordination->station->name }} › {{ $team->coordination->name }}</td>

@@ -197,6 +197,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Coordinaciones (con su estacion) donde trabaja: las de sus equipos mas las que supervisa si es jefe de
+     * zona. Para listados conviene precargar `teams.coordination.station` y `coordinations.station`.
+     *
+     * @return \Illuminate\Support\Collection<int, Coordination>
+     */
+    public function workplaces(): \Illuminate\Support\Collection
+    {
+        return $this->teams->pluck('coordination')
+            ->merge($this->coordinations)
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+    }
+
+    /**
      * Texto corto para mostrar a que coordinacion(es) pertenece o cual(es) supervisa: el nombre si es una, el
      * numero si son varias, vacio para el administrador (global) o quien aun no tiene ninguna.
      */

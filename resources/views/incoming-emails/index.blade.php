@@ -13,13 +13,35 @@
         <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('common.nav.incoming_emails') }}</h1>
     </x-slot>
 
+    @if ($mailboxes->count() > 1 || auth()->user()->seesAllTeams())
+        <x-card>
+            <p class="mb-2 text-sm font-semibold text-brand-green">{{ __('emails.index.mailboxes') }}</p>
+            <nav class="flex flex-wrap gap-2" aria-label="{{ __('emails.index.mailboxes') }}">
+                @php $totalPending = $pendingByMailbox->sum(); @endphp
+                @if ($coordinationId === null)
+                    <x-primary-button :href="route('incoming-emails.index', ['status' => $status])" aria-current="true">{{ __('common.all') }} ({{ $totalPending }})</x-primary-button>
+                @else
+                    <x-secondary-button :href="route('incoming-emails.index', ['status' => $status])">{{ __('common.all') }} ({{ $totalPending }})</x-secondary-button>
+                @endif
+                @foreach ($mailboxes as $mailbox)
+                    @php $label = $mailbox->station->name.' › '.$mailbox->name.' ('.($pendingByMailbox[$mailbox->id] ?? 0).')'; @endphp
+                    @if ($mailbox->id === $coordinationId)
+                        <x-primary-button :href="route('incoming-emails.index', ['status' => $status, 'coordination_id' => $mailbox->id])" aria-current="true">{{ $label }}</x-primary-button>
+                    @else
+                        <x-secondary-button :href="route('incoming-emails.index', ['status' => $status, 'coordination_id' => $mailbox->id])">{{ $label }}</x-secondary-button>
+                    @endif
+                @endforeach
+            </nav>
+        </x-card>
+    @endif
+
     <x-card>
         <nav class="flex flex-wrap gap-2" aria-label="{{ __('common.nav.incoming_emails') }}">
             @foreach ($statusOptions as $value => $label)
                 @if ($value === $status)
-                    <x-primary-button :href="route('incoming-emails.index', ['status' => $value])" aria-current="true">{{ $label }}</x-primary-button>
+                    <x-primary-button :href="route('incoming-emails.index', array_filter(['status' => $value, 'coordination_id' => $coordinationId]))" aria-current="true">{{ $label }}</x-primary-button>
                 @else
-                    <x-secondary-button :href="route('incoming-emails.index', ['status' => $value])">{{ $label }}</x-secondary-button>
+                    <x-secondary-button :href="route('incoming-emails.index', array_filter(['status' => $value, 'coordination_id' => $coordinationId]))">{{ $label }}</x-secondary-button>
                 @endif
             @endforeach
         </nav>
@@ -30,6 +52,7 @@
             <tr>
                 <th class="px-4 py-3">{{ __('emails.index.columns.sender') }}</th>
                 <th class="px-4 py-3">{{ __('emails.index.columns.subject') }}</th>
+                <th class="hidden px-4 py-3 lg:table-cell">{{ __('emails.index.columns.mailbox') }}</th>
                 <th class="px-4 py-3">{{ __('emails.index.columns.status') }}</th>
                 <th class="hidden px-4 py-3 md:table-cell">{{ __('emails.index.columns.received_at') }}</th>
                 <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
@@ -58,6 +81,7 @@
                             </p>
                         @endif
                     </td>
+                    <td class="hidden px-4 py-3 lg:table-cell">{{ $email->coordination ? $email->coordination->station->name.' › '.$email->coordination->name : '—' }}</td>
                     <td class="px-4 py-3"><x-status-badge :status="$email->status" /></td>
                     <td class="hidden whitespace-nowrap px-4 py-3 md:table-cell"><x-local-datetime :value="$email->received_at" /></td>
                     <td class="px-2 py-3 text-right sm:px-4">
@@ -65,7 +89,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="px-4 py-6 text-center text-gray-600">{{ __('emails.index.empty.'.$status) }}</td></tr>
+                <tr><td colspan="6" class="px-4 py-6 text-center text-gray-600">{{ __('emails.index.empty.'.$status) }}</td></tr>
             @endforelse
         </tbody>
     </x-table>

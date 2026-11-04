@@ -21,6 +21,11 @@ class StationPolicy
         return $this->hasPermission($user, PermissionName::OrgManage);
     }
 
+    public function view(User $user, Station $station): bool
+    {
+        return $this->hasPermission($user, PermissionName::OrgManage);
+    }
+
     public function create(User $user): bool
     {
         return $this->hasPermission($user, PermissionName::OrgManage);

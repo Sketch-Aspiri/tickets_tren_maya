@@ -10,6 +10,7 @@ use App\Http\Requests\Org\StoreCoordinationRequest;
 use App\Http\Requests\Org\UpdateCoordinationRequest;
 use App\Models\Coordination;
 use App\Models\Station;
+use App\Models\User;
 use App\Services\CoordinationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class CoordinationController extends Controller
 {
+    private const USER_RELATIONS = ['roles:id,name', 'teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name', 'coordinations:id,name,station_id', 'coordinations.station:id,name'];
+
     public function __construct(private readonly CoordinationService $coordinations) {}
 
     public function index(): View
@@ -24,6 +27,24 @@ class CoordinationController extends Controller
         $this->authorize('viewAny', Coordination::class);
 
         return view('org.coordinations.index', ['coordinations' => $this->coordinations->paginate()]);
+    }
+
+    public function show(Coordination $coordination): View
+    {
+        $this->authorize('view', $coordination);
+
+        $users = User::query()
+            ->with(self::USER_RELATIONS)
+            ->where(fn ($q) => $q
+                ->whereHas('teams', fn ($t) => $t->where('teams.coordination_id', $coordination->getKey()))
+                ->orWhereHas('coordinations', fn ($c) => $c->where('coordinations.id', $coordination->getKey())))
+            ->orderBy('name')
+            ->paginate((int) config('tickets.users_per_page'));
+
+        return view('org.coordinations.show', [
+            'coordination' => $coordination->load(['station', 'teams' => fn ($q) => $q->withCount('members')->with('coordinator:id,name')->orderBy('name')]),
+            'users' => $users,
+        ]);
     }
 
     public function create(): View
