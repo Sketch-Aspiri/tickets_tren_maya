@@ -148,8 +148,8 @@ class Ticket extends Model
         }
 
         return match ($user->roleEnum()) {
-            UserRole::Administrador, UserRole::JefeZona => $query,
-            UserRole::Coordinador => $query->where(fn (Builder $scope) => $this->applyCoordinatorScope($scope, $user)),
+            UserRole::Administrador => $query,
+            UserRole::JefeZona, UserRole::Coordinador => $query->where(fn (Builder $scope) => $this->applyCoordinatorScope($scope, $user)),
             UserRole::Empleado => $query->where(fn (Builder $scope) => $this->applyEmployeeScope($scope, $user)),
             default => $none(),
         };
@@ -161,7 +161,12 @@ class Ticket extends Model
     private function applyCoordinatorScope(Builder $scope, User $user): void
     {
         $scope->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()))
-            ->orWhereIn('tickets.team_id', $user->teamIdsQuery());
+            ->orWhereIn('tickets.team_id', $user->scopedTeamIdsQuery() ?? $user->teamIdsQuery());
+
+        // El jefe de zona tambien abre lo que el mismo creo, aunque lo haya enviado a un equipo ajeno.
+        if ($user->roleEnum() === UserRole::JefeZona) {
+            $scope->orWhere('tickets.created_by', $user->getKey());
+        }
     }
 
     /**

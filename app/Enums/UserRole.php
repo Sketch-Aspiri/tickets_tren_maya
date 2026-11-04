@@ -28,28 +28,33 @@ enum UserRole: string
     }
 
     /**
-     * Administrador y jefe de zona ven todos los equipos (alcance global): su pertenencia a equipos es
-     * opcional y no limita lo que ven. Coordinadores y empleados necesitan al menos un equipo.
+     * Solo el administrador ve todas las estaciones y coordinaciones (alcance global). El jefe de zona supervisa
+     * las coordinaciones que se le asignan (`coordination_user`); coordinadores y empleados, sus equipos.
      */
     public function hasGlobalScope(): bool
     {
-        return match ($this) {
-            self::Administrador, self::JefeZona => true,
-            self::Coordinador, self::Empleado => false,
-        };
-    }
-
-    public function requiresTeam(): bool
-    {
-        return ! $this->hasGlobalScope();
+        return $this === self::Administrador;
     }
 
     /**
-     * Roles que el sistema nunca puede dejar sin al menos una cuenta activa (quedarian sin quien apruebe cuentas).
+     * Coordinadores y empleados necesitan al menos un equipo; administrador y jefe de zona no (el jefe se liga a
+     * coordinaciones, no a equipos).
+     */
+    public function requiresTeam(): bool
+    {
+        return match ($this) {
+            self::Coordinador, self::Empleado => true,
+            self::Administrador, self::JefeZona => false,
+        };
+    }
+
+    /**
+     * Roles que el sistema nunca puede dejar sin al menos una cuenta activa. Solo el administrador: una
+     * coordinacion sin jefe de zona activo la cubre el administrador.
      */
     public function mustKeepOneActive(): bool
     {
-        return $this->hasGlobalScope();
+        return $this === self::Administrador;
     }
 
     /**

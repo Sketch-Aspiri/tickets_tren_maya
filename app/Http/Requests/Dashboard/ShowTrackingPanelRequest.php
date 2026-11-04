@@ -6,6 +6,7 @@ namespace App\Http\Requests\Dashboard;
 
 use App\Enums\UserRole;
 use App\Http\Requests\Concerns\AuthorizesWithGate;
+use App\Models\Coordination;
 use App\Support\Dashboard\DashboardFilters;
 use App\Support\LocalTime;
 use Illuminate\Contracts\Validation\Validator;
@@ -32,8 +33,8 @@ class ShowTrackingPanelRequest extends FormRequest
     public function rules(): array
     {
         $user = $this->user();
-        $isCoordinator = $user?->roleEnum() === UserRole::Coordinador;
-        $ownTeamIds = $isCoordinator ? $user->teamIds() : [];
+        $isCoordinator = in_array($user?->roleEnum(), [UserRole::Coordinador, UserRole::JefeZona], true);
+        $ownTeamIds = $isCoordinator ? $user->workingTeamIds() : [];
 
         return [
             'from' => ['nullable', 'date_format:Y-m-d'],
@@ -45,6 +46,13 @@ class ShowTrackingPanelRequest extends FormRequest
                 ? Rule::exists('team_user', 'user_id')->whereIn('team_id', $ownTeamIds)
                 : Rule::exists('users', 'id')],
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
+            // Estacion y coordinacion solo pueden estrechar: un id fuera del alcance falla la validacion.
+            'station_id' => ['nullable', 'integer', Rule::exists('stations', 'id')->where(fn ($query) => $user?->seesAllTeams()
+                ? $query
+                : $query->whereIn('id', Coordination::query()->select('station_id')->whereIn('id', $user->coordinationIdsQuery())))],
+            'coordination_id' => ['nullable', 'integer', Rule::exists('coordinations', 'id')->where(fn ($query) => $user?->seesAllTeams()
+                ? $query
+                : $query->whereIn('id', $user->coordinationIdsQuery()))],
         ];
     }
 
@@ -72,8 +80,8 @@ class ShowTrackingPanelRequest extends FormRequest
 
     public function filters(): DashboardFilters
     {
-        /** @var array{from?: ?string, to?: ?string, team_id?: ?int, user_id?: ?int, category_id?: ?int} $data */
-        $data = $this->safe()->only(['from', 'to', 'team_id', 'user_id', 'category_id']);
+        /** @var array{from?: ?string, to?: ?string, team_id?: ?int, user_id?: ?int, category_id?: ?int, station_id?: ?int, coordination_id?: ?int} $data */
+        $data = $this->safe()->only(['from', 'to', 'team_id', 'user_id', 'category_id', 'station_id', 'coordination_id']);
 
         return DashboardFilters::fromValidated($data);
     }

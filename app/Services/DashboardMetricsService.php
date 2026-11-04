@@ -9,6 +9,7 @@ use App\Enums\TicketStatus;
 use App\Models\Activity;
 use App\Models\Assignment;
 use App\Models\Category;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -62,7 +63,7 @@ final class DashboardMetricsService
         $identity = [
             'user' => $user->getKey(),
             'role' => $user->roleEnum()?->value,
-            'teams' => $user->seesAllTeams() ? null : $user->teamIds(),
+            'teams' => $user->scopedTeamIds(),
             'day' => LocalTime::today(),
             'filters' => $filters->cacheKey(),
         ];
@@ -89,6 +90,7 @@ final class DashboardMetricsService
             'created_distribution' => $this->distribution($builders, $filters),
             'trend' => ['granularity' => $granularity, 'points' => $this->trend($builders, $filters, $granularity)],
             'workload' => $this->workload($builders, $filters),
+            'by_coordination' => $this->byCoordination($builders),
             'closing' => $this->closing($builders, $filters),
         ];
     }
@@ -111,6 +113,62 @@ final class DashboardMetricsService
             'team_name' => count($names) === 1 ? $names[0] : null,
             'team_names' => count($names) > 1 ? $names : [],
         ];
+    }
+
+    // --- Por coordinacion ----------------------------------------------------
+
+    /**
+     * Abiertos y vencidos de hoy por coordinacion (suma de tickets y actividades del alcance). Solo se devuelve si
+     * hay mas de una coordinacion con trabajo; con una sola no aporta nada.
+     *
+     * @param  array<string, Builder<Ticket>|Builder<Activity>>  $builders
+     * @return list<array{coordination_id: int, name: string, station: string, open: int, overdue: int}>
+     */
+    private function byCoordination(array $builders): array
+    {
+        $finals = TicketStatus::finalValues();
+        $totals = [];
+
+        foreach ($builders as $type => $builder) {
+            $rows = (clone $builder)->toBase()
+                ->join('teams', 'teams.id', '=', "{$type}.team_id")
+                ->selectRaw(
+                    "teams.coordination_id as coordination_id,
+                     coalesce(sum(case when {$type}.status not in (?, ?) then 1 else 0 end), 0) as open_count,
+                     coalesce(sum(case when {$type}.due_date is not null and {$type}.due_date < ? and {$type}.status not in (?, ?) then 1 else 0 end), 0) as overdue_count",
+                    [...$finals, LocalTime::today(), ...$finals],
+                )
+                ->groupBy('teams.coordination_id')
+                ->get();
+
+            foreach ($rows as $row) {
+                $id = (int) $row->coordination_id;
+                $totals[$id]['open'] = ($totals[$id]['open'] ?? 0) + (int) $row->open_count;
+                $totals[$id]['overdue'] = ($totals[$id]['overdue'] ?? 0) + (int) $row->overdue_count;
+            }
+        }
+
+        if (count($totals) < 2) {
+            return [];
+        }
+
+        $names = Coordination::query()->with('station:id,name')->whereKey(array_keys($totals))->get()->keyBy('id');
+
+        $result = [];
+
+        foreach ($totals as $id => $row) {
+            $result[] = [
+                'coordination_id' => $id,
+                'name' => (string) ($names[$id]->name ?? '#'.$id),
+                'station' => (string) ($names[$id]->station->name ?? ''),
+                'open' => $row['open'],
+                'overdue' => $row['overdue'],
+            ];
+        }
+
+        usort($result, fn (array $a, array $b): int => [$b['open'], $a['name']] <=> [$a['open'], $b['name']]);
+
+        return $result;
     }
 
     // --- Tarjetas -----------------------------------------------------------

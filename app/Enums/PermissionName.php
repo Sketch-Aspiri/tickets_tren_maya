@@ -16,6 +16,8 @@ enum PermissionName: string
     case AdminsManage = 'admins.manage';
     case UsersApprove = 'users.approve';
     case TeamsManage = 'teams.manage';
+    /** Gestionar estaciones, coordinaciones y buzones (solo administrador). */
+    case OrgManage = 'org.manage';
     case CategoriesManage = 'categories.manage';
     case TicketsView = 'tickets.view';
     case TicketsCreate = 'tickets.create';

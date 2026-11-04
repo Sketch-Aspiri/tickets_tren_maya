@@ -6,6 +6,7 @@ namespace Database\Factories;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -63,11 +64,39 @@ class UserFactory extends Factory
             ->withRole(UserRole::Administrador);
     }
 
+    /**
+     * Ids de los jefes "universales" de la prueba en curso (ver `jefe()`). Se vacia en TestCase::tearDown.
+     *
+     * @var list<int>
+     */
+    public static array $universalBossIds = [];
+
+    /**
+     * Jefe de zona que, por comodidad de las pruebas, supervisa TODAS las coordinaciones (las existentes y las que
+     * se creen despues con CoordinationFactory). Para probar aislamiento entre coordinaciones usa `jefeOf()`.
+     */
     public function jefe(): static
     {
         return $this->active()
             ->withTwoFactor()
-            ->withRole(UserRole::JefeZona);
+            ->withRole(UserRole::JefeZona)
+            ->afterCreating(function (User $user): void {
+                $user->coordinations()->syncWithoutDetaching(Coordination::query()->pluck('id')->all());
+                self::$universalBossIds[] = (int) $user->getKey();
+            });
+    }
+
+    /**
+     * Jefe de zona que supervisa SOLO estas coordinaciones.
+     */
+    public function jefeOf(Coordination|int ...$coordinations): static
+    {
+        $ids = array_map(fn (Coordination|int $coordination): int => $coordination instanceof Coordination ? (int) $coordination->getKey() : $coordination, $coordinations);
+
+        return $this->active()
+            ->withTwoFactor()
+            ->withRole(UserRole::JefeZona)
+            ->afterCreating(fn (User $user) => $user->coordinations()->syncWithoutDetaching($ids));
     }
 
     public function coordinador(): static

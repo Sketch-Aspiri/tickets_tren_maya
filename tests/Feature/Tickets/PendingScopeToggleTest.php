@@ -113,7 +113,8 @@ class PendingScopeToggleTest extends DatabaseTestCase
         $this->assertMatchesRegularExpression('/href="[^"]*scope=team"\s+aria-current="page"/', $html);
 
         $this->signIn($this->empA1)->get('/tickets/pending')->assertOk()->assertDontSee($team, false);
-        $this->signIn($this->jefe)->get('/tickets/pending')->assertOk()->assertDontSee($team, false);
+        // El jefe de zona con equipos en sus coordinaciones tambien puede alternar a la vista de equipos.
+        $this->signIn($this->jefe)->get('/tickets/pending')->assertOk()->assertSee($team, false);
     }
 
     public function test_others_cannot_widen_their_view_with_the_parameter(): void
@@ -122,7 +123,8 @@ class PendingScopeToggleTest extends DatabaseTestCase
         $mineEmp = Ticket::factory()->forTeam($this->teamA)->createdBy($this->empA1)->assignedTo($this->empA1)->create();
 
         $this->assertSame([$mineEmp->id], $this->pending($this->empA1, '?scope=team')['tickets']);
-        $this->assertSame([], $this->pending($this->jefe, '?scope=team')['tickets'], 'el jefe no tiene equipo: se ignora');
+        $this->assertContains($bag->id, $this->pending($this->jefe, '?scope=team')['tickets'], 'el jefe ve lo abierto de los equipos de sus coordinaciones');
+        $this->assertSame([], $this->pending(User::factory()->jefeOf()->create(), '?scope=team')['tickets'], 'un jefe sin coordinaciones no ve nada y la vista se ignora');
         $this->assertNotContains($bag->id, $this->pending($this->empA2, '?scope=team')['tickets']);
     }
 

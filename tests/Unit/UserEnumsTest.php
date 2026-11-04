@@ -26,10 +26,12 @@ class UserEnumsTest extends TestCase
         $this->assertTrue(UserRole::Empleado->requiresTeam());
     }
 
-    public function test_only_administrador_and_jefe_see_every_team(): void
+    public function test_only_administrador_has_global_scope_and_must_keep_one_active(): void
     {
         $this->assertTrue(UserRole::Administrador->hasGlobalScope());
-        $this->assertTrue(UserRole::JefeZona->hasGlobalScope());
+        $this->assertFalse(UserRole::JefeZona->hasGlobalScope());
+        $this->assertTrue(UserRole::Administrador->mustKeepOneActive());
+        $this->assertFalse(UserRole::JefeZona->mustKeepOneActive());
         $this->assertFalse(UserRole::Coordinador->hasGlobalScope());
         $this->assertFalse(UserRole::Empleado->hasGlobalScope());
     }

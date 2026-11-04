@@ -37,3 +37,5 @@ Homestead.yaml
 Thumbs.db
 .env.staging
 .env.*.local
+
+bash.exe.stackdump

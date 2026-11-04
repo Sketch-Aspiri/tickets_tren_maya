@@ -39,6 +39,8 @@ final class AuditLogService
         'user' => 'App\Models\User',
         'team' => 'App\Models\Team',
         'category' => 'category',
+        'station' => 'station',
+        'coordination' => 'coordination',
     ];
 
     private const CAUSER_TYPE = 'App\Models\User';
@@ -47,11 +49,12 @@ final class AuditLogService
      * @param  array{causer_id?: ?int, event?: ?string, subject?: ?string, from?: ?string, to?: ?string, q?: ?string}  $filters
      * @return LengthAwarePaginator<int, ActivityLogEntry>
      */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters, ?User $viewer = null): LengthAwarePaginator
     {
         $allowedSubjects = array_values(self::SUBJECT_TYPES);
 
         $query = ActivityLogEntry::query()
+            ->tap(fn (Builder $q) => $this->scopeTo($q, $viewer))
             ->with(['causer', 'subject'])
             ->where(fn (Builder $q) => $q->whereNull('subject_type')->orWhereIn('subject_type', $allowedSubjects))
             ->where(fn (Builder $q) => $q->whereNull('causer_type')->orWhere('causer_type', self::CAUSER_TYPE))
@@ -69,13 +72,28 @@ final class AuditLogService
     }
 
     /**
+     * El administrador lee toda la bitacora; el jefe de zona solo las entradas de las coordinaciones que supervisa
+     * (lo global o del sistema, sin coordinacion, queda fuera). Sin `$viewer` no se acota (uso interno).
+     *
+     * @param  Builder<ActivityLogEntry>  $query
+     */
+    private function scopeTo(Builder $query, ?User $viewer): void
+    {
+        if ($viewer === null || $viewer->seesAllTeams()) {
+            return;
+        }
+
+        $query->whereIn('activity_log.coordination_id', $viewer->coordinationIdsQuery());
+    }
+
+    /**
      * Eventos distintos registrados (para el selector de filtro).
      *
      * @return list<string>
      */
-    public function events(): array
+    public function events(?User $viewer = null): array
     {
-        return ActivityLogEntry::query()->whereNotNull('event')->distinct()->orderBy('event')->pluck('event')->all();
+        return ActivityLogEntry::query()->tap(fn (Builder $q) => $this->scopeTo($q, $viewer))->whereNotNull('event')->distinct()->orderBy('event')->pluck('event')->all();
     }
 
     /**
@@ -83,9 +101,9 @@ final class AuditLogService
      *
      * @return Collection<int, User>
      */
-    public function causers(): Collection
+    public function causers(?User $viewer = null): Collection
     {
-        $ids = ActivityLogEntry::query()->where('causer_type', self::CAUSER_TYPE)->distinct()->pluck('causer_id');
+        $ids = ActivityLogEntry::query()->tap(fn (Builder $q) => $this->scopeTo($q, $viewer))->where('causer_type', self::CAUSER_TYPE)->distinct()->pluck('causer_id');
 
         return User::query()->whereIn('id', $ids)->orderBy('name')->get(['id', 'name']);
     }

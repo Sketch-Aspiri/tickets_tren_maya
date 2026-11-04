@@ -10,6 +10,7 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\IndexUsersRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\UserService;
@@ -26,9 +27,9 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         return view('users.index', [
-            'users' => $this->users->paginate($request->validated()),
+            'users' => $this->users->paginate($request->validated(), null, $request->user()),
             'filters' => $request->safe()->only(['status', 'role', 'team_id', 'q']),
-            'teams' => Team::query()->orderBy('name')->get(['id', 'name']),
+            'teams' => Team::query()->manageableBy($request->user())->orderBy('name')->get(['id', 'name']),
             'statuses' => UserStatus::cases(),
             'roles' => UserRole::cases(),
         ]);
@@ -39,8 +40,9 @@ class UserController extends Controller
         $this->authorize('view', $user);
 
         return view('users.show', [
-            'managedUser' => $user->load(['roles:id,name', 'teams:id,name']),
-            'teams' => Team::query()->orderBy('name')->get(['id', 'name']),
+            'managedUser' => $user->load(['roles:id,name', 'teams:id,name', 'coordinations:id,name']),
+            'teams' => Team::query()->manageableBy($request->user())->orderBy('name')->get(['id', 'name']),
+            'coordinations' => Coordination::query()->with('station:id,name')->orderBy('name')->get(['id', 'station_id', 'name']),
             'roles' => $this->assignableRoles($request->user()),
         ]);
     }
@@ -49,7 +51,7 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $this->users->updateRoleAndTeams($request->user(), $user, $request->selectedRole(), $request->selectedTeamIds());
+        $this->users->updateRoleAndTeams($request->user(), $user, $request->selectedRole(), $request->selectedTeamIds(), $request->selectedCoordinationIds());
 
         return redirect()->route('users.show', $user)->with('status', 'user-updated');
     }

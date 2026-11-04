@@ -99,12 +99,20 @@ class TrackingPanelTest extends DatabaseTestCase
 
     // --- Alcance por rol -------------------------------------------------------------------------------
 
-    public function test_jefe_sees_everything_and_the_scope_label_is_global(): void
+    public function test_the_administrator_sees_everything_and_the_scope_label_is_global(): void
+    {
+        $response = $this->signIn(User::factory()->administrador()->create())->get('/tracking')->assertOk();
+
+        $this->assertSame(7, $response->viewData('report')['cards']['open']['total']);
+        $response->assertSee(__('tracking.scope.global'));
+    }
+
+    public function test_jefe_sees_the_teams_of_their_coordinations_and_the_label_names_them(): void
     {
         $response = $this->signIn($this->jefe)->get('/tracking')->assertOk();
 
         $this->assertSame(7, $response->viewData('report')['cards']['open']['total']);
-        $response->assertSee(__('tracking.scope.global'));
+        $response->assertDontSee(__('tracking.scope.global'));
     }
 
     public function test_coordinator_sees_only_their_team(): void
@@ -379,7 +387,7 @@ class TrackingPanelTest extends DatabaseTestCase
         Team::factory()->count(3)->create();
 
         $this->assertSame($before, $count());
-        $this->assertLessThanOrEqual(30, $before, 'un numero acotado de consultas agregadas');
+        $this->assertLessThanOrEqual(36, $before, 'un numero acotado de consultas agregadas');
     }
 
     public function test_the_panel_is_rate_limited_per_user(): void

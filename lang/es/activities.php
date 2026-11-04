@@ -93,7 +93,7 @@ return [
         'inactive_category' => '(inactiva)',
         'team' => 'Equipo',
         'select_team' => 'Elige un equipo',
-        'team_hint' => 'Como jefe de zona no perteneces a un equipo: elige a cuál corresponde la actividad.',
+        'team_hint' => 'Elige a cuál de los equipos de tus coordinaciones corresponde la actividad.',
         'start_date' => 'Fecha de inicio',
         'start_date_hint' => 'Opcional. Obligatoria si la actividad es recurrente.',
         'due_date' => 'Fecha límite',

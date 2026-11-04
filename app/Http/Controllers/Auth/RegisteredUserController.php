@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\Coordination;
+use App\Models\Station;
 use App\Services\UserRegistrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -16,7 +18,14 @@ class RegisteredUserController extends Controller
 
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'coordinations' => Coordination::query()
+                ->with('station:id,name')
+                ->where('active', true)
+                ->whereIn('station_id', Station::query()->active()->select('id'))
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 
     /**
@@ -24,8 +33,8 @@ class RegisteredUserController extends Controller
      */
     public function store(RegisterRequest $request): RedirectResponse
     {
-        /** @var array{name: string, email: string, password: string} $data */
-        $data = $request->safe()->only(['name', 'email', 'password']);
+        /** @var array{name: string, email: string, password: string, coordination_id: int} $data */
+        $data = $request->safe()->only(['name', 'email', 'password', 'coordination_id']);
 
         $this->registration->register($data);
 

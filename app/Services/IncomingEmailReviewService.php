@@ -59,6 +59,11 @@ final class IncomingEmailReviewService
 
             $activity = $this->activities->create($actor, $activityData);
 
+            // La actividad debe quedar en un equipo de la coordinacion del correo (si no, se revierte todo).
+            if ((int) $activity->team()->value('coordination_id') !== (int) $locked->coordination_id) {
+                throw BusinessRuleException::because('emails.errors.team_outside_coordination');
+            }
+
             // Se comprueba el tope ANTES de copiar ningun adjunto: adopt() ya se defiende sola en cada
             // llamada (borra el archivo que acaba de copiar si falla despues), pero un bucle que adopta
             // uno por uno puede fallar a la mitad (adjunto N supera el tope) dejando huerfanos en disco

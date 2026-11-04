@@ -25,6 +25,9 @@ use App\Http\Controllers\IncomingEmailController;
 use App\Http\Controllers\IncomingEmailConversionController;
 use App\Http\Controllers\IncomingEmailDiscardController;
 use App\Http\Controllers\Notifications\NotificationController;
+use App\Http\Controllers\Org\CoordinationController;
+use App\Http\Controllers\Org\MailboxController;
+use App\Http\Controllers\Org\StationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Tickets\TicketAssignmentController;
@@ -76,6 +79,16 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     });
 
     Route::resource('teams', TeamController::class)->except('show');
+
+    // Estructura organizacional: solo administrador (permiso `org.manage`, StationPolicy / CoordinationPolicy).
+    Route::resource('stations', StationController::class)->except('show');
+    Route::resource('coordinations', CoordinationController::class)->except('show');
+    Route::get('mailboxes', [MailboxController::class, 'index'])->name('mailboxes.index');
+    Route::get('coordinations/{coordination}/mailbox', [MailboxController::class, 'edit'])->name('mailboxes.edit');
+    Route::put('coordinations/{coordination}/mailbox', [MailboxController::class, 'update'])->name('mailboxes.update');
+    Route::delete('coordinations/{coordination}/mailbox', [MailboxController::class, 'destroy'])->name('mailboxes.destroy');
+    Route::post('coordinations/{coordination}/mailbox/test', [MailboxController::class, 'test'])
+        ->middleware('throttle:mailbox-test')->name('mailboxes.test');
 
     // Categorias: solo jefe de zona (CategoryPolicy).
     Route::resource('categories', CategoryController::class)->except('show');

@@ -9,9 +9,12 @@ use App\Enums\RecurrenceFrequency;
 use App\Http\Requests\Emails\ConvertIncomingEmailRequest;
 use App\Models\Activity;
 use App\Models\IncomingEmail;
+use App\Models\Team;
+use App\Models\User;
 use App\Services\AssignmentService;
 use App\Services\CategoryService;
 use App\Services\IncomingEmailReviewService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,9 +48,9 @@ class IncomingEmailConversionController extends Controller
             'email' => $incomingEmail,
             'activity' => $activity,
             'priorities' => Priority::cases(),
-            'categories' => $this->categories->selectable($activity->category_id),
+            'categories' => $this->categories->selectable($request->user(), $activity->category_id),
             'frequencies' => RecurrenceFrequency::cases(),
-            'teams' => $request->user()->selectableTeams(),
+            'teams' => $this->teamOptions($request->user(), $incomingEmail),
             'assignableUsers' => $this->assignments->assignableUsers($request->user()),
             'rule' => null,
             'showRecurrence' => false,
@@ -65,5 +68,22 @@ class IncomingEmailConversionController extends Controller
         ]);
 
         return redirect()->route('activities.show', $activity)->with('status', 'incoming-email-converted');
+    }
+
+    /**
+     * Solo equipos de la coordinacion del correo (y dentro del alcance de quien convierte). Quien no tiene alcance
+     * global y solo puede usar un equipo no necesita elegir: la lista queda vacia y se usa ese.
+     *
+     * @return Collection<int, Team>
+     */
+    private function teamOptions(User $actor, IncomingEmail $email): Collection
+    {
+        $teams = Team::query()
+            ->where('coordination_id', $email->coordination_id)
+            ->when(! $actor->seesAllTeams(), fn ($query) => $query->whereIn('id', $actor->workingTeamIds()))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return $actor->seesAllTeams() || $teams->count() > 1 || ($teams->count() === 1 && count($actor->workingTeamIds()) > 1) ? $teams : new Collection;
     }
 }

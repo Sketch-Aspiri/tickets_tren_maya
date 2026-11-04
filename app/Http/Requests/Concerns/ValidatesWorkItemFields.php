@@ -34,7 +34,7 @@ trait ValidatesWorkItemFields
     protected function newWorkItemTeamRules(): array
     {
         $user = $this->user();
-        $ownTeamIds = $user !== null && ! $user->seesAllTeams() ? $user->teamIds() : [];
+        $ownTeamIds = $user !== null && ! $user->seesAllTeams() ? $user->workingTeamIds() : [];
 
         return [
             Rule::requiredIf(fn (): bool => $user?->mustChooseTeam() ?? false),

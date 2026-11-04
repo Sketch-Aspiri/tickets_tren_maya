@@ -42,7 +42,7 @@ final class AssignmentService
         return User::query()
             ->where('status', UserStatus::Active->value)
             ->whereHas('roles')
-            ->when(! $actor->seesAllTeams(), fn ($query) => $query->memberOfAny($actor->teamIds()))
+            ->when($actor->scopedTeamIdsQuery(), fn ($query, $teams) => $query->whereIn('users.id', DB::table('team_user')->select('user_id')->whereIn('team_id', $teams)))
             ->orderBy('name')
             ->with('teams:id,name')
             ->get(['id', 'name', 'avatar_path']);
@@ -183,14 +183,14 @@ final class AssignmentService
             throw BusinessRuleException::because(WorkflowSubject::error($subject, 'invalid_assignee'));
         }
 
-        $actorTeamIds = $actor->seesAllTeams() ? [] : $actor->teamIds();
+        $scopedTeamIds = $actor->scopedTeamIds();
 
         foreach ($users as $candidate) {
             if (! $candidate->canAccessApplication()) {
                 throw BusinessRuleException::because(WorkflowSubject::error($subject, 'invalid_assignee'));
             }
 
-            if (! $actor->seesAllTeams() && array_intersect($actorTeamIds, $candidate->teamIds()) === []) {
+            if ($scopedTeamIds !== null && array_intersect($scopedTeamIds, $candidate->teamIds()) === []) {
                 throw BusinessRuleException::because(WorkflowSubject::error($subject, 'assignee_out_of_team'));
             }
         }

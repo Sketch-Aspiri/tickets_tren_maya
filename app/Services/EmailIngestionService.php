@@ -8,6 +8,8 @@ use App\Contracts\MailboxAttachment;
 use App\Contracts\MailboxClient;
 use App\Contracts\MailboxMessage;
 use App\Enums\IncomingEmailStatus;
+use App\Exceptions\BusinessRuleException;
+use App\Models\Coordination;
 use App\Models\IncomingEmail;
 use App\Support\AttachmentInspector;
 use Carbon\CarbonImmutable;
@@ -32,23 +34,38 @@ final class EmailIngestionService
 {
     private const AUTORESPONDER_PRECEDENCE = ['bulk', 'junk', 'list'];
 
+    /** Coordinacion cuyo buzon se esta procesando (se fija en `ingest()`). */
+    private int $coordinationId = 0;
+
     public function __construct(
         private readonly MailboxClient $mailbox,
         private readonly AttachmentInspector $inspector,
         private readonly AuditLogger $audit,
     ) {}
 
+    private function defaultCoordinationId(): int
+    {
+        $id = Coordination::query()->orderBy('id')->value('id');
+
+        if ($id === null) {
+            throw BusinessRuleException::because('emails.errors.no_coordination');
+        }
+
+        return (int) $id;
+    }
+
     /**
      * @return array{fetched:int, created:int, duplicate:int, skipped_autoresponder:int, skipped_invalid:int, failed:int, capped:bool}
      */
-    public function ingest(): array
+    public function ingest(?int $coordinationId = null): array
     {
+        $this->coordinationId = $coordinationId ?? $this->defaultCoordinationId();
         $maxPerRun = (int) config('mail_ingestion.max_per_run');
         // Se pide uno más que el tope para poder avisar (`capped`) de que quedaron mensajes por procesar.
         $messages = $this->mailbox->fetchMessagesSince(
             $this->windowStart(),
             $maxPerRun > 0 ? $maxPerRun + 1 : 0,
-            fn (string $messageId): bool => IncomingEmail::query()->where('message_id', $messageId)->exists(),
+            fn (string $messageId): bool => IncomingEmail::query()->where('coordination_id', $this->coordinationId)->where('message_id', $messageId)->exists(),
         );
 
         $result = [
@@ -113,7 +130,7 @@ final class EmailIngestionService
             // persistir, asi ambos comparan el mismo valor (el que de verdad queda guardado).
             $fromEmail = $this->sanitizeSenderText($message->fromEmail);
 
-            if (IncomingEmail::query()->where('message_id', $messageId)->exists()) {
+            if (IncomingEmail::query()->where('coordination_id', $this->coordinationId)->where('message_id', $messageId)->exists()) {
                 $result['duplicate']++;
                 $this->mailbox->markAsRead($message);
 
@@ -201,6 +218,7 @@ final class EmailIngestionService
     private function exceedsSenderRateLimit(string $fromEmail): bool
     {
         $count = IncomingEmail::query()
+            ->where('coordination_id', $this->coordinationId)
             ->where('from_email', $fromEmail)
             ->where('created_at', '>=', now()->subHour())
             ->count();
@@ -281,6 +299,7 @@ final class EmailIngestionService
     {
         DB::transaction(function () use ($message, $messageId, $fromEmail, $attachments): void {
             $email = new IncomingEmail([
+                'coordination_id' => $this->coordinationId,
                 'message_id' => $messageId,
                 'from_email' => $fromEmail,
                 'from_name' => $message->fromName !== null ? $this->sanitizeSenderText($message->fromName) : null,

@@ -37,6 +37,7 @@ class IncomingEmailConvertAttachmentCapTest extends DatabaseTestCase
     private function makeIncomingEmailWithAttachments(int $count): IncomingEmail
     {
         $email = new IncomingEmail([
+            'coordination_id' => $this->teamA->coordination_id,
             'message_id' => 'msg-cap-'.$count,
             'from_email' => 'solicitante@example.com',
             'from_name' => 'Solicitante Externo',

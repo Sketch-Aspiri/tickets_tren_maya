@@ -18,6 +18,22 @@
         </div>
 
         <div class="mt-4">
+            <x-input-label for="coordination_id" :value="__('auth.register.coordination')" />
+            <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" required>
+                <option value="">{{ __('auth.register.choose_coordination') }}</option>
+                @foreach ($coordinations->groupBy(fn ($coordination) => $coordination->station->name) as $stationName => $group)
+                    <optgroup label="{{ $stationName }}">
+                        @foreach ($group as $coordination)
+                            <option value="{{ $coordination->id }}" @selected((int) old('coordination_id') === $coordination->id)>{{ $coordination->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endforeach
+            </x-select-input>
+            <p class="mt-1 text-xs text-gray-500">{{ __('auth.register.coordination_hint') }}</p>
+            <x-input-error :messages="$errors->get('coordination_id')" class="mt-2" />
+        </div>
+
+        <div class="mt-4">
             <x-input-label for="password" :value="__('auth.register.password')" />
             <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required autocomplete="new-password" />
             <p class="mt-1 text-xs text-gray-500">{{ __('auth.register.password_hint') }}</p>

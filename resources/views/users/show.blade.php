@@ -3,6 +3,7 @@
     $currentRole = $managedUser->roleEnum();
     $memberTeamIds = $managedUser->teams->pluck('id')->all();
     $selectedTeamIds = old('team_ids', $memberTeamIds);
+    $selectedCoordinationIds = old('coordination_ids', $managedUser->coordinations->pluck('id')->all());
     $canReactivate = $managedUser->isInactive() && $currentRole !== null && (! $currentRole->requiresTeam() || $memberTeamIds !== []);
 @endphp
 
@@ -21,6 +22,9 @@
             <div><dt class="text-gray-500">{{ __('users.index.columns.status') }}</dt><dd><x-status-badge :status="$managedUser->status" /></dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.role') }}</dt><dd><x-role-badge :role="$currentRole" /></dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.teams') }}</dt><dd class="font-medium">{{ $managedUser->teams->isEmpty() ? __('users.index.no_team') : $managedUser->teams->pluck('name')->sort()->implode(', ') }}</dd></div>
+            @if ($currentRole === \App\Enums\UserRole::JefeZona)
+                <div><dt class="text-gray-500">{{ __('users.show.coordinations') }}</dt><dd class="font-medium">{{ $managedUser->coordinations->isEmpty() ? __('users.show.no_coordinations') : $managedUser->coordinations->pluck('name')->sort()->implode(', ') }}</dd></div>
+            @endif
             <div><dt class="text-gray-500">{{ __('users.index.columns.registered') }}</dt><dd><x-local-datetime :value="$managedUser->created_at" /></dd></div>
             <div><dt class="text-gray-500">{{ __('users.show.two_factor') }}</dt><dd>{{ $managedUser->hasTwoFactorEnabled() ? __('users.show.two_factor_on') : __('users.show.two_factor_off') }}</dd></div>
         </dl>
@@ -48,6 +52,13 @@
                         <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
                         <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
                     </div>
+                    @if (auth()->user()->seesAllTeams())
+                    <div class="sm:col-span-2">
+                        <x-coordination-checkboxes prefix="approve_coordination" :coordinations="$coordinations" :selected="$selectedCoordinationIds" :legend="__('users.show.coordinations')" :hint="__('users.show.coordinations_hint')" />
+                        <x-input-error :messages="$errors->get('coordination_ids')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('coordination_ids.*')" class="mt-2" />
+                    </div>
+                    @endif
                     <div class="sm:col-span-2">
                         <x-primary-button>{{ __('users.show.approve_submit') }}</x-primary-button>
                     </div>
@@ -98,6 +109,13 @@
                         <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
                         <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
                     </div>
+                    @if (auth()->user()->seesAllTeams())
+                    <div class="sm:col-span-2">
+                        <x-coordination-checkboxes prefix="update_coordination" :coordinations="$coordinations" :selected="$selectedCoordinationIds" :legend="__('users.show.coordinations')" :hint="__('users.show.coordinations_hint')" />
+                        <x-input-error :messages="$errors->get('coordination_ids')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('coordination_ids.*')" class="mt-2" />
+                    </div>
+                    @endif
                     <div class="sm:col-span-2">
                         <x-primary-button>{{ __('users.show.save_role_team') }}</x-primary-button>
                     </div>

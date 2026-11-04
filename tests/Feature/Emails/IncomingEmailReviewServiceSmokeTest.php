@@ -38,6 +38,7 @@ class IncomingEmailReviewServiceSmokeTest extends DatabaseTestCase
     private function makeIncomingEmail(string $messageId): IncomingEmail
     {
         $email = new IncomingEmail([
+            'coordination_id' => $this->teamA->coordination_id,
             'message_id' => $messageId,
             'from_email' => 'solicitante@example.com',
             'from_name' => 'Solicitante Externo',

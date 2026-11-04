@@ -80,6 +80,18 @@
             </x-sidebar-link>
         @endcan
 
+        @can('viewAny', \App\Models\Station::class)
+            <x-sidebar-link icon="building" :href="route('stations.index')" :active="request()->routeIs('stations.*')">
+                {{ __('common.nav.stations') }}
+            </x-sidebar-link>
+            <x-sidebar-link icon="building" :href="route('coordinations.index')" :active="request()->routeIs('coordinations.*')">
+                {{ __('common.nav.coordinations') }}
+            </x-sidebar-link>
+            <x-sidebar-link icon="mail" :href="route('mailboxes.index')" :active="request()->routeIs('mailboxes.*')">
+                {{ __('common.nav.mailboxes') }}
+            </x-sidebar-link>
+        @endcan
+
         @can('viewAny', \App\Models\Team::class)
             <x-sidebar-link icon="flag" :href="route('teams.index')" :active="request()->routeIs('teams.*')">
                 {{ __('common.nav.teams') }}
@@ -105,6 +117,9 @@
             <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-gray-900">{{ auth()->user()->name }}</p>
                 <p class="truncate text-xs text-gray-600">{{ auth()->user()->roleEnum()?->label() ?? auth()->user()->email }}</p>
+                @if (($coordinationLabel = auth()->user()->coordinationLabel()) !== '')
+                    <p class="truncate text-xs text-gray-600">{{ $coordinationLabel }}</p>
+                @endif
             </div>
         </div>
         <x-sidebar-link icon="user" :href="route('profile.edit')" :active="request()->routeIs('profile.*')">

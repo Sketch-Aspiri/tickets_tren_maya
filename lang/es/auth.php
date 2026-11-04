@@ -4,7 +4,7 @@ return [
     'failed' => 'Estas credenciales no coinciden con nuestros registros.',
     'password' => 'La contraseña es incorrecta.',
     'throttle' => 'Demasiados intentos de acceso. Inténtalo de nuevo en :seconds segundos.',
-    'registered' => 'Tu registro fue recibido. Un jefe de zona revisará tu cuenta y, cuando la apruebe, podrás usar el sistema.',
+    'registered' => 'Tu registro fue recibido. El jefe de zona de la coordinación que elegiste revisará tu cuenta y, cuando la apruebe, podrás usar el sistema.',
 
     'login' => [
         'title' => 'Iniciar sesión',
@@ -19,7 +19,10 @@ return [
 
     'register' => [
         'title' => 'Solicitar acceso',
-        'intro' => 'Tu cuenta quedará pendiente hasta que un jefe de zona la apruebe y te asigne rol y equipo.',
+        'intro' => 'Tu cuenta quedará pendiente hasta que el jefe de zona de la coordinación que elijas la apruebe y te asigne rol y equipo.',
+        'coordination' => 'Coordinación',
+        'choose_coordination' => 'Elige tu coordinación',
+        'coordination_hint' => 'La solicitud llegará al jefe de zona de esa coordinación.',
         'name' => 'Nombre completo',
         'email' => 'Correo electrónico',
         'password' => 'Contraseña',

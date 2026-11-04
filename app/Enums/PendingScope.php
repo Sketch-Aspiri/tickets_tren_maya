@@ -21,14 +21,20 @@ enum PendingScope: string
     }
 
     /**
-     * Solo un coordinador con al menos un equipo puede ver los pendientes de sus equipos (ni el administrador ni el
-     * jefe, que ya ven todo en los listados).
+     * Pueden ver los pendientes de sus equipos un coordinador con al menos un equipo y un jefe de zona con al
+     * menos un equipo en sus coordinaciones (el administrador ya ve todo en los listados).
      */
     public static function canUseTeam(User $user): bool
     {
-        return $user->canAccessApplication()
-            && $user->roleEnum() === UserRole::Coordinador
-            && $user->teams()->exists();
+        if (! $user->canAccessApplication()) {
+            return false;
+        }
+
+        return match ($user->roleEnum()) {
+            UserRole::Coordinador => $user->teams()->exists(),
+            UserRole::JefeZona => $user->workingTeamIds() !== [],
+            default => false,
+        };
     }
 
     /**

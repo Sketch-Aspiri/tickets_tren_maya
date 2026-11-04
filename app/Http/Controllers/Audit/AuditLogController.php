@@ -11,7 +11,7 @@ use Illuminate\View\View;
 use Spatie\Activitylog\Models\Activity as ActivityLogEntry;
 
 /**
- * Visor de la bitácora de auditoría (solo jefe de zona; solo lectura). No existe ninguna ruta que escriba
+ * Visor de la bitácora de auditoría (administrador: toda; jefe de zona: la de sus coordinaciones; solo lectura). No existe ninguna ruta que escriba
  * o borre entradas desde la aplicación.
  */
 class AuditLogController extends Controller
@@ -22,14 +22,14 @@ class AuditLogController extends Controller
     {
         $this->authorize('viewAny', ActivityLogEntry::class);
 
-        $entries = $this->audit->paginate($request->filters());
+        $entries = $this->audit->paginate($request->filters(), $request->user());
 
         return view('audit.index', [
             'entries' => $entries,
             'rows' => $entries->getCollection()->map(fn (ActivityLogEntry $entry): array => $this->audit->present($entry)),
             'filters' => $request->filters(),
-            'events' => $this->audit->events(),
-            'causers' => $this->audit->causers(),
+            'events' => $this->audit->events($request->user()),
+            'causers' => $this->audit->causers($request->user()),
             'subjectTypes' => array_keys(AuditLogService::SUBJECT_TYPES),
         ]);
     }

@@ -78,7 +78,7 @@ final class ActivityListingService
     private function filtered(User $user, array $filters): Builder
     {
         return $this->baseQuery($user)
-            ->when(! $user->seesAllTeams(), fn (Builder $q) => $q->whereIn('activities.team_id', $user->teamIdsQuery()))
+            ->when($user->scopedTeamIdsQuery(), fn (Builder $q, $teams) => $q->whereIn('activities.team_id', $teams))
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('activities.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('activities.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('activities.category_id', $id))
@@ -107,7 +107,7 @@ final class ActivityListingService
             ->open();
 
         if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
-            $query->whereIn('activities.team_id', $user->teamIdsQuery());
+            $query->whereIn('activities.team_id', $user->scopedTeamIdsQuery() ?? $user->teamIdsQuery());
         } else {
             $query->where(fn (Builder $mine) => $mine
                 ->assignedTo($user)

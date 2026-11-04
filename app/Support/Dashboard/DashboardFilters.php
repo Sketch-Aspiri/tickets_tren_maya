@@ -23,12 +23,14 @@ final readonly class DashboardFilters
         public ?int $teamId = null,
         public ?int $userId = null,
         public ?int $categoryId = null,
+        public ?int $stationId = null,
+        public ?int $coordinationId = null,
     ) {}
 
     /**
      * Periodo por defecto: los últimos N días terminando hoy (hora de negocio), ambos inclusivos.
      *
-     * @param  array{from?: ?string, to?: ?string, team_id?: ?int, user_id?: ?int, category_id?: ?int}  $data  Datos ya validados.
+     * @param  array{from?: ?string, to?: ?string, team_id?: ?int, user_id?: ?int, category_id?: ?int, station_id?: ?int, coordination_id?: ?int}  $data  Datos ya validados.
      */
     public static function fromValidated(array $data): self
     {
@@ -44,6 +46,8 @@ final readonly class DashboardFilters
             teamId: isset($data['team_id']) ? (int) $data['team_id'] : null,
             userId: isset($data['user_id']) ? (int) $data['user_id'] : null,
             categoryId: isset($data['category_id']) ? (int) $data['category_id'] : null,
+            stationId: isset($data['station_id']) ? (int) $data['station_id'] : null,
+            coordinationId: isset($data['coordination_id']) ? (int) $data['coordination_id'] : null,
         );
     }
 
@@ -84,6 +88,8 @@ final readonly class DashboardFilters
             'team' => $this->teamId,
             'user' => $this->userId,
             'category' => $this->categoryId,
+            'station' => $this->stationId,
+            'coordination' => $this->coordinationId,
         ];
     }
 

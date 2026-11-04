@@ -1,6 +1,19 @@
 @csrf
 
 <div>
+    <x-input-label for="coordination_id" :value="__('categories.form.coordination')" />
+    <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" :required="! auth()->user()->seesAllTeams()">
+        @if (auth()->user()->seesAllTeams())
+            <option value="">{{ __('categories.form.global') }}</option>
+        @endif
+        @foreach ($coordinations as $coordination)
+            <option value="{{ $coordination->id }}" @selected((int) old('coordination_id', $category->coordination_id) === $coordination->id)>{{ $coordination->station->name }} › {{ $coordination->name }}</option>
+        @endforeach
+    </x-select-input>
+    <x-input-error :messages="$errors->get('coordination_id')" class="mt-2" />
+</div>
+
+<div class="mt-4">
     <x-input-label for="name" :value="__('categories.form.name')" />
     <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $category->name)" maxlength="255" required autofocus />
     <x-input-error :messages="$errors->get('name')" class="mt-2" />

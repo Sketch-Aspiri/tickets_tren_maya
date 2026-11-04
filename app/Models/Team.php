@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,7 @@ class Team extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'coordination_id',
         'name',
         'coordinator_id',
     ];
@@ -30,6 +32,7 @@ class Team extends Model
     protected function casts(): array
     {
         return [
+            'coordination_id' => 'integer',
             'coordinator_id' => 'integer',
         ];
     }
@@ -37,7 +40,7 @@ class Team extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'coordinator_id'])
+            ->logOnly(['coordination_id', 'name', 'coordinator_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('teams');
@@ -55,6 +58,30 @@ class Team extends Model
             && $user->isActive()
             && $user->hasSystemRole(UserRole::Coordinador)
             && $user->belongsToTeam($this->getKey());
+    }
+
+    /**
+     * Equipos que `$actor` puede gestionar: todos (administrador) o los de las coordinaciones que supervisa (jefe
+     * de zona). Cualquier otro rol: ninguno.
+     *
+     * @param  Builder<Team>  $query
+     * @return Builder<Team>
+     */
+    public function scopeManageableBy(Builder $query, User $actor): Builder
+    {
+        return match ($actor->roleEnum()) {
+            UserRole::Administrador => $query,
+            UserRole::JefeZona => $query->whereIn('teams.coordination_id', $actor->coordinationIdsQuery()),
+            default => $query->whereIn('teams.id', []),
+        };
+    }
+
+    /**
+     * @return BelongsTo<Coordination, $this>
+     */
+    public function coordination(): BelongsTo
+    {
+        return $this->belongsTo(Coordination::class);
     }
 
     /**

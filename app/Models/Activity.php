@@ -190,8 +190,8 @@ class Activity extends Model
         }
 
         return match ($user->roleEnum()) {
-            UserRole::Administrador, UserRole::JefeZona => $query,
-            UserRole::Coordinador => $query->where(fn (Builder $scope) => $this->applyCoordinatorScope($scope, $user)),
+            UserRole::Administrador => $query,
+            UserRole::JefeZona, UserRole::Coordinador => $query->where(fn (Builder $scope) => $this->applyCoordinatorScope($scope, $user)),
             UserRole::Empleado => $query
                 ->whereNull('activities.recurrence_rule')
                 ->where(fn (Builder $scope) => $scope->assignedTo($user)->orWhere(fn (Builder $subtask) => $subtask->hasSubtaskFor($user))),
@@ -205,7 +205,12 @@ class Activity extends Model
     private function applyCoordinatorScope(Builder $scope, User $user): void
     {
         $scope->assignedTo($user)
-            ->orWhereIn('activities.team_id', $user->teamIdsQuery());
+            ->orWhereIn('activities.team_id', $user->scopedTeamIdsQuery() ?? $user->teamIdsQuery());
+
+        // El jefe de zona tambien abre lo que el mismo creo, aunque haya quedado en un equipo ajeno.
+        if ($user->roleEnum() === UserRole::JefeZona) {
+            $scope->orWhere('activities.created_by', $user->getKey());
+        }
     }
 
     /**

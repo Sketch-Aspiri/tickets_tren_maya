@@ -9,12 +9,13 @@ use App\Enums\PermissionName;
 use App\Models\IncomingEmail;
 use App\Models\User;
 use App\Policies\Concerns\ChecksPermissions;
+use Illuminate\Auth\Access\Response;
 
 /**
- * Bandeja de correos entrantes: jefe de zona, administrador y coordinador (permiso `emails.view`), sin
- * recorte por equipo (un correo externo no tiene equipo hasta que alguien lo convierte). Descartar o
- * convertir exige `emails.manage` y que el correo siga `PendingReview` (una vez revisado, ninguna de las
- * dos acciones vuelve a estar disponible).
+ * Bandeja de correos entrantes: administrador (todos) y jefe de zona/coordinador de la coordinacion del correo
+ * (permiso `emails.view`). Un correo de otra coordinacion responde 404. Descartar o convertir exige
+ * `emails.manage` y que el correo siga `PendingReview` (una vez revisado, ninguna de las dos acciones vuelve a
+ * estar disponible).
  */
 class IncomingEmailPolicy
 {
@@ -25,20 +26,31 @@ class IncomingEmailPolicy
         return $this->hasPermission($user, PermissionName::EmailsView);
     }
 
-    public function view(User $user, IncomingEmail $incomingEmail): bool
+    public function view(User $user, IncomingEmail $incomingEmail): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::EmailsView);
+        return $this->scoped($user, $incomingEmail, PermissionName::EmailsView);
     }
 
-    public function discard(User $user, IncomingEmail $incomingEmail): bool
+    public function discard(User $user, IncomingEmail $incomingEmail): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::EmailsManage)
-            && $incomingEmail->status === IncomingEmailStatus::PendingReview;
+        return $this->scoped($user, $incomingEmail, PermissionName::EmailsManage, requirePending: true);
     }
 
-    public function convert(User $user, IncomingEmail $incomingEmail): bool
+    public function convert(User $user, IncomingEmail $incomingEmail): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::EmailsManage)
-            && $incomingEmail->status === IncomingEmailStatus::PendingReview;
+        return $this->scoped($user, $incomingEmail, PermissionName::EmailsManage, requirePending: true);
+    }
+
+    private function scoped(User $user, IncomingEmail $incomingEmail, PermissionName $permission, bool $requirePending = false): Response|bool
+    {
+        if (! $this->hasPermission($user, $permission)) {
+            return false;
+        }
+
+        if (! IncomingEmail::query()->whereKey($incomingEmail->getKey())->visibleTo($user)->exists()) {
+            return Response::denyAsNotFound();
+        }
+
+        return ! $requirePending || $incomingEmail->status === IncomingEmailStatus::PendingReview;
     }
 }

@@ -7,6 +7,7 @@ namespace Tests\Feature\Emails;
 use App\Contracts\MailboxAttachment;
 use App\Contracts\MailboxMessage;
 use App\Enums\IncomingEmailStatus;
+use App\Models\Coordination;
 use App\Models\IncomingEmail;
 use App\Services\AuditLogger;
 use App\Services\EmailIngestionService;
@@ -27,6 +28,7 @@ class EmailIngestionServiceTest extends DatabaseTestCase
         parent::setUp();
 
         Storage::fake('local');
+        Coordination::factory()->create();
     }
 
     /**
@@ -64,6 +66,7 @@ class EmailIngestionServiceTest extends DatabaseTestCase
     {
         config(['mail_ingestion.max_per_sender_per_hour' => 1]);
         $email = new IncomingEmail([
+            'coordination_id' => Coordination::query()->value('id') ?? Coordination::factory()->create()->id,
             'message_id' => 'previous-1',
             'from_email' => 'over@example.com',
             'from_name' => null,
@@ -97,6 +100,7 @@ class EmailIngestionServiceTest extends DatabaseTestCase
     {
         config(['mail_ingestion.max_per_sender_per_hour' => 1]);
         $email = new IncomingEmail([
+            'coordination_id' => Coordination::query()->value('id') ?? Coordination::factory()->create()->id,
             'message_id' => 'previous-2',
             'from_email' => 'over2@example.com',
             'from_name' => null,

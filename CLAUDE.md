@@ -19,6 +19,8 @@ Es un **proyecto independiente** del dashboard del jefe de zona (repo, base de d
 
 Usuarios: pocos al inicio, diseñado para escalar a **100+**. Debe funcionar bien en celular (responsive).
 
+**Estructura organizacional (multi-coordinación, decisiones 70–77):** Estación/Edificio → Coordinación → Equipo → Empleados. Cada coordinación ve solo lo suyo (aislamiento con 404 al cambiar un ID), pero un ticket puede enviarse a un equipo de otra coordinación. El **administrador** es global; cada **jefe de zona** supervisa una o varias coordinaciones; cada coordinación tiene su propio buzón de correo.
+
 ---
 
 ## 2. Reglas de trabajo para agentes (Cursor y Claude Code)
@@ -105,7 +107,7 @@ Regla: **controladores delgados**; la lógica de negocio vive en `Services/`. La
 
 ## 5. Roles y permisos
 
-Tres roles (Spatie Permission), jerarquía **jefe de zona → coordinador → empleado**.
+Cuatro roles (Spatie Permission): **administrador** (global) y la jerarquía **jefe de zona → coordinador → empleado**. El administrador ve y gestiona todas las estaciones y coordinaciones (y es el único que otorga los roles de administrador y jefe de zona y sus coordinaciones). El **jefe de zona** ve solo los equipos de las coordinaciones que supervisa (`coordination_user`), lo que él creó y lo que se le asignó; gestiona usuarios, equipos y categorías únicamente de esas coordinaciones. Donde esta matriz dice «jefe de zona … todos», léase «todos los de sus coordinaciones» (el administrador sí es global). Definición única del alcance: `User::scopedTeamIdsQuery()`.
 
 - Existen **equipos** (`teams`). Cada equipo tiene un coordinador. Cada empleado pertenece a un equipo.
 - El jefe de zona ve todo. El coordinador ve lo de su equipo. El empleado ve lo suyo.
@@ -162,8 +164,12 @@ Reglas:
 Ajusta nombres si es necesario, pero conserva las relaciones.
 
 - `users`: id, name, email (único), password, status (`pending|active|inactive`), team_id (nullable), 2FA (secret, confirmed_at), timestamps
-- `teams`: id, name, coordinator_id (FK users)
-- `categories`: id, name, active
+- `stations`: id, name (único), active
+- `coordinations`: id, station_id (FK restrict), name, code (único), active; único (station_id, name)
+- `coordination_user`: jefes de zona ↔ coordinaciones que supervisan (PK compuesta)
+- `coordination_mailboxes`: coordination_id (único), host, port, encryption, username, password (cifrada), folder, active, last_polled_at, last_error
+- `teams`: id, coordination_id (FK restrict), name (único por coordinación), coordinator_id (FK users)
+- `categories`: id, coordination_id (nullable: null = global), name (único por coordinación), active
 - `tickets`: id, folio (único), title, description, priority, status, category_id, team_id, created_by (nullable si viene de correo desconocido → no se crea), source (`web|email`), due_date, completed_at, timestamps, softDeletes
 - `activities`: id, folio, title, description, priority, status, category_id, team_id, created_by, start_date, due_date, recurrence_rule (JSON, nullable), parent_activity_id (nullable, instancias), completed_at, timestamps, softDeletes
 - `subtasks`: id, activity_id, title, assigned_to (nullable), done, done_at
@@ -171,7 +177,7 @@ Ajusta nombres si es necesario, pero conserva las relaciones.
 - `status_histories` (polimórfica): id, historable_type, historable_id, from_status, to_status, user_id, comment, created_at
 - `comments` (polimórfica): id, commentable_type, commentable_id, user_id, body, created_at
 - `attachments` (polimórfica): id, attachable_type, attachable_id, user_id, original_name, path, mime, size
-- `email_ingestions`: id, message_id (único), from_email, subject, ticket_id (nullable), result (`created|rejected|duplicate|error`), reason, processed_at
+- `email_ingestions` (histórico del diseño original; hoy `incoming_emails`, con coordination_id y único (coordination_id, message_id)): id, message_id (único), from_email, subject, ticket_id (nullable), result (`created|rejected|duplicate|error`), reason, processed_at
 - Tablas de Spatie (permissions, activity_log) y `notifications` de Laravel.
 
 **Índices** (pensando en 100+ usuarios): `status`, `due_date`, `team_id`, `priority`, `assignments(user_id)`, `assignments(assignable_type, assignable_id)`. Paginación en todos los listados; evita N+1 con `with()` y revísalo con pruebas.
@@ -200,7 +206,7 @@ Ajusta nombres si es necesario, pero conserva las relaciones.
 
 ## 9. Correo entrante → tickets
 
-- Comando `php artisan tickets:ingest-emails` programado cada 5 minutos (configurable), conectado por IMAP a la bandeja definida en `.env`.
+- **Un buzón IMAP por coordinación** (tabla `coordination_mailboxes`, gestionada por el administrador en «Buzones»; el correo de cada buzón entra solo a la bandeja de esa coordinación). Comando `php artisan emails:ingest` programado cada 5 minutos (configurable): recorre los buzones activos y aísla los fallos por buzón (`last_error`). El primer buzón se migra del `.env` con `php artisan mailboxes:seed-from-env {coordinación}`.
 - Flujo por cada correo no leído:
   1. Si `Message-ID` ya existe en `email_ingestions` → `duplicate`, ignorar.
   2. Si el remitente **no corresponde a un usuario activo** → `rejected` (no crear ticket), registrar motivo y ofrecer al jefe verlo en un listado.
@@ -388,6 +394,18 @@ Sprints de **1 semana** (ritmo rápido). Cada sprint termina con demo en `stagin
 
 ---
 
+### Sprint 7 — Multi-coordinación (estaciones, coordinaciones, buzones por coordinación)
+**Objetivo:** que el sistema sirva a varias coordinaciones en distintas estaciones, cada una con su jefe, su bandeja y su aislamiento (plan en `docs/PLAN_MULTI_COORDINACION.md`).
+- [x] Fase 1: estaciones, coordinaciones, `teams.coordination_id` con backfill, CRUD (administrador, permiso `org.manage`) y jefes con varias coordinaciones.
+- [x] Fase 2: aislamiento por coordinación (`scopedTeamIdsQuery`), pruebas de IDOR entre coordinaciones y de envío de tickets entre coordinaciones.
+- [x] Fase 3: un buzón por coordinación (contraseña cifrada, probar conexión, anti-SSRF) y `emails:ingest` por buzón aislado.
+- [x] Fase 4: registro con coordinación, panel con filtros de estación/coordinación, bitácora acotada y textos.
+- [x] Fase 5: datos de volumen (`DemoScaleSeeder`), despliegue (`docs/DESPLIEGUE_MULTI_COORDINACION.md`) y este registro.
+
+**Listo cuando:** un jefe de la coordinación A no puede ver nada de la B (404), un empleado de A puede enviar un ticket al equipo de B, y cada buzón entrega a su propia bandeja.
+
+---
+
 ## 18. Decisiones abiertas (con valor por defecto)
 
 Usa el valor por defecto y **avísame** cuando llegues al punto donde importa. Anota la decisión final en el registro.
@@ -525,3 +543,14 @@ Usa el valor por defecto y **avísame** cuando llegues al punto donde importa. A
 **2026-10-29 — Migración a reglas Cursor (compatible con Claude Code)**
 
 69. **Dualidad Cursor + Claude Code sin duplicar la biblia del producto.** Se mantiene `CLAUDE.md` como fuente de verdad always-on (Cursor y Claude lo leen). Las reglas detalladas viven en `docs/ai/rules/*.md` y se regeneran con `bash scripts/ai/sync-rules.sh` hacia `.cursor/rules/*.mdc` (globs / `alwaysApply`) y `.claude/rules/*.md` (`paths`). Se reescribieron las reglas heredadas del dashboard (VPN-only / un usuario) para este sistema de tickets (público HTTPS, multi-rol). Agents y commands canónicos en `.cursor/agents` y `.cursor/commands`, espejados a `.claude/` por el mismo script. Hook de shell único en `scripts/ai/validate-bash.sh` (detecta payload Cursor vs Claude), cableado en `.cursor/hooks.json` (`beforeShellExecution`) y `.claude/settings.json` (`PreToolUse` Bash); ya no bloquea supuestos VPN-only del dashboard, sí MySQL localhost, SSH key-only, `.env`, ufw y operaciones destructivas. `.gitignore` ignora basura local de `.cursor/` pero versiona rules/agents/commands/hooks. Guía: `docs/AI_TOOLS.md`. No se añadió `AGENTS.md` copia de `CLAUDE.md` (duplicaría contexto en Cursor).
+
+**2026-11-03 — Multi-coordinación (Sprint 7)**
+
+70. **Jerarquía y datos.** Estación/Edificio → Coordinación → Equipo. Tablas `stations`, `coordinations`, `coordination_user` (jefes ↔ coordinaciones) y `coordination_mailboxes`; `teams.coordination_id` (obligatoria, FK `restrict`, nombre único **por coordinación**), `categories.coordination_id` (nula = global; nombre único por coordinación; los nulos no chocan en el índice único, por lo que dos categorías globales con el mismo nombre solo las impide la validación) y `users.requested_coordination_id`. Tickets y actividades **no** llevan `coordination_id`: se deriva de `team_id` (una sola fuente de verdad). La migración crea la «Estación principal / Coordinación principal» solo si ya hay datos, le asigna todos los equipos, a los jefes activos, a las cuentas pendientes sin coordinación y a los correos existentes; en una base vacía no crea nada. Folios, chat directo y Excel en la nube siguen globales (el Excel por coordinación queda en backlog).
+71. **Una sola definición de alcance (`User`).** `UserRole::hasGlobalScope()` ya solo es del administrador. `User::scopedTeamIdsQuery()` (`null` = todos): administrador todos; jefe los equipos de sus coordinaciones; coordinador/empleado los suyos. `coordinationIdsQuery()` y `workingTeamIds()` la complementan; `coordinationIds()` memoriza en la instancia (las Policies de listados la usan por fila; `forgetCoordinationIds()` la invalida). La usan `Ticket/Activity::scopeVisibleTo` (el jefe además abre lo que él creó o se le asignó), listados y exportaciones, «Mis pendientes» (el jefe también tiene la vista de equipo), `AssignmentService`, el panel, la bitácora, correos, equipos, categorías y usuarios. Fuera de alcance responde **404**. Para pruebas, `UserFactory::jefe()` supervisa todas las coordinaciones (también las que se creen después) y `jefeOf(...)` solo las indicadas.
+72. **Gestión por jefe.** `scopeManageableBy` en `Team`, `Category` y `User`. El jefe gestiona equipos de sus coordinaciones (crear/mover solo dentro de ellas), categorías de sus coordinaciones (las globales son del administrador) y usuarios en sus equipos o que solicitaron su coordinación; una cuenta sin equipo ni coordinación solicitada (huérfana) la puede ubicar cualquier jefe. **Otorgar los roles de jefe de zona y administrador, y las coordinaciones de un jefe, es exclusivo del administrador** (decisión del implementador, más estricta que el plan: evita que un jefe cree jefes con alcance que él no controla); otro jefe o un administrador son 404 para un jefe. La regla «siempre al menos un jefe activo» se retira (una coordinación sin jefe la cubre el administrador); se conserva para administradores. Los Form Requests de usuarios, equipos, categorías, correos y buzones autorizan con `Gate::authorize` para respetar ese 404.
+73. **Permiso `org.manage`** (solo administrador): estaciones, coordinaciones y buzones. Tras desplegar hay que correr `db:seed --class=RolesAndPermissionsSeeder --force`; sin eso esas pantallas responden 403 a todos.
+74. **Buzones por coordinación.** `MailboxPoller` recorre los buzones activos y procesa cada uno aislado (`last_error` sin credenciales y evento `poll_failed`); `EmailIngestionService::ingest($coordinationId)` deduplica por `(coordination_id, message_id)` y aplica los límites por remitente/hora y por corrida **por buzón**. Contraseña con cast `encrypted` + `$hidden`, nunca en vistas, JSON, bitácora ni mensajes de error; vacío al editar conserva la actual. **Anti-SSRF** (`PublicMailHost`): el host debe ser IP/nombre públicos; se rechazan IPs privadas, de loopback, enlace local y reservadas, también tras resolver DNS. Limitación conocida: la validación resuelve el nombre al guardar y la conexión resuelve de nuevo (ventana de DNS rebinding); mitigación operativa: solo el administrador edita buzones y la conexión sale desde la VPS. «Probar conexión» con límite 5/min. Las notificaciones de correo nuevo van a los jefes de esa coordinación (o a los administradores si no tiene jefe activo, `Coordination::approvers()`). La conversión a Actividad solo ofrece y acepta equipos de la coordinación del correo (si no, se revierte). _No verificado:_ conexión contra un servidor IMAP real y la decisión abierta #8 (OAuth) sigue vigente, ahora por buzón.
+75. **Registro con coordinación.** El formulario pide una coordinación activa de una estación activa (select agrupado por estación; riesgo aceptado: esos nombres son visibles en la página pública de registro). Se guarda en `requested_coordination_id`; el aviso va a los jefes de esa coordinación (o a los administradores) y solo ellos ven la solicitud.
+76. **Bitácora y panel.** `activity_log.coordination_id` (sin FK a propósito: historial) lo llena `AuditCoordinationResolver` en el evento `creating` de la entrada (sujeto → equipo → coordinación; sin sujeto, la coordinación de quien lo causó; lo global/del sistema queda en `null` y solo lo ve el administrador). Para un usuario se toma la coordinación que solicitó, la de su primer equipo o la primera que supervisa (aproximación: una persona en dos coordinaciones registra solo una). El jefe ve solo la bitácora de sus coordinaciones. El panel suma filtros **Estación** y **Coordinación** (un id fuera del alcance falla la validación; solo estrechan) y, si hay más de una coordinación con trabajo, la tabla «Por coordinación»; la llave de cache incluye los equipos del alcance. El límite de consultas agregadas del panel pasó de 30 a 36 (sigue sin crecer con los datos).
+77. **Datos y pruebas.** `DemoDataSeeder` ahora crea dos estaciones y dos jefes demo; `DemoScaleSeeder` (solo local, no se invoca por defecto: `php artisan db:seed --class=DemoScaleSeeder`) crea 3 estaciones, 5 coordinaciones, 15 equipos, 110 usuarios y 4000 tickets por lotes. Pruebas nuevas: `tests/Feature/Org/*` (CRUD, matriz de acceso, aislamiento/IDOR, buzones, backfill de la migración, escala) y `tests/Feature/Emails/MailboxPollerTest`. Pruebas anteriores adaptadas por decisión legítima: las que suponían «jefe = global» ahora usan al administrador cuando prueban lo global, y las de «último jefe» se reemplazaron por las del último administrador. Falla heredada del commit anterior, no relacionada: `TicketAssignmentTest::test_show_page_offers_take_only_to_those_who_can_and_assign_only_to_managers`. _No verificado:_ MySQL 8 (cambio a `NOT NULL` con FK, índices únicos compuestos, `DROP INDEX` por nombre), navegador real y rendimiento medido con EXPLAIN en MySQL (en SQLite solo se comprobó que el número de consultas es constante).

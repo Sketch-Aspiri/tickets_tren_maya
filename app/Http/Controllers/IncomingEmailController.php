@@ -21,6 +21,7 @@ class IncomingEmailController extends Controller
         $status = $request->statusFilter();
 
         $emails = IncomingEmail::query()
+            ->visibleTo($request->user())
             ->with('attachments')
             ->when($status !== 'all', fn ($query) => $query->where('status', $status))
             ->orderByDesc('received_at')

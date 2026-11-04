@@ -23,6 +23,7 @@ class IncomingEmailConvertRedirectTest extends DatabaseTestCase
     public function test_converting_an_email_redirects_to_a_page_that_renders(): void
     {
         $email = new IncomingEmail([
+            'coordination_id' => $this->teamA->coordination_id,
             'message_id' => 'msg-redirect-1',
             'from_email' => 'externo@example.com',
             'from_name' => 'Externo',

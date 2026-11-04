@@ -14,7 +14,7 @@ return [
     ],
     'forbidden' => [
         'title' => 'Acceso no permitido',
-        'message' => 'Tu cuenta no tiene permiso para realizar esta acción o ver esta página. Si crees que es un error, contacta al jefe de zona.',
+        'message' => 'Tu cuenta no tiene permiso para realizar esta acción o ver esta página. Si crees que es un error, contacta al jefe de zona de tu coordinación o al administrador.',
     ],
     'not_found' => [
         'title' => 'Página no encontrada',

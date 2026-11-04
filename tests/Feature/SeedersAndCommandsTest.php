@@ -70,8 +70,13 @@ class SeedersAndCommandsTest extends DatabaseTestCase
         $this->assertEqualsCanonicalizing($managerial, $granted(UserRole::Coordinador));
         $everything = array_column(PermissionName::cases(), 'value');
         $this->assertEqualsCanonicalizing($everything, $granted(UserRole::Administrador));
-        $this->assertEqualsCanonicalizing(array_values(array_diff($everything, ['admins.manage'])), $granted(UserRole::JefeZona));
+        $this->assertEqualsCanonicalizing(array_values(array_diff($everything, ['admins.manage', 'org.manage'])), $granted(UserRole::JefeZona));
         $this->assertContains('admins.manage', $granted(UserRole::Administrador));
+        // Estructura organizacional (estaciones, coordinaciones, buzones): solo administrador.
+        $this->assertContains('org.manage', $granted(UserRole::Administrador));
+        foreach ([UserRole::JefeZona, UserRole::Coordinador, UserRole::Empleado] as $role) {
+            $this->assertNotContains('org.manage', $granted($role));
+        }
         $this->assertNotContains('admins.manage', $granted(UserRole::JefeZona));
         $this->assertNotContains('admins.manage', $granted(UserRole::Coordinador));
         $this->assertNotContains('admins.manage', $granted(UserRole::Empleado));

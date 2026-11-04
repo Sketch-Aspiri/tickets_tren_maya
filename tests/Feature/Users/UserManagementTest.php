@@ -170,60 +170,35 @@ class UserManagementTest extends DatabaseTestCase
         User::factory()->jefe()->create();
         $team = Team::factory()->create();
 
+        // El rol de jefe de zona solo lo cambia el administrador (tambien el propio).
         $this->signIn($this->jefe)->from('/users')->put("/users/{$this->jefe->id}", ['role' => 'empleado', 'team_ids' => [$team->id]])
-            ->assertSessionHas('error', __('users.errors.cannot_change_own_role'));
+            ->assertSessionHas('error', __('users.errors.admin_only'));
 
         $this->assertSame(UserRole::JefeZona, $this->jefe->fresh()->roleEnum());
     }
 
-    public function test_a_jefe_can_demote_another_jefe_while_at_least_one_remains(): void
+    public function test_a_jefe_cannot_reach_another_jefe_but_the_administrator_can_demote_them(): void
     {
         $other = User::factory()->jefe()->create();
         $team = Team::factory()->create();
 
-        $this->signIn($this->jefe)->put("/users/{$other->id}", ['role' => 'empleado', 'team_ids' => [$team->id]])
+        // Otro jefe esta fuera de lo que un jefe gestiona: 404.
+        $this->signIn($this->jefe)->put("/users/{$other->id}", ['role' => 'empleado', 'team_ids' => [$team->id]])->assertNotFound();
+        $this->assertSame(UserRole::JefeZona, $other->fresh()->roleEnum());
+
+        $this->signIn(User::factory()->administrador()->create())->put("/users/{$other->id}", ['role' => 'empleado', 'team_ids' => [$team->id]])
             ->assertSessionHasNoErrors();
 
         $this->assertSame(UserRole::Empleado, $other->fresh()->roleEnum());
     }
 
-    public function test_service_refuses_to_deactivate_the_last_active_jefe_even_for_a_different_actor(): void
+    public function test_the_last_active_jefe_can_be_deactivated_because_the_administrator_covers(): void
     {
-        $actor = User::factory()->coordinador()->create();
-
-        $this->expectException(BusinessRuleException::class);
-        $this->expectExceptionMessage(__('users.errors.last_jefe'));
-
-        try {
-            app(UserService::class)->deactivate($actor, $this->jefe);
-        } finally {
-            $this->assertTrue($this->jefe->fresh()->isActive());
-        }
-    }
-
-    public function test_service_refuses_to_demote_the_last_active_jefe_even_for_a_different_actor(): void
-    {
-        $actor = User::factory()->coordinador()->create();
-        $team = Team::factory()->create();
-
-        $this->expectException(BusinessRuleException::class);
-        $this->expectExceptionMessage(__('users.errors.last_jefe'));
-
-        try {
-            app(UserService::class)->updateRoleAndTeams($actor, $this->jefe, UserRole::Empleado, [$team->id]);
-        } finally {
-            $this->assertSame(UserRole::JefeZona, $this->jefe->fresh()->roleEnum());
-        }
-    }
-
-    public function test_an_inactive_jefe_does_not_count_as_a_remaining_jefe(): void
-    {
-        User::factory()->jefe()->inactive()->create();
-        $actor = User::factory()->coordinador()->create();
-
-        $this->expectException(BusinessRuleException::class);
+        $actor = User::factory()->administrador()->create();
 
         app(UserService::class)->deactivate($actor, $this->jefe);
+
+        $this->assertTrue($this->jefe->fresh()->isInactive());
     }
 
     public function test_deactivating_a_coordinator_releases_the_teams_they_coordinate(): void
@@ -339,23 +314,25 @@ class UserManagementTest extends DatabaseTestCase
         $admin = User::factory()->administrador()->create();
         $team = Team::factory()->create();
 
-        $this->signIn($this->jefe)->put("/users/{$admin->id}", ['role' => 'empleado', 'team_ids' => [$team->id]])->assertForbidden();
-        $this->signIn($this->jefe)->post("/users/{$admin->id}/deactivate")->assertForbidden();
+        // Fuera del alcance de un jefe: 404 (no se revela la cuenta).
+        $this->signIn($this->jefe)->put("/users/{$admin->id}", ['role' => 'empleado', 'team_ids' => [$team->id]])->assertNotFound();
+        $this->signIn($this->jefe)->post("/users/{$admin->id}/deactivate")->assertNotFound();
 
         $this->assertSame(UserRole::Administrador, $admin->fresh()->roleEnum());
         $this->assertTrue($admin->fresh()->isActive());
 
         $inactive = User::factory()->administrador()->inactive()->create();
-        $this->signIn($this->jefe)->post("/users/{$inactive->id}/activate")->assertForbidden();
+        $this->signIn($this->jefe)->post("/users/{$inactive->id}/activate")->assertNotFound();
         $this->assertTrue($inactive->fresh()->isInactive());
     }
 
-    public function test_a_jefe_can_still_view_an_administrador_account_but_not_promote_anyone_to_it(): void
+    public function test_a_jefe_cannot_see_an_administrador_account_nor_promote_anyone_to_it(): void
     {
         $admin = User::factory()->administrador()->create(['name' => 'Ada Admin']);
         $empleado = User::factory()->empleado()->create();
 
-        $this->signIn($this->jefe)->get("/users/{$admin->id}")->assertOk()->assertSee('Ada Admin');
+        // Las cuentas de administrador estan fuera del alcance de un jefe de zona: 404.
+        $this->signIn($this->jefe)->get("/users/{$admin->id}")->assertNotFound();
         $this->signIn($this->jefe)->put("/users/{$empleado->id}", ['role' => 'administrador'])->assertInvalid(['role']);
 
         $this->assertSame(UserRole::Empleado, $empleado->fresh()->roleEnum());

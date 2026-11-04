@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Auth;
 
 use App\Enums\UserStatus;
+use App\Models\Coordination;
 use App\Models\User;
 use App\Notifications\NewUserPendingApproval;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,12 +15,22 @@ use Tests\DatabaseTestCase;
 
 class RegistrationTest extends DatabaseTestCase
 {
+    private Coordination $coordination;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->coordination = Coordination::factory()->create();
+    }
+
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     private function validPayload(array $overrides = []): array
     {
         return array_merge([
+            'coordination_id' => $this->coordination->id,
             'name' => 'Ana María Pérez',
             'email' => 'ana@example.com',
             'password' => 'Str0ng-Passw0rd!',
@@ -100,7 +111,7 @@ class RegistrationTest extends DatabaseTestCase
         $this->post('/register', $this->validPayload());
 
         $user = User::query()->where('email', 'ana@example.com')->firstOrFail();
-        $activity = Activity::query()->where('subject_id', $user->id)->where('event', 'created')->first();
+        $activity = Activity::query()->where('subject_type', $user->getMorphClass())->where('subject_id', $user->id)->where('event', 'created')->first();
 
         $this->assertNotNull($activity);
         $this->assertSame('pending', $activity->attribute_changes['attributes']['status']);
@@ -145,5 +156,54 @@ class RegistrationTest extends DatabaseTestCase
         $user = User::factory()->empleado()->create();
 
         $this->signIn($user)->get('/register')->assertRedirect(route('dashboard'));
+    }
+
+    public function test_registration_requires_an_active_coordination_of_an_active_station(): void
+    {
+        $inactive = Coordination::factory()->inactive()->create();
+        $inactiveStation = Coordination::factory()->create();
+        $inactiveStation->station->update(['active' => false]);
+
+        $this->post('/register', $this->validPayload(['coordination_id' => null]))->assertInvalid(['coordination_id']);
+        $this->post('/register', $this->validPayload(['coordination_id' => 99999]))->assertInvalid(['coordination_id']);
+        $this->post('/register', $this->validPayload(['coordination_id' => $inactive->id]))->assertInvalid(['coordination_id']);
+        $this->post('/register', $this->validPayload(['coordination_id' => $inactiveStation->id]))->assertInvalid(['coordination_id']);
+        $this->assertDatabaseMissing('users', ['email' => 'ana@example.com']);
+    }
+
+    public function test_the_requested_coordination_is_stored_and_only_its_bosses_are_notified(): void
+    {
+        Notification::fake();
+        $other = Coordination::factory()->create();
+        $bossOfRequested = User::factory()->jefeOf($this->coordination)->create();
+        $bossOfOther = User::factory()->jefeOf($other)->create();
+        $admin = User::factory()->administrador()->create();
+
+        $this->post('/register', $this->validPayload())->assertRedirect(route('login'));
+
+        $user = User::query()->where('email', 'ana@example.com')->firstOrFail();
+        $this->assertSame($this->coordination->id, $user->requested_coordination_id);
+        Notification::assertSentTo($bossOfRequested, NewUserPendingApproval::class);
+        Notification::assertNotSentTo($bossOfOther, NewUserPendingApproval::class);
+        Notification::assertNotSentTo($admin, NewUserPendingApproval::class);
+    }
+
+    public function test_administrators_are_notified_when_the_coordination_has_no_active_boss(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->administrador()->create();
+        $inactiveBoss = User::factory()->jefeOf($this->coordination)->inactive()->create();
+
+        $this->post('/register', $this->validPayload())->assertRedirect(route('login'));
+
+        Notification::assertSentTo($admin, NewUserPendingApproval::class);
+        Notification::assertNotSentTo($inactiveBoss, NewUserPendingApproval::class);
+    }
+
+    public function test_the_registration_form_lists_coordinations_grouped_by_station(): void
+    {
+        $this->get('/register')->assertOk()
+            ->assertSee($this->coordination->station->name)
+            ->assertSee($this->coordination->name);
     }
 }

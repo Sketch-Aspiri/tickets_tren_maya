@@ -10,6 +10,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -77,6 +78,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Coordinacion que la persona eligio al registrarse.
+     *
+     * @return BelongsTo<Coordination, $this>
+     */
+    public function requestedCoordination(): BelongsTo
+    {
+        return $this->belongsTo(Coordination::class, 'requested_coordination_id');
+    }
+
+    /**
      * Equipos a los que pertenece (cualquier rol puede estar en varios a la vez).
      *
      * @return BelongsToMany<Team, $this>
@@ -84,6 +95,16 @@ class User extends Authenticatable
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class)->withTimestamps();
+    }
+
+    /**
+     * Coordinaciones que supervisa (solo jefes de zona).
+     *
+     * @return BelongsToMany<Coordination, $this>
+     */
+    public function coordinations(): BelongsToMany
+    {
+        return $this->belongsToMany(Coordination::class)->withTimestamps();
     }
 
     /**
@@ -125,11 +146,104 @@ class User extends Authenticatable
     }
 
     /**
-     * Administrador y jefe de zona ven todos los equipos; para el resto el alcance son sus equipos.
+     * Solo el administrador ve todos los equipos de todas las coordinaciones; para el resto el alcance es
+     * `scopedTeamIdsQuery()`.
      */
     public function seesAllTeams(): bool
     {
         return $this->roleEnum()?->hasGlobalScope() ?? false;
+    }
+
+    /**
+     * Ids de las coordinaciones que supervisa (jefe de zona, via `coordination_user`) o a las que pertenece
+     * (coordinador y empleado, via la coordinacion de sus equipos). Subconsulta, sin lectura previa.
+     */
+    public function coordinationIdsQuery(): QueryBuilder
+    {
+        if ($this->roleEnum() === UserRole::JefeZona) {
+            return DB::table('coordination_user')->select('coordination_id')->where('user_id', $this->getKey());
+        }
+
+        return DB::table('teams')->select('coordination_id')->whereIn('id', $this->teamIdsQuery());
+    }
+
+    /**
+     * Memoria de `coordinationIds()` (una instancia de usuario vive lo que dura una peticion).
+     *
+     * @var list<int>|null
+     */
+    private ?array $coordinationIdsMemo = null;
+
+    /**
+     * Ids de las coordinaciones del usuario como lista, memorizados en la instancia: las Policies de listados la
+     * consultan una vez por fila y no deben generar una consulta cada vez. Usa `forgetCoordinationIds()` si el
+     * conjunto cambia durante la misma peticion.
+     *
+     * @return list<int>
+     */
+    public function coordinationIds(): array
+    {
+        return $this->coordinationIdsMemo ??= $this->coordinationIdsQuery()
+            ->pluck('coordination_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function forgetCoordinationIds(): void
+    {
+        $this->coordinationIdsMemo = null;
+    }
+
+    /**
+     * Texto corto para mostrar a que coordinacion(es) pertenece o cual(es) supervisa: el nombre si es una, el
+     * numero si son varias, vacio para el administrador (global) o quien aun no tiene ninguna.
+     */
+    public function coordinationLabel(): string
+    {
+        if ($this->seesAllTeams()) {
+            return '';
+        }
+
+        $ids = $this->coordinationIds();
+
+        return match (count($ids)) {
+            0 => '',
+            1 => (string) Coordination::query()->whereKey($ids[0])->value('name'),
+            default => trans_choice('common.nav.coordination_count', count($ids), ['count' => count($ids)]),
+        };
+    }
+
+    /**
+     * UNICA definicion de "equipos que gestiona/ve como unidad": `null` = todos (administrador); jefe de zona =
+     * equipos de sus coordinaciones; coordinador y empleado = sus equipos. Subconsulta, sin lectura previa.
+     */
+    public function scopedTeamIdsQuery(): ?QueryBuilder
+    {
+        return match ($this->roleEnum()) {
+            UserRole::Administrador => null,
+            UserRole::JefeZona => DB::table('teams')->select('id')->whereIn('coordination_id', $this->coordinationIdsQuery()),
+            default => $this->teamIdsQuery(),
+        };
+    }
+
+    /**
+     * Lo mismo que `scopedTeamIdsQuery()` pero como lista (`null` = todos), leida de la base.
+     *
+     * @return list<int>|null
+     */
+    public function scopedTeamIds(): ?array
+    {
+        $query = $this->scopedTeamIdsQuery();
+
+        if ($query === null) {
+            return null;
+        }
+
+        $column = $query->columns[0] ?? 'team_id';
+
+        return $query->pluck($column)->map(fn (mixed $id): int => (int) $id)->sort()->values()->all();
     }
 
     /**
@@ -142,6 +256,10 @@ class User extends Authenticatable
     {
         if ($this->seesAllTeams()) {
             return Team::query()->orderBy('name')->get(['id', 'name']);
+        }
+
+        if ($this->roleEnum() === UserRole::JefeZona) {
+            return Team::query()->whereIn('coordination_id', $this->coordinationIdsQuery())->orderBy('name')->get(['id', 'name']);
         }
 
         $teams = $this->teams()->orderBy('teams.name')->get(['teams.id', 'teams.name']);
@@ -159,7 +277,7 @@ class User extends Authenticatable
             return $requested;
         }
 
-        $own = $this->teamIds();
+        $own = $this->workingTeamIds();
 
         if (count($own) === 1) {
             return $own[0];
@@ -169,11 +287,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Equipos entre los que trabaja un usuario sin alcance global: los de las coordinaciones que supervisa (jefe
+     * de zona) o los propios (coordinador y empleado).
+     *
+     * @return list<int>
+     */
+    public function workingTeamIds(): array
+    {
+        return $this->roleEnum() === UserRole::JefeZona ? ($this->scopedTeamIds() ?? []) : $this->teamIds();
+    }
+
+    /**
      * Debe elegir el equipo en el formulario (mas de uno o alcance global).
      */
     public function mustChooseTeam(): bool
     {
-        return $this->seesAllTeams() || count($this->teamIds()) > 1;
+        return $this->seesAllTeams() || count($this->workingTeamIds()) > 1;
     }
 
     /**
@@ -188,9 +317,47 @@ class User extends Authenticatable
             return $requested;
         }
 
-        $own = $this->teamIds();
+        $own = $this->workingTeamIds();
 
         return count($own) === 1 ? $own[0] : null;
+    }
+
+    /**
+     * Usuarios que `$actor` puede ver y gestionar: el administrador a todos; un jefe de zona a si mismo, a los
+     * integrantes de los equipos de sus coordinaciones y a las cuentas que solicitaron una de sus coordinaciones.
+     * Nunca a otros jefes ni a administradores (los gestiona el administrador). Coordinador y empleado: solo a si.
+     * Las cuentas sin equipo ni coordinacion solicitada (aun sin ubicar) las puede ubicar cualquier jefe.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    public function scopeManageableBy(Builder $query, User $actor): Builder
+    {
+        if ($actor->seesAllTeams()) {
+            return $query;
+        }
+
+        if ($actor->roleEnum() !== UserRole::JefeZona) {
+            return $query->whereKey($actor->getKey());
+        }
+
+        return $query->where(function (Builder $scope) use ($actor): void {
+            $scope->whereKey($actor->getKey())
+                ->orWhere(function (Builder $others) use ($actor): void {
+                    $others->whereDoesntHave('roles', fn (Builder $role) => $role->whereIn('name', [UserRole::Administrador->value, UserRole::JefeZona->value]))
+                        ->where(function (Builder $reach) use ($actor): void {
+                            $reach->whereIn('users.id', DB::table('team_user')->select('user_id')->whereIn('team_id', $actor->scopedTeamIdsQuery()))
+                                ->orWhere(fn (Builder $requested) => $requested
+                                    ->where('users.status', '!=', UserStatus::Active->value)
+                                    ->whereIn('users.requested_coordination_id', $actor->coordinationIdsQuery()))
+                                // Sin equipo ni coordinacion solicitada: cuenta aun sin ubicar; cualquier jefe puede darle lugar.
+                                ->orWhere(fn (Builder $orphan) => $orphan
+                                    ->whereNull('users.requested_coordination_id')
+                                    ->where('users.status', '!=', UserStatus::Active->value)
+                                    ->whereNotIn('users.id', DB::table('team_user')->select('user_id')));
+                        });
+                });
+        });
     }
 
     /**

@@ -61,8 +61,8 @@ final class TicketListingService
      *
      * En este listado (y en su exportación, que reutiliza los mismos filtros) coordinador y empleado ven
      * SOLO lo de su(s) equipo(s): a diferencia de `visibleTo`, aquí no cuenta lo asignado explícitamente
-     * fuera de su equipo (eso sigue viéndose en "Mis pendientes", que usa `baseQuery` directamente). Jefe y
-     * administrador (`seesAllTeams`) no llevan esta restricción.
+     * fuera de su equipo (eso sigue viéndose en "Mis pendientes", que usa `baseQuery` directamente). El jefe de zona
+     * ve los equipos de sus coordinaciones (`scopedTeamIdsQuery`); solo el administrador no lleva restricción.
      *
      * @param  array{status?: ?string, priority?: ?string, category_id?: ?int, responsible_id?: ?int, team_id?: ?int, overdue?: ?bool, unassigned?: ?bool, q?: ?string}  $filters
      * @return Builder<Ticket>
@@ -70,7 +70,7 @@ final class TicketListingService
     private function filtered(User $user, array $filters): Builder
     {
         return $this->baseQuery($user)
-            ->when(! $user->seesAllTeams(), fn (Builder $q) => $q->whereIn('tickets.team_id', $user->teamIdsQuery()))
+            ->when($user->scopedTeamIdsQuery(), fn (Builder $q, $teams) => $q->whereIn('tickets.team_id', $teams))
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('tickets.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('tickets.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('tickets.category_id', $id))
@@ -96,7 +96,7 @@ final class TicketListingService
         $query = $this->baseQuery($user)->open();
 
         if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
-            $query->whereIn('tickets.team_id', $user->teamIdsQuery());
+            $query->whereIn('tickets.team_id', $user->scopedTeamIdsQuery() ?? $user->teamIdsQuery());
         } else {
             $query->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()));
         }

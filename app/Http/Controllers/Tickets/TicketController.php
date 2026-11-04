@@ -42,7 +42,7 @@ class TicketController extends Controller
             'filters' => $request->filters(),
             'statuses' => TicketStatus::cases(),
             'priorities' => Priority::cases(),
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => Category::query()->visibleTo(request()->user())->orderBy('name')->get(['id', 'name']),
             // Filtro por equipo: solo quien ve mas de un equipo (alcance global o varios equipos).
             'teams' => $user->selectableTeams(),
             'responsibles' => $this->assignments->assignableUsers($user),
@@ -126,7 +126,7 @@ class TicketController extends Controller
         return [
             'ticket' => $ticket,
             'priorities' => Priority::cases(),
-            'categories' => $this->categories->selectable($ticket->category_id),
+            'categories' => $this->categories->selectable(request()->user(), $ticket->category_id),
             // Un ticket nuevo puede mandarse a cualquier equipo (p. ej. al de TI), no solo al del creador.
             'teams' => $ticket->exists ? collect() : Team::query()->orderBy('name')->get(['id', 'name']),
             'defaultTeamId' => $ticket->exists ? null : ($user->teamIds()[0] ?? null),

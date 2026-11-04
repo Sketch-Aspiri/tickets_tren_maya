@@ -10,7 +10,10 @@ use App\Models\Category;
 use App\Models\ChatMessage;
 use App\Models\Comment;
 use App\Models\Conversation;
+use App\Models\Coordination;
+use App\Models\CoordinationMailbox;
 use App\Models\IncomingEmail;
+use App\Models\Station;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -44,6 +47,9 @@ final class MorphMap
             'incoming_email' => IncomingEmail::class,
             'conversation' => Conversation::class,
             'chat_message' => ChatMessage::class,
+            'station' => Station::class,
+            'coordination' => Coordination::class,
+            'coordination_mailbox' => CoordinationMailbox::class,
             'App\Models\User' => User::class,
             'App\Models\Team' => Team::class,
         ];

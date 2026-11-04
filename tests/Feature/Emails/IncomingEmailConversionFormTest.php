@@ -28,6 +28,7 @@ class IncomingEmailConversionFormTest extends DatabaseTestCase
     private function makeIncomingEmail(): IncomingEmail
     {
         $email = new IncomingEmail([
+            'coordination_id' => $this->teamA->coordination_id,
             'message_id' => 'msg-convert-form-1',
             'from_email' => 'solicitante@example.com',
             'from_name' => 'Solicitante Externo',

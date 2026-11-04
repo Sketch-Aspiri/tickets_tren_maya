@@ -6,10 +6,13 @@ return [
     'edit' => 'Editar equipo',
     'columns' => [
         'name' => 'Nombre',
+        'coordination' => 'Coordinación',
         'coordinator' => 'Coordinador',
         'members' => 'Integrantes',
     ],
     'form' => [
+        'coordination' => 'Coordinación',
+        'choose_coordination' => 'Elige una coordinación',
         'name' => 'Nombre del equipo',
         'coordinator' => 'Coordinador',
         'no_coordinator' => 'Sin coordinador',

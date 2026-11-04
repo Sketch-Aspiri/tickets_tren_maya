@@ -7,6 +7,7 @@ namespace Tests\Feature\Users;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\UserService;
@@ -50,7 +51,7 @@ class UserIntegrityTest extends DatabaseTestCase
         $pending = User::factory()->pending()->create();
         $team = Team::factory()->create();
 
-        $this->signIn($this->jefe)->post("/users/{$pending->id}/approve", ['role' => 'jefe_zona', 'team_ids' => [$team->id]])
+        $this->signIn(User::factory()->administrador()->create())->post("/users/{$pending->id}/approve", ['role' => 'jefe_zona', 'team_ids' => [$team->id]])
             ->assertSessionHasNoErrors();
 
         $fresh = $pending->fresh();
@@ -80,7 +81,7 @@ class UserIntegrityTest extends DatabaseTestCase
         $team = Team::factory()->create();
         $pending = User::factory()->pending()->create();
 
-        app(UserService::class)->approve($this->jefe, $pending, UserRole::JefeZona, [$team->id]);
+        app(UserService::class)->approve(User::factory()->administrador()->create(), $pending, UserRole::JefeZona, [$team->id]);
 
         $this->assertSame([$team->id], $pending->fresh()->teamIds());
     }
@@ -141,37 +142,50 @@ class UserIntegrityTest extends DatabaseTestCase
 
     public function test_a_database_deadlock_becomes_a_retry_message_instead_of_a_server_error(): void
     {
-        $other = User::factory()->jefe()->create();
+        $admin = User::factory()->administrador()->create();
+        $other = User::factory()->administrador()->create();
         $this->makeAuditFail(new PDOException('SQLSTATE[40001]: Deadlock found when trying to get lock; try restarting transaction'));
 
         $this->expectException(BusinessRuleException::class);
         $this->expectExceptionMessage(__('users.errors.concurrent_change'));
 
-        app(UserService::class)->deactivate($this->jefe, $other);
+        app(UserService::class)->deactivate($admin, $other);
     }
 
     public function test_non_concurrency_database_errors_are_not_swallowed(): void
     {
-        $other = User::factory()->jefe()->create();
+        $admin = User::factory()->administrador()->create();
+        $other = User::factory()->administrador()->create();
         $this->makeAuditFail(new PDOException('disk I/O error'));
 
         $this->expectException(PDOException::class);
 
-        app(UserService::class)->deactivate($this->jefe, $other);
+        app(UserService::class)->deactivate($admin, $other);
     }
 
-    public function test_the_last_jefe_rule_counts_only_other_active_jefes(): void
+    public function test_the_last_administrator_rule_counts_only_other_active_administrators(): void
     {
-        $inactiveJefe = User::factory()->jefe()->inactive()->create();
-        $second = User::factory()->jefe()->create();
+        $first = User::factory()->administrador()->create();
+        $second = User::factory()->administrador()->create();
+        $third = User::factory()->administrador()->create();
 
-        // Con dos activos se puede inactivar a uno; el que queda ya no.
-        app(UserService::class)->deactivate($this->jefe, $second);
+        // Con tres activos se pueden inactivar dos; el ultimo lo protege `last_admin` (ver UserManagementTest).
+        app(UserService::class)->deactivate($first, $second);
+        app(UserService::class)->deactivate($first, $third);
 
-        $this->expectException(BusinessRuleException::class);
-        $this->expectExceptionMessage(__('users.errors.last_jefe'));
+        $this->assertTrue($second->fresh()->isInactive());
+        $this->assertTrue($third->fresh()->isInactive());
+        $this->assertTrue($first->fresh()->isActive());
+    }
 
-        app(UserService::class)->deactivate($inactiveJefe, $this->jefe);
+    public function test_a_coordination_may_be_left_without_an_active_jefe(): void
+    {
+        $actor = User::factory()->administrador()->create();
+
+        // Una coordinacion sin jefe activo la cubre el administrador: ya no se exige un minimo de jefes.
+        app(UserService::class)->deactivate($actor, $this->jefe);
+
+        $this->assertTrue($this->jefe->fresh()->isInactive());
     }
 
     // --- Scope activeWithRole ----------------------------------------------------------
@@ -202,7 +216,7 @@ class UserIntegrityTest extends DatabaseTestCase
     {
         $long = str_repeat('Aa1', 90);
 
-        $this->post('/register', ['name' => 'Nombre Valido', 'email' => 'long@example.com', 'password' => $long, 'password_confirmation' => $long])
+        $this->post('/register', ['coordination_id' => Coordination::factory()->create()->id, 'name' => 'Nombre Valido', 'email' => 'long@example.com', 'password' => $long, 'password_confirmation' => $long])
             ->assertInvalid(['password']);
 
         $this->post('/reset-password', ['token' => 'x', 'email' => 'long@example.com', 'password' => $long, 'password_confirmation' => $long])

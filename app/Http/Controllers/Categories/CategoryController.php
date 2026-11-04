@@ -9,7 +9,9 @@ use App\Http\Requests\Categories\DeleteCategoryRequest;
 use App\Http\Requests\Categories\StoreCategoryRequest;
 use App\Http\Requests\Categories\UpdateCategoryRequest;
 use App\Models\Category;
+use App\Models\Coordination;
 use App\Services\CategoryService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -21,14 +23,14 @@ class CategoryController extends Controller
     {
         $this->authorize('viewAny', Category::class);
 
-        return view('categories.index', ['categories' => $this->categories->paginate()]);
+        return view('categories.index', ['categories' => $this->categories->paginate(request()->user())]);
     }
 
     public function create(): View
     {
         $this->authorize('create', Category::class);
 
-        return view('categories.create', ['category' => new Category(['active' => true])]);
+        return view('categories.create', ['category' => new Category(['active' => true]), 'coordinations' => $this->coordinationOptions()]);
     }
 
     public function store(StoreCategoryRequest $request): RedirectResponse
@@ -44,7 +46,7 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        return view('categories.edit', ['category' => $category]);
+        return view('categories.edit', ['category' => $category, 'coordinations' => $this->coordinationOptions()]);
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
@@ -63,5 +65,21 @@ class CategoryController extends Controller
         $this->categories->delete($category);
 
         return redirect()->route('categories.index')->with('status', 'category-deleted');
+    }
+
+    /**
+     * Coordinaciones entre las que puede elegir quien edita: todas (administrador) o las que supervisa (jefe).
+     *
+     * @return Collection<int, Coordination>
+     */
+    private function coordinationOptions(): Collection
+    {
+        $actor = request()->user();
+
+        return Coordination::query()
+            ->with('station:id,name')
+            ->when(! $actor->seesAllTeams(), fn ($query) => $query->whereIn('id', $actor->coordinationIdsQuery()))
+            ->orderBy('name')
+            ->get();
     }
 }

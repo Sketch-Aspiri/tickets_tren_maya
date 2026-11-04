@@ -25,7 +25,15 @@ use Webklex\PHPIMAP\Message as ImapMessage;
  */
 final class WebklexMailboxClient implements MailboxClient
 {
-    public function __construct(private readonly ClientManager $manager) {}
+    /**
+     * @param  array<string, mixed>|null  $account  Cuenta dinamica del buzon de una coordinacion; sin ella se usa la
+     *                                              cuenta `default` de `config/imap.php`.
+     */
+    public function __construct(
+        private readonly ClientManager $manager,
+        private readonly ?array $account = null,
+        private readonly ?string $folder = null,
+    ) {}
 
     /**
      * @param  callable(string): bool  $isKnown
@@ -33,10 +41,10 @@ final class WebklexMailboxClient implements MailboxClient
      */
     public function fetchMessagesSince(CarbonInterface $since, int $limit, callable $isKnown): array
     {
-        $client = $this->manager->account();
+        $client = $this->account !== null ? $this->manager->make($this->account) : $this->manager->account();
         $client->connect();
 
-        $folder = $client->getFolder((string) config('mail_ingestion.folder', 'INBOX'));
+        $folder = $client->getFolder($this->folder ?? (string) config('mail_ingestion.folder', 'INBOX'));
 
         if ($folder === null) {
             return [];

@@ -23,10 +23,11 @@ final class TeamService
     /**
      * @return LengthAwarePaginator<int, Team>
      */
-    public function paginate(): LengthAwarePaginator
+    public function paginate(User $actor): LengthAwarePaginator
     {
         return Team::query()
-            ->with('coordinator:id,name')
+            ->manageableBy($actor)
+            ->with(['coordinator:id,name', 'coordination.station'])
             ->withCount('members')
             ->orderBy('name')
             ->paginate((int) config('tickets.users_per_page'));
@@ -35,22 +36,24 @@ final class TeamService
     /**
      * Un equipo nuevo no tiene integrantes, asi que nace sin coordinador (ver ActiveCoordinator).
      *
-     * @param  array{name: string}  $data
+     * @param  array{name: string, coordination_id: int}  $data
      */
     public function create(array $data): Team
     {
         return Team::query()->create([
+            'coordination_id' => $data['coordination_id'],
             'name' => $data['name'],
             'coordinator_id' => null,
         ]);
     }
 
     /**
-     * @param  array{name: string, coordinator_id?: ?int}  $data
+     * @param  array{name: string, coordination_id: int, coordinator_id?: ?int}  $data
      */
     public function update(Team $team, array $data): Team
     {
         $team->update([
+            'coordination_id' => $data['coordination_id'],
             'name' => $data['name'],
             'coordinator_id' => $data['coordinator_id'] ?? null,
         ]);

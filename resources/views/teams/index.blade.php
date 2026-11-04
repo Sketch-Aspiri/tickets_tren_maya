@@ -15,6 +15,7 @@
         <thead>
             <tr>
                 <th class="px-4 py-3">{{ __('teams.columns.name') }}</th>
+                <th class="hidden px-4 py-3 md:table-cell">{{ __('teams.columns.coordination') }}</th>
                 <th class="hidden px-4 py-3 sm:table-cell">{{ __('teams.columns.coordinator') }}</th>
                 <th class="px-4 py-3">{{ __('teams.columns.members') }}</th>
                 <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
@@ -27,6 +28,7 @@
                         {{ $team->name }}
                         <p class="text-xs font-normal sm:hidden {{ $team->coordinator ? 'text-gray-600' : 'italic text-gray-700' }}">{{ __('teams.columns.coordinator') }}: {{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }}</p>
                     </td>
+                    <td class="hidden px-4 py-3 md:table-cell">{{ $team->coordination->station->name }} › {{ $team->coordination->name }}</td>
                     <td class="hidden px-4 py-3 sm:table-cell {{ $team->coordinator ? '' : 'italic text-gray-700' }}">{{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }}</td>
                     <td class="px-4 py-3">{{ $team->members_count }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-right">
@@ -43,7 +45,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
+                <tr><td colspan="5" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
             @endforelse
         </tbody>
     </x-table>

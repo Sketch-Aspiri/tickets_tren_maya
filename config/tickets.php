@@ -49,6 +49,8 @@ return [
         'chat_start_per_hour' => 20,
         // Centro de notificaciones: la insignia del menu consulta el resumen cada pocos segundos.
         'notifications_poll_per_minute' => 120,
+        // Probar la conexion de un buzon abre una conexion de red saliente: tope bajo por usuario.
+        'mailbox_test_per_minute' => 5,
         // Fotos de perfil: cambiarla es raro; verlas es frecuente (chat y listas cargan varias por pagina).
         'avatar_upload_per_hour' => 20,
         'avatar_view_per_minute' => 600,

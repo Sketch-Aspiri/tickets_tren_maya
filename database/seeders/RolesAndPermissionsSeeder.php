@@ -69,7 +69,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $jefe = array_values(array_filter(
             PermissionName::cases(),
-            fn (PermissionName $permission): bool => $permission !== PermissionName::AdminsManage,
+            fn (PermissionName $permission): bool => ! in_array($permission, [PermissionName::AdminsManage, PermissionName::OrgManage], true),
         ));
 
         return [

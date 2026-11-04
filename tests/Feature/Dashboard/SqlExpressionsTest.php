@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Dashboard;
 
+use App\Models\Coordination;
 use App\Support\SqlExpressions;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class SqlExpressionsTest extends DatabaseTestCase
 {
     public function test_local_date_shifts_the_stored_utc_timestamp_to_business_time(): void
     {
-        DB::table('teams')->insert(['name' => 'Zeta', 'created_at' => '2026-09-20 03:00:00', 'updated_at' => '2026-09-20 12:00:00']);
+        DB::table('teams')->insert(['coordination_id' => Coordination::factory()->create()->id, 'name' => 'Zeta', 'created_at' => '2026-09-20 03:00:00', 'updated_at' => '2026-09-20 12:00:00']);
 
         $expression = SqlExpressions::localDate('teams.created_at', -300);
         $row = DB::table('teams')->selectRaw("{$expression} as bucket")->first();
@@ -27,7 +28,7 @@ class SqlExpressionsTest extends DatabaseTestCase
 
     public function test_seconds_between_computes_the_difference_in_the_database(): void
     {
-        DB::table('teams')->insert(['name' => 'Zeta', 'created_at' => '2026-09-20 12:00:00', 'updated_at' => '2026-09-22 12:00:30']);
+        DB::table('teams')->insert(['coordination_id' => Coordination::factory()->create()->id, 'name' => 'Zeta', 'created_at' => '2026-09-20 12:00:00', 'updated_at' => '2026-09-22 12:00:30']);
 
         $expression = SqlExpressions::secondsBetween('teams.created_at', 'teams.updated_at');
 

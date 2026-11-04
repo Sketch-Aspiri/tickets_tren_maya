@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\HostResolver;
 use App\Contracts\MailboxClient;
+use App\Contracts\MailboxResolver;
+use App\Infrastructure\DnsHostResolver;
 use App\Infrastructure\WebklexMailboxClient;
+use App\Infrastructure\WebklexMailboxResolver;
 use App\Listeners\LogAuthenticationActivity;
 use App\Models\IncomingEmail;
 use App\Policies\AuditLogPolicy;
@@ -13,6 +17,7 @@ use App\Policies\DashboardPolicy;
 use App\Policies\IncomingEmailPolicy;
 use App\Services\Cloud\CloudFileUploader;
 use App\Services\Cloud\MicrosoftGraphClient;
+use App\Support\AuditCoordinationResolver;
 use App\Support\EnvironmentSecurityCheck;
 use App\Support\MorphMap;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -31,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(MailboxClient::class, WebklexMailboxClient::class);
+        $this->app->bind(MailboxResolver::class, WebklexMailboxResolver::class);
+        $this->app->bind(HostResolver::class, DnsHostResolver::class);
         $this->app->bind(CloudFileUploader::class, MicrosoftGraphClient::class);
     }
 
@@ -46,6 +53,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiters();
 
         Event::subscribe(LogAuthenticationActivity::class);
+
+        // Cada entrada de la bitacora (trait LogsActivity y AuditLogger) queda ligada a su coordinacion.
+        ActivityLogEntry::creating(fn (ActivityLogEntry $entry) => app(AuditCoordinationResolver::class)->assign($entry));
     }
 
     /**
@@ -140,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
             'avatar-view' => ['avatar_view_per_minute', 'perMinute'],
             'notifications-poll' => ['notifications_poll_per_minute', 'perMinute'],
             'notifications-write' => ['notifications_write_per_minute', 'perMinute'],
+            'mailbox-test' => ['mailbox_test_per_minute', 'perMinute'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {

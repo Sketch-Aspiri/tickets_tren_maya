@@ -33,7 +33,7 @@ class TicketViewsTest extends DatabaseTestCase
      */
     private function renderAllPages(): array
     {
-        $category = Category::factory()->create();
+        $category = Category::factory()->create(['coordination_id' => $this->teamA->coordination_id]);
         $ticket = Ticket::factory()->forTeam($this->teamA)->createdBy($this->empA1)->overdue()->assignedTo($this->empA1)
             ->create(['title' => '"><x-evil onload=alert(1)>', 'category_id' => $category->id]);
         $ticket->comments()->create(['body' => "'\"><script>alert(1)</script>", 'user_id' => $this->coordA->id]);

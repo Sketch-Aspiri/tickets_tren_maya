@@ -13,6 +13,7 @@
         <thead>
             <tr>
                 <th class="px-4 py-3">{{ __('categories.columns.name') }}</th>
+                <th class="hidden px-4 py-3 md:table-cell">{{ __('categories.columns.coordination') }}</th>
                 <th class="px-4 py-3">{{ __('categories.columns.status') }}</th>
                 <th class="hidden px-4 py-3 sm:table-cell">{{ __('categories.columns.tickets') }}</th>
                 <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
@@ -22,6 +23,7 @@
             @forelse ($categories as $category)
                 <tr>
                     <td class="px-4 py-3 font-medium text-gray-900">{{ $category->name }}</td>
+                    <td class="hidden px-4 py-3 md:table-cell">{{ $category->coordination?->name ?? __('categories.global') }}</td>
                     <td class="px-4 py-3">
                         @if ($category->active)
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-mint/20 px-2.5 py-0.5 text-xs font-medium text-brand-green"><span class="h-1.5 w-1.5 rounded-full bg-brand-teal" aria-hidden="true"></span>{{ __('categories.active') }}</span>
@@ -44,7 +46,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
+                <tr><td colspan="5" class="p-0"><x-empty-state :title="__('common.empty')" /></td></tr>
             @endforelse
         </tbody>
     </x-table>

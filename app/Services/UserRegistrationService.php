@@ -11,14 +11,15 @@ use App\Notifications\NewUserPendingApproval;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Registro propio: la cuenta nace `pending`, sin rol ni equipo, y se avisa a los administradores y jefes de zona.
+ * Registro propio: la cuenta nace `pending`, sin rol ni equipo, con la coordinacion que la persona eligio; se avisa a
+ * los jefes de zona de esa coordinacion (o a los administradores si no tiene).
  */
 final class UserRegistrationService
 {
     public function __construct(private readonly AuditLogger $audit) {}
 
     /**
-     * @param  array{name: string, email: string, password: string}  $data
+     * @param  array{name: string, email: string, password: string, coordination_id?: ?int}  $data
      */
     public function register(array $data): User
     {
@@ -27,7 +28,10 @@ final class UserRegistrationService
             'email' => $data['email'],
             'password' => $data['password'],
         ]);
-        $user->forceFill(['status' => UserStatus::Pending])->save();
+        $user->forceFill([
+            'status' => UserStatus::Pending,
+            'requested_coordination_id' => $data['coordination_id'] ?? null,
+        ])->save();
 
         $this->notifyApprovers($user);
 
@@ -62,12 +66,14 @@ final class UserRegistrationService
         return $user;
     }
 
+    /**
+     * El aviso va a los jefes de zona de la coordinacion solicitada; si no tiene ninguno activo (o no se indico
+     * coordinacion), a los administradores.
+     */
     private function notifyApprovers(User $pending): void
     {
-        $approvers = User::query()
-            ->role([UserRole::Administrador->value, UserRole::JefeZona->value])
-            ->where('status', UserStatus::Active->value)
-            ->get();
+        $approvers = $pending->requestedCoordination?->approvers()
+            ?? User::query()->activeWithRole(UserRole::Administrador)->get();
 
         Notification::send($approvers, new NewUserPendingApproval($pending->id, $pending->name, $pending->email));
     }

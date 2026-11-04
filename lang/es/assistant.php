@@ -14,7 +14,7 @@ return [
         'ticket_vs_activity' => [
             'audience' => 'all',
             'q' => '¿Qué diferencia hay entre un ticket y una actividad?',
-            'a' => 'Un ticket es una solicitud que hay que atender (por ejemplo, una falla en una impresora). Una actividad es una tarea planificada por el jefe de zona o un coordinador, con subtareas y, si se necesita, recurrencia (por ejemplo, un reporte semanal).',
+            'a' => 'Un ticket es una solicitud que hay que atender (por ejemplo, una falla en una impresora). Una actividad es una tarea planificada por el jefe de zona o un coordinador de tu coordinación, con subtareas y, si se necesita, recurrencia (por ejemplo, un reporte semanal).',
         ],
         'create_ticket' => [
             'audience' => 'all',
@@ -74,7 +74,7 @@ return [
         'two_factor' => [
             'audience' => 'all',
             'q' => 'Perdí mi celular, ¿cómo entro con la verificación en dos pasos?',
-            'a' => 'Usa uno de tus códigos de recuperación en la pantalla de verificación (cada uno sirve una sola vez). Si no los tienes, pide al jefe de zona o a soporte que restablezcan tu verificación.',
+            'a' => 'Usa uno de tus códigos de recuperación en la pantalla de verificación (cada uno sirve una sola vez). Si no los tienes, pide al jefe de zona de tu coordinación, al administrador o a soporte que restablezcan tu verificación.',
         ],
         'password' => [
             'audience' => 'all',

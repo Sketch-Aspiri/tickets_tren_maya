@@ -34,9 +34,11 @@ class TrackingPanelController extends Controller
             'report' => $report,
             'charts' => TrackingCharts::build($report),
             'filters' => $filters,
+            'stations' => $this->scope->selectableStations($user),
+            'coordinations' => $this->scope->selectableCoordinations($user),
             'teams' => $this->scope->selectableTeams($user),
             'employees' => $this->scope->selectableEmployees($user),
-            'categories' => $this->scope->selectableCategories(),
+            'categories' => $this->scope->selectableCategories($request->user()),
         ]);
     }
 }

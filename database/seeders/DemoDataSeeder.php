@@ -9,6 +9,8 @@ use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Category;
+use App\Models\Coordination;
+use App\Models\Station;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
@@ -55,10 +57,26 @@ class DemoDataSeeder extends Seeder
 
         $this->createUser('Administrador Demo', 'admin@demo.test', $hash, UserRole::Administrador, null);
         $this->createUser('Administrador Demo', 'admin@demo.test', $hash, UserRole::Administrador, null);
-        $this->createUser('Jefe de Zona Demo', 'jefe@demo.test', $hash, UserRole::JefeZona, null);
+        $jefe = $this->createUser('Jefe de Zona Demo', 'jefe@demo.test', $hash, UserRole::JefeZona, null);
+
+        $station = Station::query()->firstOrCreate(['name' => 'Estación Demo'], ['active' => true]);
+        $coordination = Coordination::query()->firstOrCreate(
+            ['code' => 'DEMO'],
+            ['station_id' => $station->id, 'name' => 'Coordinación Demo', 'active' => true],
+        );
+        $jefe->coordinations()->syncWithoutDetaching([$coordination->id]);
+
+        // Segunda estacion con su propia coordinacion y su propio jefe: sirve para probar el aislamiento.
+        $northStation = Station::query()->firstOrCreate(['name' => 'Estación Norte Demo'], ['active' => true]);
+        $northCoordination = Coordination::query()->firstOrCreate(
+            ['code' => 'DEMO-N'],
+            ['station_id' => $northStation->id, 'name' => 'Coordinación Norte Demo', 'active' => true],
+        );
+        $this->createUser('Jefe de Zona Norte Demo', 'jefe.norte@demo.test', $hash, UserRole::JefeZona, null)
+            ->coordinations()->syncWithoutDetaching([$northCoordination->id]);
 
         foreach (self::TEAM_NAMES as $index => $teamName) {
-            $team = Team::query()->firstOrCreate(['name' => $teamName]);
+            $team = Team::query()->firstOrCreate(['name' => $teamName], ['coordination_id' => $index === 2 ? $northCoordination->id : $coordination->id]);
             $slug = Str::slug($teamName);
 
             $coordinator = $this->createUser("Coordinador {$teamName}", "coordinador.{$slug}@demo.test", $hash, UserRole::Coordinador, $team);
@@ -69,7 +87,7 @@ class DemoDataSeeder extends Seeder
             }
 
             if ($index === 0) {
-                $this->createPending('Registro Pendiente Demo', 'pendiente@demo.test', $hash);
+                $this->createPending('Registro Pendiente Demo', 'pendiente@demo.test', $hash, $coordination->id);
             }
         }
 
@@ -225,14 +243,14 @@ class DemoDataSeeder extends Seeder
         return $user;
     }
 
-    private function createPending(string $name, string $email, string $hash): void
+    private function createPending(string $name, string $email, string $hash, ?int $coordinationId = null): void
     {
         if (User::query()->where('email', $email)->exists()) {
             return;
         }
 
         $user = new User(['name' => $name, 'email' => $email]);
-        $user->forceFill(['password' => $hash, 'status' => UserStatus::Pending])->save();
+        $user->forceFill(['password' => $hash, 'status' => UserStatus::Pending, 'requested_coordination_id' => $coordinationId])->save();
         $this->createdUsers++;
     }
 }

@@ -10,10 +10,13 @@
 
 return [
     'command' => [
+        'mailbox_failed' => 'No se pudo revisar el buzón de la coordinación :coordination (ver Buzones).',
         'done' => 'Correos revisados: :fetched. Nuevos: :created. Duplicados: :duplicate. '
             .'Autorespuestas omitidas: :skipped_autoresponder. Rechazados: :skipped_invalid. Fallidos: :failed.',
     ],
     'errors' => [
+        'team_outside_coordination' => 'El equipo elegido no pertenece a la coordinación de este correo.',
+        'no_coordination' => 'No hay ninguna coordinación configurada: crea una antes de recibir correos.',
         'already_reviewed' => 'Este correo ya fue revisado (descartado o convertido); no se puede volver a descartar ni convertir.',
         'too_many_attachments_to_convert' => 'Este correo tiene mas adjuntos de los que la actividad puede recibir (maximo :max). Elimina alguno antes de convertirlo.',
     ],

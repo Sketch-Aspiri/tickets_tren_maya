@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\DeleteTeamRequest;
 use App\Http\Requests\Teams\StoreTeamRequest;
 use App\Http\Requests\Teams\UpdateTeamRequest;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\TeamService;
@@ -24,7 +25,7 @@ class TeamController extends Controller
     {
         $this->authorize('viewAny', Team::class);
 
-        return view('teams.index', ['teams' => $this->teams->paginate()]);
+        return view('teams.index', ['teams' => $this->teams->paginate(request()->user())]);
     }
 
     public function create(): View
@@ -33,7 +34,11 @@ class TeamController extends Controller
 
         $team = new Team;
 
-        return view('teams.create', ['team' => $team, 'coordinators' => $this->coordinatorOptions($team)]);
+        return view('teams.create', [
+            'team' => $team,
+            'coordinators' => $this->coordinatorOptions($team),
+            'coordinations' => $this->coordinationOptions(),
+        ]);
     }
 
     public function store(StoreTeamRequest $request): RedirectResponse
@@ -49,7 +54,11 @@ class TeamController extends Controller
     {
         $this->authorize('update', $team);
 
-        return view('teams.edit', ['team' => $team, 'coordinators' => $this->coordinatorOptions($team)]);
+        return view('teams.edit', [
+            'team' => $team,
+            'coordinators' => $this->coordinatorOptions($team),
+            'coordinations' => $this->coordinationOptions($team->coordination_id),
+        ]);
     }
 
     public function update(UpdateTeamRequest $request, Team $team): RedirectResponse
@@ -68,6 +77,23 @@ class TeamController extends Controller
         $this->teams->delete($team);
 
         return redirect()->route('teams.index')->with('status', 'team-deleted');
+    }
+
+    /**
+     * Coordinaciones activas (mas la actual del equipo aunque este inactiva) para el selector.
+     *
+     * @return Collection<int, Coordination>
+     */
+    private function coordinationOptions(?int $keepId = null): Collection
+    {
+        $actor = request()->user();
+
+        return Coordination::query()
+            ->with('station:id,name')
+            ->when(! $actor->seesAllTeams(), fn ($query) => $query->whereIn('id', $actor->coordinationIdsQuery()))
+            ->where(fn ($query) => $query->where('active', true)->when($keepId, fn ($inner, int $id) => $inner->orWhere('id', $id)))
+            ->orderBy('name')
+            ->get();
     }
 
     /**

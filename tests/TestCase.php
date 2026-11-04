@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Http\Middleware\TrustHosts;
 use Illuminate\Http\Middleware\TrustProxies;
@@ -15,6 +16,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function tearDown(): void
     {
+        UserFactory::$universalBossIds = [];
         Request::setTrustedHosts([]);
         TrustHosts::flushState();
         TrustProxies::flushState();

@@ -6,6 +6,7 @@ namespace Tests\Feature\Tickets;
 
 use App\Models\Category;
 use App\Models\Ticket;
+use App\Models\User;
 use Spatie\Activitylog\Models\Activity;
 use Tests\Concerns\BuildsTicketScenario;
 use Tests\DatabaseTestCase;
@@ -19,6 +20,8 @@ class CategoryCrudTest extends DatabaseTestCase
         parent::setUp();
 
         $this->buildScenario();
+        // Las categorias globales (sin coordinacion) las gestiona el administrador; esta clase las ejercita como tal.
+        $this->jefe = User::factory()->administrador()->create();
     }
 
     // --- Autorizacion por rol ------------------------------------------------

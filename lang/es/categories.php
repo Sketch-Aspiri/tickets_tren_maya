@@ -6,12 +6,16 @@ return [
     'edit' => 'Editar categoría',
     'columns' => [
         'name' => 'Nombre',
+        'coordination' => 'Coordinación',
         'status' => 'Estado',
         'tickets' => 'Tickets',
     ],
     'active' => 'Activa',
     'inactive' => 'Inactiva',
+    'global' => 'Global (todas)',
     'form' => [
+        'coordination' => 'Coordinación',
+        'global' => 'Global (todas las coordinaciones)',
         'name' => 'Nombre de la categoría',
         'active' => 'Categoría activa (se puede elegir en tickets nuevos)',
     ],

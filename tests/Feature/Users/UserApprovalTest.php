@@ -88,7 +88,8 @@ class UserApprovalTest extends DatabaseTestCase
     {
         $pending = User::factory()->pending()->create();
 
-        $this->signIn($this->jefe)->post("/users/{$pending->id}/approve", ['role' => 'jefe_zona'])->assertSessionHasNoErrors();
+        // Otorgar el rol de jefe de zona es exclusivo del administrador.
+        $this->signIn(User::factory()->administrador()->create())->post("/users/{$pending->id}/approve", ['role' => 'jefe_zona'])->assertSessionHasNoErrors();
 
         $fresh = $pending->fresh();
         $this->assertSame(UserRole::JefeZona, $fresh->roleEnum());
@@ -102,7 +103,9 @@ class UserApprovalTest extends DatabaseTestCase
         foreach (['empleado', 'coordinador', 'jefe_zona'] as $role) {
             $pending = User::factory()->pending()->create();
 
-            $this->signIn($this->jefe)->post("/users/{$pending->id}/approve", ['role' => $role, 'team_ids' => [$this->team->id, $second->id]])
+            $actor = $role === 'jefe_zona' ? User::factory()->administrador()->create() : $this->jefe;
+
+            $this->signIn($actor)->post("/users/{$pending->id}/approve", ['role' => $role, 'team_ids' => [$this->team->id, $second->id]])
                 ->assertSessionHasNoErrors();
 
             $this->assertEqualsCanonicalizing([$this->team->id, $second->id], $pending->fresh()->teamIds(), $role);
@@ -142,7 +145,7 @@ class UserApprovalTest extends DatabaseTestCase
     {
         $admin = User::factory()->administrador()->inactive()->create();
 
-        $this->signIn($this->jefe)->post("/users/{$admin->id}/approve", ['role' => 'empleado', 'team_ids' => [$this->team->id]])->assertForbidden();
+        $this->signIn($this->jefe)->post("/users/{$admin->id}/approve", ['role' => 'empleado', 'team_ids' => [$this->team->id]])->assertNotFound();
         $this->assertSame(UserRole::Administrador, $admin->fresh()->roleEnum());
     }
 

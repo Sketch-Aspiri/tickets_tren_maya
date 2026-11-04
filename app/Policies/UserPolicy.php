@@ -25,34 +25,50 @@ class UserPolicy
         return $this->hasPermission($user, PermissionName::UsersManage);
     }
 
-    public function view(User $user, User $target): bool
+    public function view(User $user, User $target): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage);
+        return $this->scoped($user, $target, PermissionName::UsersManage, false);
     }
 
-    public function update(User $user, User $target): bool
+    public function update(User $user, User $target): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage) && $this->mayTouch($user, $target);
+        return $this->scoped($user, $target, PermissionName::UsersManage);
     }
 
-    public function approve(User $user, User $target): bool
+    public function approve(User $user, User $target): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::UsersApprove) && $this->mayTouch($user, $target);
+        return $this->scoped($user, $target, PermissionName::UsersApprove);
     }
 
-    public function reject(User $user, User $target): bool
+    public function reject(User $user, User $target): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::UsersApprove) && $this->mayTouch($user, $target);
+        return $this->scoped($user, $target, PermissionName::UsersApprove);
     }
 
-    public function activate(User $user, User $target): bool
+    public function activate(User $user, User $target): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage) && $this->mayTouch($user, $target);
+        return $this->scoped($user, $target, PermissionName::UsersManage);
     }
 
-    public function deactivate(User $user, User $target): bool
+    public function deactivate(User $user, User $target): Response|bool
     {
-        return $this->hasPermission($user, PermissionName::UsersManage) && $this->mayTouch($user, $target);
+        return $this->scoped($user, $target, PermissionName::UsersManage);
+    }
+
+    /**
+     * Permiso + alcance: una cuenta fuera de lo que el actor gestiona (otra coordinacion, otro jefe) responde 404.
+     */
+    private function scoped(User $user, User $target, PermissionName $permission, bool $mustTouch = true): Response|bool
+    {
+        if (! $this->hasPermission($user, $permission)) {
+            return false;
+        }
+
+        if (! User::query()->whereKey($target->getKey())->manageableBy($user)->exists()) {
+            return Response::denyAsNotFound();
+        }
+
+        return ! $mustTouch || $this->mayTouch($user, $target);
     }
 
     /**

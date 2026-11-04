@@ -36,6 +36,32 @@
                 <x-input-error :messages="$errors->get('to')" class="mt-1" />
             </div>
 
+            @if ($stations->isNotEmpty())
+                <div class="lg:col-span-1">
+                    <x-input-label for="station_id" :value="__('tracking.filters.station')" />
+                    <x-select-input id="station_id" name="station_id" class="mt-1 block w-full">
+                        <option value="">{{ __('common.all') }}</option>
+                        @foreach ($stations as $station)
+                            <option value="{{ $station->id }}" @selected($filters->stationId === $station->id)>{{ $station->name }}</option>
+                        @endforeach
+                    </x-select-input>
+                    <x-input-error :messages="$errors->get('station_id')" class="mt-1" />
+                </div>
+            @endif
+
+            @if ($coordinations->isNotEmpty())
+                <div class="lg:col-span-1">
+                    <x-input-label for="coordination_id" :value="__('tracking.filters.coordination')" />
+                    <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full">
+                        <option value="">{{ __('common.all') }}</option>
+                        @foreach ($coordinations as $coordination)
+                            <option value="{{ $coordination->id }}" @selected($filters->coordinationId === $coordination->id)>{{ $coordination->name }}</option>
+                        @endforeach
+                    </x-select-input>
+                    <x-input-error :messages="$errors->get('coordination_id')" class="mt-1" />
+                </div>
+            @endif
+
             @if ($teams->isNotEmpty())
                 <div class="lg:col-span-1">
                     <x-input-label for="team_id" :value="__('tracking.filters.team')" />
@@ -199,4 +225,31 @@
     <p class="text-xs text-gray-600">
         {{ __('tracking.generated_at', ['when' => \Illuminate\Support\Carbon::parse($report['generated_at'])->timezone(config('app.display_timezone'))->format('d/m/Y H:i')]) }}
     </p>
+    @if (! empty($report['by_coordination']))
+        <x-card :title="__('tracking.by_coordination.title')">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-700">
+                            <th class="py-2 pe-4 font-medium">{{ __('tracking.by_coordination.coordination') }}</th>
+                            <th class="hidden py-2 pe-4 font-medium sm:table-cell">{{ __('tracking.by_coordination.station') }}</th>
+                            <th class="py-2 pe-4 text-right font-medium">{{ __('tracking.by_coordination.open') }}</th>
+                            <th class="py-2 text-right font-medium">{{ __('tracking.by_coordination.overdue') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-brand-green/10">
+                        @foreach ($report['by_coordination'] as $row)
+                            <tr>
+                                <td class="py-2 pe-4 font-medium text-gray-900">{{ $row['name'] }}</td>
+                                <td class="hidden py-2 pe-4 sm:table-cell">{{ $row['station'] }}</td>
+                                <td class="py-2 pe-4 text-right tabular-nums">{{ $row['open'] }}</td>
+                                <td class="py-2 text-right tabular-nums {{ $row['overdue'] > 0 ? 'font-semibold text-red-700' : '' }}">{{ $row['overdue'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </x-card>
+    @endif
+
 </x-app-layout>

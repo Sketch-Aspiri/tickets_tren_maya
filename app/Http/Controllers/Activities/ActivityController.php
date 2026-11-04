@@ -46,7 +46,7 @@ class ActivityController extends Controller
             'statuses' => TicketStatus::cases(),
             'priorities' => Priority::cases(),
             'kinds' => ActivityListingService::KINDS,
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => Category::query()->visibleTo(request()->user())->orderBy('name')->get(['id', 'name']),
             // Filtro por equipo: solo quien ve mas de un equipo (alcance global o varios equipos).
             'teams' => $user->selectableTeams(),
             'responsibles' => $this->assignments->assignableUsers($user),
@@ -161,7 +161,7 @@ class ActivityController extends Controller
         return [
             'activity' => $activity,
             'priorities' => Priority::cases(),
-            'categories' => $this->categories->selectable($activity->category_id),
+            'categories' => $this->categories->selectable(request()->user(), $activity->category_id),
             'frequencies' => RecurrenceFrequency::cases(),
             // Elige el equipo de la actividad nueva quien tiene alcance global o varios equipos.
             'teams' => $creating ? $request->user()->selectableTeams() : collect(),

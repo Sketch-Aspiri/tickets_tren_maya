@@ -8,9 +8,18 @@ return [
         'team' => 'Alcance: equipo :team',
         'teams' => 'Alcance: equipos :teams',
     ],
+    'by_coordination' => [
+        'title' => 'Por coordinación',
+        'coordination' => 'Coordinación',
+        'station' => 'Estación',
+        'open' => 'Abiertos',
+        'overdue' => 'Vencidos',
+    ],
     'filters' => [
         'from' => 'Desde',
         'to' => 'Hasta',
+        'station' => 'Estación',
+        'coordination' => 'Coordinación',
         'team' => 'Equipo',
         'employee' => 'Persona asignada',
         'category' => 'Categoría',

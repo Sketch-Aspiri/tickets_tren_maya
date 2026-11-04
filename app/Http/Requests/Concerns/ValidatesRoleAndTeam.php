@@ -29,6 +29,9 @@ trait ValidatesRoleAndTeam
                 'array',
             ],
             'team_ids.*' => ['integer', 'distinct', Rule::exists('teams', 'id')],
+            // Solo aplica al jefe de zona: las coordinaciones que supervisa (para otros roles se ignora).
+            'coordination_ids' => ['nullable', 'array'],
+            'coordination_ids.*' => ['integer', 'distinct', Rule::exists('coordinations', 'id')],
         ];
     }
 
@@ -51,6 +54,16 @@ trait ValidatesRoleAndTeam
     public function selectedRole(): ?UserRole
     {
         return UserRole::tryFrom((string) $this->input('role'));
+    }
+
+    /**
+     * Coordinaciones validadas y sin repetir (vacio si no se envio ninguna).
+     *
+     * @return list<int>
+     */
+    public function selectedCoordinationIds(): array
+    {
+        return array_values(array_unique(array_map('intval', (array) $this->validated('coordination_ids', []))));
     }
 
     /**

@@ -14,6 +14,21 @@
 @endif
 
 <div>
+    <x-input-label for="coordination_id" :value="__('teams.form.coordination')" />
+    <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" required>
+        <option value="">{{ __('teams.form.choose_coordination') }}</option>
+        @foreach ($coordinations->groupBy(fn ($coordination) => $coordination->station->name) as $stationName => $group)
+            <optgroup label="{{ $stationName }}">
+                @foreach ($group as $coordination)
+                    <option value="{{ $coordination->id }}" @selected((int) old('coordination_id', $team->coordination_id) === $coordination->id)>{{ $coordination->name }}</option>
+                @endforeach
+            </optgroup>
+        @endforeach
+    </x-select-input>
+    <x-input-error :messages="$errors->get('coordination_id')" class="mt-2" />
+</div>
+
+<div class="mt-4">
     <x-input-label for="name" :value="__('teams.form.name')" />
     <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $team->name)" maxlength="255" required autofocus />
     <x-input-error :messages="$errors->get('name')" class="mt-2" />

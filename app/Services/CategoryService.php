@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Exceptions\BusinessRuleException;
 use App\Models\Category;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -18,9 +19,11 @@ final class CategoryService
     /**
      * @return LengthAwarePaginator<int, Category>
      */
-    public function paginate(): LengthAwarePaginator
+    public function paginate(User $actor): LengthAwarePaginator
     {
         return Category::query()
+            ->manageableBy($actor)
+            ->with('coordination:id,name')
             ->withCount('tickets')
             ->orderBy('name')
             ->paginate((int) config('tickets.categories_per_page'));
@@ -32,31 +35,34 @@ final class CategoryService
      *
      * @return Collection<int, Category>
      */
-    public function selectable(?int $keepCategoryId = null): Collection
+    public function selectable(User $actor, ?int $keepCategoryId = null): Collection
     {
         return Category::query()
+            ->where(fn ($scope) => $scope->visibleTo($actor)->when($keepCategoryId, fn ($keep, int $id) => $keep->orWhere('categories.id', $id)))
             ->where(fn ($query) => $query->where('active', true)->when($keepCategoryId, fn ($inner, int $id) => $inner->orWhere('id', $id)))
             ->orderBy('name')
             ->get(['id', 'name', 'active']);
     }
 
     /**
-     * @param  array{name: string, active?: bool}  $data
+     * @param  array{name: string, coordination_id?: ?int, active?: bool}  $data
      */
     public function create(array $data): Category
     {
         return Category::query()->create([
+            'coordination_id' => $data['coordination_id'] ?? null,
             'name' => $data['name'],
             'active' => $data['active'] ?? true,
         ]);
     }
 
     /**
-     * @param  array{name: string, active?: bool}  $data
+     * @param  array{name: string, coordination_id?: ?int, active?: bool}  $data
      */
     public function update(Category $category, array $data): Category
     {
         $category->update([
+            'coordination_id' => array_key_exists('coordination_id', $data) ? $data['coordination_id'] : $category->coordination_id,
             'name' => $data['name'],
             'active' => $data['active'] ?? $category->active,
         ]);

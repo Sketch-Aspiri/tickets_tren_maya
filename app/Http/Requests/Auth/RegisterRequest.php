@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Station;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -39,6 +40,10 @@ class RegisterRequest extends FormRequest
             'name' => ['required', 'string', 'min:2', 'max:255', "regex:/^[\p{L}\p{M}0-9 .,'’-]+$/u"],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')],
             'password' => ['required', 'string', 'max:255', 'confirmed', Password::defaults()],
+            // La solicitud llega al jefe de esa coordinacion: solo coordinaciones activas de estaciones activas.
+            'coordination_id' => ['required', 'integer', Rule::exists('coordinations', 'id')
+                ->where('active', true)
+                ->whereIn('station_id', Station::query()->active()->select('id'))],
         ];
     }
 }

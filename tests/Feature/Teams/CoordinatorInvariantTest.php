@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Teams;
 
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use App\Rules\ActiveCoordinator;
@@ -118,7 +119,7 @@ class CoordinatorInvariantTest extends DatabaseTestCase
         $team = Team::factory()->create();
         $coordinador = User::factory()->coordinador()->create(['team_id' => $team->id]);
 
-        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['name' => $team->name, 'coordinator_id' => $coordinador->id])
+        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['coordination_id' => $team->coordination_id, 'name' => $team->name, 'coordinator_id' => $coordinador->id])
             ->assertSessionHasNoErrors();
 
         $this->assertSame($coordinador->id, $team->fresh()->coordinator_id);
@@ -129,7 +130,7 @@ class CoordinatorInvariantTest extends DatabaseTestCase
         $team = Team::factory()->create();
         $foreignCoordinador = User::factory()->coordinador()->create();
 
-        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['name' => $team->name, 'coordinator_id' => $foreignCoordinador->id])
+        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['coordination_id' => $team->coordination_id, 'name' => $team->name, 'coordinator_id' => $foreignCoordinador->id])
             ->assertInvalid(['coordinator_id']);
 
         $this->assertNull($team->fresh()->coordinator_id);
@@ -140,7 +141,7 @@ class CoordinatorInvariantTest extends DatabaseTestCase
         [$coordinador] = $this->coordinatorOfOwnTeam();
         $otherTeam = Team::factory()->create();
 
-        $this->signIn($this->jefe)->put("/teams/{$otherTeam->id}", ['name' => $otherTeam->name, 'coordinator_id' => $coordinador->id])
+        $this->signIn($this->jefe)->put("/teams/{$otherTeam->id}", ['coordination_id' => $otherTeam->coordination_id, 'name' => $otherTeam->name, 'coordinator_id' => $coordinador->id])
             ->assertInvalid(['coordinator_id']);
     }
 
@@ -150,7 +151,7 @@ class CoordinatorInvariantTest extends DatabaseTestCase
         $second = Team::factory()->create();
         $coordinador->teams()->attach($second->id);
 
-        $this->signIn($this->jefe)->put("/teams/{$second->id}", ['name' => $second->name, 'coordinator_id' => $coordinador->id])
+        $this->signIn($this->jefe)->put("/teams/{$second->id}", ['coordination_id' => $second->coordination_id, 'name' => $second->name, 'coordinator_id' => $coordinador->id])
             ->assertSessionHasNoErrors();
 
         $this->assertSame($coordinador->id, $first->fresh()->coordinator_id);
@@ -161,7 +162,7 @@ class CoordinatorInvariantTest extends DatabaseTestCase
     {
         $coordinador = User::factory()->coordinador()->create();
 
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Nuevo', 'coordinator_id' => $coordinador->id])
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => 'Nuevo', 'coordinator_id' => $coordinador->id])
             ->assertInvalid(['coordinator_id']);
 
         $this->assertDatabaseMissing('teams', ['name' => 'Nuevo']);
@@ -198,5 +199,10 @@ class CoordinatorInvariantTest extends DatabaseTestCase
             ->assertOk()
             ->assertSee('Miembro Coordinador')
             ->assertDontSee('Ajeno Coordinador');
+    }
+
+    private function coordinationId(): int
+    {
+        return Coordination::factory()->create()->id;
     }
 }

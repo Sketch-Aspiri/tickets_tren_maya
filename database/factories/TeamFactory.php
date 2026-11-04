@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Coordination;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,6 +19,7 @@ class TeamFactory extends Factory
     public function definition(): array
     {
         return [
+            'coordination_id' => Coordination::factory(),
             'name' => 'Equipo '.fake()->unique()->words(2, true),
             'coordinator_id' => null,
         ];

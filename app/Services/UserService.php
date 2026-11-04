@@ -8,6 +8,7 @@ use App\Enums\PermissionName;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use Closure;
@@ -42,9 +43,10 @@ final class UserService
      * @param  array{status?: ?string, role?: ?string, team_id?: ?int, q?: ?string}  $filters
      * @return LengthAwarePaginator<int, User>
      */
-    public function paginate(array $filters, ?int $perPage = null): LengthAwarePaginator
+    public function paginate(array $filters, ?int $perPage = null, ?User $actor = null): LengthAwarePaginator
     {
         return User::query()
+            ->when($actor, fn (Builder $q, User $viewer) => $q->manageableBy($viewer))
             ->with(['roles:id,name', 'teams:id,name'])
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('status', $status))
             ->when($filters['role'] ?? null, fn (Builder $q, string $role) => $q->role($role))
@@ -55,17 +57,21 @@ final class UserService
             ->withQueryString();
     }
 
-    public function pendingCount(): int
+    public function pendingCount(?User $actor = null): int
     {
-        return User::query()->where('status', UserStatus::Pending->value)->count();
+        return User::query()
+            ->when($actor, fn (Builder $q, User $viewer) => $q->manageableBy($viewer))
+            ->where('status', UserStatus::Pending->value)
+            ->count();
     }
 
     /**
      * Aprueba una cuenta pendiente (o re-evalua una rechazada) asignando rol y equipos.
      *
      * @param  list<int>  $teamIds
+     * @param  list<int>  $coordinationIds  solo se usan si el rol es jefe de zona
      */
-    public function approve(User $actor, User $target, UserRole $role, array $teamIds): User
+    public function approve(User $actor, User $target, UserRole $role, array $teamIds, array $coordinationIds = []): User
     {
         if ($target->isActive()) {
             throw BusinessRuleException::because('users.errors.already_active');
@@ -73,13 +79,15 @@ final class UserService
 
         $teamIds = $this->normalizeTeamIds($role, $teamIds);
         $this->assertCanAssignRole($actor, $target, $role);
+        $this->assertTeamsInScope($actor, $teamIds);
 
-        return DB::transaction(function () use ($actor, $target, $role, $teamIds): User {
+        return DB::transaction(function () use ($actor, $target, $role, $teamIds, $coordinationIds): User {
             $before = $this->snapshot($target);
 
             $this->persist($target, ['status' => UserStatus::Active]);
             $target->teams()->sync($teamIds);
             $target->syncRoles([$role->value]);
+            $this->syncCoordinations($actor, $target, $role, $coordinationIds);
 
             $this->audit->record(self::LOG, 'approved', $target, $actor, $before, $this->snapshot($target));
 
@@ -160,8 +168,9 @@ final class UserService
      * Cambia rol y/o equipos de un usuario activo.
      *
      * @param  list<int>  $teamIds
+     * @param  list<int>|null  $coordinationIds  `null` = no tocar las coordinaciones (salvo si el rol deja de ser jefe)
      */
-    public function updateRoleAndTeams(User $actor, User $target, UserRole $role, array $teamIds): User
+    public function updateRoleAndTeams(User $actor, User $target, UserRole $role, array $teamIds, ?array $coordinationIds = null): User
     {
         if (! $target->isActive()) {
             throw BusinessRuleException::because('users.errors.not_active');
@@ -169,8 +178,9 @@ final class UserService
 
         $teamIds = $this->normalizeTeamIds($role, $teamIds);
         $this->assertCanAssignRole($actor, $target, $role);
+        $this->assertTeamsInScope($actor, $teamIds);
 
-        return $this->transactionWithRetry(function () use ($actor, $target, $role, $teamIds): User {
+        return $this->transactionWithRetry(function () use ($actor, $target, $role, $teamIds, $coordinationIds): User {
             $oldRole = $target->roleEnum();
             $roleChanged = $oldRole !== $role;
 
@@ -180,10 +190,14 @@ final class UserService
 
             $before = $this->snapshot($target);
 
-            $target->teams()->sync($teamIds);
+            $this->syncTeamsWithinScope($actor, $target, $teamIds);
 
             if ($roleChanged) {
                 $target->syncRoles([$role->value]);
+            }
+
+            if ($coordinationIds !== null || $roleChanged) {
+                $this->syncCoordinations($actor, $target, $role, $coordinationIds ?? []);
             }
 
             // Un coordinador que cambia de rol o deja un equipo deja de coordinar lo que ya no le corresponde.
@@ -200,12 +214,71 @@ final class UserService
     }
 
     /**
+     * Fija las coordinaciones que supervisa un jefe de zona; para cualquier otro rol las quita. Solo registra en
+     * la bitacora cuando el conjunto cambia.
+     *
+     * @param  list<int>  $coordinationIds
+     */
+    private function syncCoordinations(User $actor, User $target, UserRole $role, array $coordinationIds): void
+    {
+        $coordinationIds = $role === UserRole::JefeZona ? array_values(array_unique(array_map('intval', $coordinationIds))) : [];
+
+        if ($coordinationIds !== [] && Coordination::query()->whereKey($coordinationIds)->count() !== count($coordinationIds)) {
+            throw BusinessRuleException::because('users.errors.invalid_coordination');
+        }
+
+        $before = $target->coordinations()->pluck('coordinations.id')->map(fn (mixed $id): int => (int) $id)->sort()->values()->all();
+        $target->coordinations()->sync($coordinationIds);
+        $target->forgetCoordinationIds();
+        $after = $target->coordinations()->pluck('coordinations.id')->map(fn (mixed $id): int => (int) $id)->sort()->values()->all();
+
+        if ($before !== $after) {
+            $this->audit->record(self::LOG, 'coordinations_changed', $target, $actor, ['coordination_ids' => $before], ['coordination_ids' => $after]);
+        }
+    }
+
+    /**
+     * El administrador fija el conjunto completo; un jefe solo toca las membresias dentro de su alcance y
+     * conserva las que la persona tenga en equipos de otras coordinaciones.
+     *
+     * @param  list<int>  $teamIds
+     */
+    private function syncTeamsWithinScope(User $actor, User $target, array $teamIds): void
+    {
+        $scoped = $actor->scopedTeamIds();
+
+        if ($scoped === null) {
+            $target->teams()->sync($teamIds);
+
+            return;
+        }
+
+        $outside = array_values(array_diff($target->teamIds(), $scoped));
+        $target->teams()->sync(array_values(array_unique([...$teamIds, ...$outside])));
+    }
+
+    /**
+     * Un jefe de zona solo puede asignar equipos de sus coordinaciones (el administrador, cualquiera).
+     *
+     * @param  list<int>  $teamIds
+     */
+    private function assertTeamsInScope(User $actor, array $teamIds): void
+    {
+        $scoped = $actor->scopedTeamIds();
+
+        if ($scoped !== null && array_diff($teamIds, $scoped) !== []) {
+            throw BusinessRuleException::because('users.errors.invalid_team');
+        }
+    }
+
+    /**
      * Solo quien tiene `admins.manage` (el administrador) otorga el rol de administrador o gestiona una cuenta que
      * ya lo es (aprobarla, cambiarle el rol, activarla o inactivarla). Un jefe de zona no puede.
      */
     private function assertCanAssignRole(User $actor, User $target, ?UserRole $role): void
     {
-        $touchesAdmin = $role === UserRole::Administrador || $target->hasSystemRole(UserRole::Administrador);
+        $touchesAdmin = $role === UserRole::Administrador || $target->hasSystemRole(UserRole::Administrador)
+            || $role === UserRole::JefeZona || $target->hasSystemRole(UserRole::JefeZona);
 
         if ($touchesAdmin && ! ($actor->canAccessApplication() && $actor->checkPermissionTo(PermissionName::AdminsManage->value))) {
             throw BusinessRuleException::because('users.errors.admin_only');

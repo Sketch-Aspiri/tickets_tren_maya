@@ -49,6 +49,8 @@ class AuditLogViewerTest extends DatabaseTestCase
             'log_name' => 'tickets',
             'description' => 'status_changed',
             'event' => 'status_changed',
+            // Coordinacion del escenario: el jefe de las pruebas la supervisa.
+            'coordination_id' => $this->teamA->coordination_id,
             'created_at' => now(),
             'updated_at' => now(),
             ...$attributes,

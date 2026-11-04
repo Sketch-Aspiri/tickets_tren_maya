@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Teams;
 
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class TeamCrudTest extends DatabaseTestCase
 
     public function test_jefe_creates_a_team_and_it_is_audited(): void
     {
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Logística'])
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => 'Logística'])
             ->assertRedirect(route('teams.index'))
             ->assertSessionHas('status', 'team-created');
 
@@ -37,7 +38,7 @@ class TeamCrudTest extends DatabaseTestCase
 
     public function test_team_can_be_created_without_coordinator(): void
     {
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Sin Coordinador'])->assertSessionHasNoErrors();
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => 'Sin Coordinador'])->assertSessionHasNoErrors();
 
         $this->assertNull(Team::query()->where('name', 'Sin Coordinador')->firstOrFail()->coordinator_id);
     }
@@ -70,7 +71,7 @@ class TeamCrudTest extends DatabaseTestCase
         $team = Team::factory()->create(['name' => 'Nombre Viejo']);
         $coordinador = User::factory()->coordinador()->create(['team_id' => $team->id]);
 
-        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['name' => 'Nombre Nuevo', 'coordinator_id' => $coordinador->id])
+        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['coordination_id' => $team->coordination_id, 'name' => 'Nombre Nuevo', 'coordinator_id' => $coordinador->id])
             ->assertRedirect(route('teams.index'));
 
         $fresh = $team->fresh();
@@ -86,7 +87,7 @@ class TeamCrudTest extends DatabaseTestCase
     {
         $team = Team::factory()->create(['name' => 'Mismo Nombre']);
 
-        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['name' => 'Mismo Nombre'])->assertSessionHasNoErrors();
+        $this->signIn($this->jefe)->put("/teams/{$team->id}", ['coordination_id' => $team->coordination_id, 'name' => 'Mismo Nombre'])->assertSessionHasNoErrors();
     }
 
     public function test_jefe_deletes_an_empty_team_and_it_is_audited(): void
@@ -113,13 +114,13 @@ class TeamCrudTest extends DatabaseTestCase
 
     public function test_team_validation(): void
     {
-        Team::factory()->create(['name' => 'Existente']);
+        $existing = Team::factory()->create(['name' => 'Existente']);
 
         $this->signIn($this->jefe)->post('/teams', [])->assertInvalid(['name']);
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Existente'])->assertInvalid(['name']);
-        $this->signIn($this->jefe)->post('/teams', ['name' => str_repeat('a', 256)])->assertInvalid(['name']);
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Ok', 'coordinator_id' => 'abc'])->assertInvalid(['coordinator_id']);
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Ok', 'coordinator_id' => 99999])->assertInvalid(['coordinator_id']);
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $existing->coordination_id, 'name' => 'Existente'])->assertInvalid(['name']);
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => str_repeat('a', 256)])->assertInvalid(['name']);
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => 'Ok', 'coordinator_id' => 'abc'])->assertInvalid(['coordinator_id']);
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => 'Ok', 'coordinator_id' => 99999])->assertInvalid(['coordinator_id']);
     }
 
     public function test_coordinator_must_be_an_active_coordinador_member_of_the_team(): void
@@ -131,7 +132,7 @@ class TeamCrudTest extends DatabaseTestCase
         $pending = User::factory()->pending()->create();
 
         foreach ([$empleado, $jefe, $inactiveCoordinador, $pending] as $candidate) {
-            $this->signIn($this->jefe)->put("/teams/{$team->id}", ['name' => $team->name, 'coordinator_id' => $candidate->id])
+            $this->signIn($this->jefe)->put("/teams/{$team->id}", ['coordination_id' => $team->coordination_id, 'name' => $team->name, 'coordinator_id' => $candidate->id])
                 ->assertInvalid(['coordinator_id']);
         }
 
@@ -140,7 +141,7 @@ class TeamCrudTest extends DatabaseTestCase
 
     public function test_mass_assignment_ignores_unexpected_fields(): void
     {
-        $this->signIn($this->jefe)->post('/teams', ['name' => 'Seguro', 'id' => 9999, 'created_at' => '2000-01-01'])
+        $this->signIn($this->jefe)->post('/teams', ['coordination_id' => $this->coordinationId(), 'name' => 'Seguro', 'id' => 9999, 'created_at' => '2000-01-01'])
             ->assertSessionHasNoErrors();
 
         $team = Team::query()->where('name', 'Seguro')->firstOrFail();
@@ -153,7 +154,7 @@ class TeamCrudTest extends DatabaseTestCase
         $team = new Team;
         $user = new User;
 
-        $this->assertSame(['name', 'coordinator_id'], $team->getFillable());
+        $this->assertSame(['coordination_id', 'name', 'coordinator_id'], $team->getFillable());
         $this->assertSame(['name', 'email', 'password'], $user->getFillable());
         $this->assertNotSame([], $team->getGuarded());
     }
@@ -166,5 +167,10 @@ class TeamCrudTest extends DatabaseTestCase
         $coordinador->delete();
 
         $this->assertNull($team->fresh()->coordinator_id);
+    }
+
+    private function coordinationId(): int
+    {
+        return Coordination::factory()->create()->id;
     }
 }

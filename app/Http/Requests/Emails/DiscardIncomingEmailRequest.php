@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Emails;
 
+use App\Http\Requests\Concerns\AuthorizesWithGate;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -12,9 +13,11 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class DiscardIncomingEmailRequest extends FormRequest
 {
+    use AuthorizesWithGate;
+
     public function authorize(): bool
     {
-        return $this->user()?->can('discard', $this->route('incomingEmail')) ?? false;
+        return $this->authorizeAbility('discard', $this->route('incomingEmail'));
     }
 
     /**

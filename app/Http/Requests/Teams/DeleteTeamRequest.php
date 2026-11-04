@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Teams;
 
+use App\Http\Requests\Concerns\AuthorizesWithGate;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DeleteTeamRequest extends FormRequest
 {
+    use AuthorizesWithGate;
+
     public function authorize(): bool
     {
-        return $this->user()?->can('delete', $this->route('team')) ?? false;
+        return $this->authorizeAbility('delete', $this->route('team'));
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Emails;
 
+use App\Http\Requests\Concerns\AuthorizesWithGate;
 use App\Http\Requests\Concerns\ValidatesNewActivityFields;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -15,11 +16,11 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class ConvertIncomingEmailRequest extends FormRequest
 {
-    use ValidatesNewActivityFields;
+    use AuthorizesWithGate, ValidatesNewActivityFields;
 
     public function authorize(): bool
     {
-        return $this->user()?->can('convert', $this->route('incomingEmail')) ?? false;
+        return $this->authorizeAbility('convert', $this->route('incomingEmail'));
     }
 
     /**

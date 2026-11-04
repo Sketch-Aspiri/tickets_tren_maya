@@ -19,7 +19,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'user' => $user,
-            'pendingCount' => $user->can('viewAny', User::class) ? $this->users->pendingCount() : null,
+            'pendingCount' => $user->can('viewAny', User::class) ? $this->users->pendingCount($user) : null,
         ]);
     }
 }
