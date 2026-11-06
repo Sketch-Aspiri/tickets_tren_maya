@@ -58,8 +58,14 @@ export function registerPush(Alpine) {
         busy: false,
         failed: false,
         labels: {},
+        // Se leen en init(): dentro de un manejador de clic `$el` es el botón, no el contenedor con los data-*.
+        subscribeUrl: '',
+        unsubscribeUrl: '',
 
         init() {
+            this.subscribeUrl = this.$el.dataset.subscribeUrl ?? '';
+            this.unsubscribeUrl = this.$el.dataset.unsubscribeUrl ?? '';
+
             try {
                 this.labels = JSON.parse(this.$el.dataset.labels ?? '{}');
             } catch {
@@ -146,7 +152,7 @@ export function registerPush(Alpine) {
                 const data = subscription.toJSON();
                 const encodings = PushManager.supportedContentEncodings ?? [];
 
-                await postJson(this.$el.dataset.subscribeUrl, {
+                await postJson(this.subscribeUrl, {
                     endpoint: data.endpoint,
                     keys: data.keys,
                     contentEncoding: encodings.includes('aes128gcm') ? 'aes128gcm' : 'aesgcm',
@@ -172,7 +178,7 @@ export function registerPush(Alpine) {
                 const subscription = await registration.pushManager.getSubscription();
 
                 if (subscription !== null) {
-                    await postJson(this.$el.dataset.unsubscribeUrl, { endpoint: subscription.endpoint });
+                    await postJson(this.unsubscribeUrl, { endpoint: subscription.endpoint });
                     await subscription.unsubscribe();
                 }
 
