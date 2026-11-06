@@ -192,6 +192,8 @@ return [
         'tenant' => env('SHEET_INBOX_TENANT', 'consumers'),
         'interval_minutes' => (int) env('SHEET_INBOX_INTERVAL_MINUTES', 15),
         'max_rows_per_run' => (int) env('SHEET_INBOX_MAX_ROWS_PER_RUN', 200),
+        // Carga manual de un libro: una persona la inicia y revisa el resultado, por eso el tope es mayor.
+        'max_rows_per_upload' => (int) env('SHEET_INBOX_MAX_ROWS_PER_UPLOAD', 3000),
         'max_file_kb' => (int) env('SHEET_INBOX_MAX_FILE_KB', 10240),
     ],
 

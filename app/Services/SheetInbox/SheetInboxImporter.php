@@ -10,6 +10,8 @@ use App\Models\SpreadsheetSource;
 use App\Models\User;
 use App\Notifications\NewIncomingEmailToReview;
 use App\Services\AuditLogger;
+use App\Support\SpanishDateTime;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Notification;
 
 /**
@@ -35,7 +37,7 @@ final class SheetInboxImporter
     {
         try {
             $rows = $this->reader->rows($source, $this->auth->accessToken($source));
-            $result = $this->store($source, $rows);
+            $result = $this->store($source, $rows, max(1, (int) config('tickets.sheet_inbox.max_rows_per_run')));
         } catch (SheetInboxException $exception) {
             $source->forceFill(['last_synced_at' => now(), 'last_error' => mb_substr($exception->getMessage(), 0, 500)])->save();
             $this->audit->record('sheet_sources', 'sync_failed', $source->coordination, null, extra: ['reason' => $exception->getMessage()]);
@@ -55,7 +57,7 @@ final class SheetInboxImporter
     public function importUploaded(SpreadsheetSource $source, string $bytes, User $actor): array
     {
         try {
-            $result = $this->store($source, $this->reader->parse($bytes, $source));
+            $result = $this->store($source, $this->reader->parse($bytes, $source), max(1, (int) config('tickets.sheet_inbox.max_rows_per_upload')));
         } catch (SheetInboxException $exception) {
             $source->forceFill(['last_error' => mb_substr($exception->getMessage(), 0, 500)])->save();
             $this->audit->record('sheet_sources', 'upload_failed', $source->coordination, $actor, extra: ['reason' => $exception->getMessage()]);
@@ -87,15 +89,25 @@ final class SheetInboxImporter
      * @param  list<array<string, string>>  $rows
      * @return array{created: int, skipped: int}
      */
-    private function store(SpreadsheetSource $source, array $rows): array
+    private function store(SpreadsheetSource $source, array $rows, int $limit): array
     {
         $created = 0;
         $skipped = 0;
-        $limit = max(1, (int) config('tickets.sheet_inbox.max_rows_per_run'));
+        $perMinute = [];
 
         foreach ($rows as $row) {
             if ($created >= $limit) {
                 break;
+            }
+
+            $subject = $this->value($row, $source->subject_column);
+            $dateText = $this->value($row, $source->received_at_column);
+
+            // Sin asunto ni fecha no es una solicitud (restos de listas laterales o filas a medio llenar): se omite.
+            if ($subject === '' && $dateText === '') {
+                $skipped++;
+
+                continue;
             }
 
             $messageId = 'sheet:'.$source->getKey().':'.hash('sha256', $this->key($source, $row));
@@ -106,20 +118,42 @@ final class SheetInboxImporter
                 continue;
             }
 
+            $receivedAt = $this->receivedAt($dateText, $perMinute);
+
             $email = new IncomingEmail([
                 'coordination_id' => $source->coordination_id,
                 'message_id' => $messageId,
                 'from_email' => $this->email($source, $row),
                 'from_name' => mb_substr($this->value($row, $source->requester_name_column) ?: (string) $source->name, 0, 255),
-                'subject' => mb_substr($this->value($row, $source->subject_column) ?: __('sheet_sources.untitled_row'), 0, 500),
+                'subject' => mb_substr($subject ?: __('sheet_sources.untitled_row'), 0, 500),
                 'body' => mb_substr($this->body($source, $row), 0, 10000),
-                'received_at' => now(),
+                'received_at' => $receivedAt,
             ]);
             $email->forceFill(['status' => IncomingEmailStatus::PendingReview])->save();
             $created++;
         }
 
         return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /**
+     * Fecha de recepción de la hoja (o la hora actual si no hay columna de fecha o no se entiende). Varias filas del
+     * mismo minuto conservan el orden de la hoja sumando segundos, para que el listado no las mezcle.
+     *
+     * @param  array<string, int>  $perMinute
+     */
+    private function receivedAt(string $dateText, array &$perMinute): CarbonInterface
+    {
+        $date = SpanishDateTime::parse($dateText);
+
+        if ($date === null) {
+            return now();
+        }
+
+        $minute = $date->format('YmdHi');
+        $perMinute[$minute] = ($perMinute[$minute] ?? -1) + 1;
+
+        return $date->addSeconds(min(59, $perMinute[$minute]));
     }
 
     /**

@@ -144,6 +144,57 @@ class SheetManualUploadTest extends DatabaseTestCase
         $this->assertSame(0, IncomingEmail::query()->count());
     }
 
+    public function test_reception_date_column_sets_the_real_date_and_keeps_the_sheet_order(): void
+    {
+        $this->manualSource($this->own)->forceFill(['received_at_column' => 'Fecha'])->save();
+
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), [
+            'file' => $this->file([
+                ['Folio', 'Asunto', 'Fecha'],
+                ['A-1', 'Primero', 'martes 11 de agosto 2026, 1:11 p. m.'],
+                ['A-2', 'Segundo mismo minuto', 'martes 11 de agosto 2026, 1:11 p. m.'],
+                ['A-3', 'Tercero', 'viernes 6 de noviembre 2026, 10:09 a. m.'],
+            ]),
+        ])->assertSessionHas('notice');
+
+        $first = IncomingEmail::query()->where('subject', 'Primero')->firstOrFail();
+        $second = IncomingEmail::query()->where('subject', 'Segundo mismo minuto')->firstOrFail();
+        // 1:11 p. m. en Cancún (UTC-5) = 18:11 UTC; el segundo del mismo minuto conserva el orden de la hoja.
+        $this->assertSame('2026-08-11 18:11:00', $first->received_at->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-08-11 18:11:01', $second->received_at->utc()->format('Y-m-d H:i:s'));
+
+        $order = IncomingEmail::query()->orderByDesc('received_at')->orderByDesc('id')->pluck('subject')->all();
+        $this->assertSame(['Tercero', 'Segundo mismo minuto', 'Primero'], $order);
+    }
+
+    public function test_rows_without_subject_and_date_are_skipped_but_rows_with_a_date_are_kept(): void
+    {
+        $this->manualSource($this->own)->forceFill(['received_at_column' => 'Fecha'])->save();
+
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), [
+            'file' => $this->file([
+                ['Folio', 'Asunto', 'Fecha', 'Lista'],
+                ['', '', '', 'NEREYDA'],
+                ['', '', '', 'MARIN'],
+                ['A-1', '', 'lunes 3 de agosto 2026, 9:00 a. m.', ''],
+                ['A-2', 'Con asunto', 'lunes 3 de agosto 2026, 9:05 a. m.', ''],
+            ]),
+        ]);
+
+        $this->assertSame(2, IncomingEmail::query()->count());
+    }
+
+    public function test_without_a_date_column_the_import_time_is_used(): void
+    {
+        $this->manualSource($this->own);
+
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), [
+            'file' => $this->file([['Folio', 'Asunto', 'Fecha'], ['A-1', 'X', 'martes 11 de agosto 2026, 1:11 p. m.']]),
+        ]);
+
+        $this->assertTrue(IncomingEmail::query()->firstOrFail()->received_at->isToday());
+    }
+
     public function test_sheet_can_be_saved_without_a_share_url_for_manual_mode(): void
     {
         $this->signIn($this->coordinator)->put(route('sheet-sources.update', $this->own), [

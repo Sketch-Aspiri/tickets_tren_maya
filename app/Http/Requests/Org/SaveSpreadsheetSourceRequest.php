@@ -48,6 +48,7 @@ class SaveSpreadsheetSourceRequest extends FormRequest
             'body_columns.*' => ['string', 'max:100'],
             'requester_name_column' => self::COLUMN,
             'requester_email_column' => self::COLUMN,
+            'received_at_column' => self::COLUMN,
             'key_column' => self::COLUMN,
             'active' => ['boolean'],
         ];
@@ -60,7 +61,7 @@ class SaveSpreadsheetSourceRequest extends FormRequest
     {
         $payload = $this->safe()->only([
             'name', 'share_url', 'worksheet', 'header_row', 'subject_column', 'body_columns',
-            'requester_name_column', 'requester_email_column', 'key_column', 'active',
+            'requester_name_column', 'requester_email_column', 'received_at_column', 'key_column', 'active',
         ]);
 
         // Sin enlace = solo carga manual del archivo (la columna no admite nulos).

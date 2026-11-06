@@ -27,6 +27,7 @@ final class SpreadsheetSource extends Model
         'body_columns',
         'requester_name_column',
         'requester_email_column',
+        'received_at_column',
         'key_column',
         'active',
     ];

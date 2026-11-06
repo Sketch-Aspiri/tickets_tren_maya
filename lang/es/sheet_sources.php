@@ -40,6 +40,8 @@ return [
         'body_columns_hint' => 'Vacío = todas las demás columnas, como «Encabezado: valor».',
         'requester_name_column' => 'Columna del nombre del solicitante',
         'requester_email_column' => 'Columna del correo del solicitante',
+        'received_at_column' => 'Columna de la fecha de recepción',
+        'received_at_column_hint' => 'Para que la bandeja respete el orden y la fecha reales del archivo (por ejemplo «martes 11 de agosto 2026, 1:11 p. m.»). Vacío = se usa la hora de la importación.',
         'key_column' => 'Columna con un identificador único (folio, ID)',
         'key_column_hint' => 'Evita duplicados aunque una fila cambie. Vacío = se reconoce la fila por todo su contenido.',
         'active' => 'Sincronizar automáticamente',

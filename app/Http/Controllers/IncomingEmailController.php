@@ -61,6 +61,7 @@ class IncomingEmailController extends Controller
             ->when($stationId !== null, fn ($query) => $query->whereIn('incoming_emails.coordination_id', $stationMailboxIds))
             ->when($status !== 'all', fn ($query) => $query->where('status', $status))
             ->orderByDesc('received_at')
+            ->orderByDesc('id')
             ->paginate((int) config('mail_ingestion.per_page'))
             ->withQueryString();
 

@@ -69,6 +69,13 @@
             </div>
 
             <div>
+                <x-input-label for="received_at_column" :value="__('sheet_sources.form.received_at_column')" />
+                <x-text-input id="received_at_column" name="received_at_column" type="text" class="mt-1 block w-full" :value="old('received_at_column', $source->received_at_column)" maxlength="100" aria-describedby="received_at_column_hint" />
+                <p id="received_at_column_hint" class="mt-1 text-xs text-gray-600">{{ __('sheet_sources.form.received_at_column_hint') }}</p>
+                <x-input-error :messages="$errors->get('received_at_column')" class="mt-2" />
+            </div>
+
+            <div>
                 <x-input-label for="key_column" :value="__('sheet_sources.form.key_column')" />
                 <x-text-input id="key_column" name="key_column" type="text" class="mt-1 block w-full" :value="old('key_column', $source->key_column)" maxlength="100" aria-describedby="key_column_hint" />
                 <p id="key_column_hint" class="mt-1 text-xs text-gray-600">{{ __('sheet_sources.form.key_column_hint') }}</p>
