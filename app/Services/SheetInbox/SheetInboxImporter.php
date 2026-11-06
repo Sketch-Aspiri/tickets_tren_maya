@@ -110,7 +110,7 @@ final class SheetInboxImporter
                 continue;
             }
 
-            $messageId = 'sheet:'.$source->getKey().':'.hash('sha256', $this->key($source, $row));
+            $messageId = $this->dedupeId($source, $row);
 
             if (IncomingEmail::query()->where('coordination_id', $source->coordination_id)->where('message_id', $messageId)->exists()) {
                 $skipped++;
@@ -157,13 +157,39 @@ final class SheetInboxImporter
     }
 
     /**
+     * Identificador con el que se reconoce una fila ya importada (`message_id` de la bandeja). Una sola definición:
+     * la usan la importación y las correcciones de datos.
+     *
+     * @param  array<string, string>  $row
+     */
+    public function dedupeId(SpreadsheetSource $source, array $row): string
+    {
+        return 'sheet:'.$source->getKey().':'.hash('sha256', $this->key($source, $row));
+    }
+
+    /**
+     * Columnas de la clave: una o varias separadas por «|» (clave compuesta, p. ej. fecha | correo | asunto). Con
+     * columnas que nunca cambian, una fila editada en el Excel no se importa otra vez.
+     *
+     * @return list<string>
+     */
+    public static function keyColumns(?string $keyColumn): array
+    {
+        return array_values(array_filter(
+            array_map('trim', explode('|', (string) $keyColumn)),
+            fn (string $column): bool => $column !== '',
+        ));
+    }
+
+    /**
      * @param  array<string, string>  $row
      */
     private function key(SpreadsheetSource $source, array $row): string
     {
-        $key = $this->value($row, $source->key_column);
+        $values = array_map(fn (string $column): string => $this->value($row, $column), self::keyColumns($source->key_column));
 
-        return $key !== '' ? 'key:'.$key : 'row:'.json_encode($row, JSON_UNESCAPED_UNICODE);
+        // Con una sola columna la clave es el valor tal cual (igual que antes de existir la clave compuesta).
+        return implode('', $values) !== '' ? 'key:'.implode('|', $values) : 'row:'.json_encode($row, JSON_UNESCAPED_UNICODE);
     }
 
     /**

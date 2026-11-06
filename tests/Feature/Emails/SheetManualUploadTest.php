@@ -11,6 +11,7 @@ use App\Models\SpreadsheetSource;
 use App\Models\Station;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\SheetInbox\SheetInboxImporter;
 use Illuminate\Http\UploadedFile;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -193,6 +194,49 @@ class SheetManualUploadTest extends DatabaseTestCase
         ]);
 
         $this->assertTrue(IncomingEmail::query()->firstOrFail()->received_at->isToday());
+    }
+
+    public function test_composite_key_ignores_edits_to_other_columns_and_keeps_same_minute_rows_apart(): void
+    {
+        $this->manualSource($this->own)->forceFill(['key_column' => 'Fecha | Correo | Asunto', 'received_at_column' => 'Fecha'])->save();
+
+        $header = ['Fecha', 'Correo', 'Asunto', 'Estado'];
+        $first = ['martes 11 de agosto 2026, 1:11 p. m.', 'ana@example.com', 'Oficio uno', ''];
+        $sameMinute = ['martes 11 de agosto 2026, 1:11 p. m.', 'beto@example.com', 'Oficio dos', ''];
+
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), ['file' => $this->file([$header, $first, $sameMinute])]);
+        $this->assertSame(2, IncomingEmail::query()->count());
+
+        // Alguien trabaja el Excel (cambia "Estado") y se agrega una fila nueva: nada se duplica ni se reimporta.
+        $first[3] = 'ATENDIDO';
+        $new = ['miércoles 12 de agosto 2026, 9:00 a. m.', 'ana@example.com', 'Oficio tres', ''];
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), ['file' => $this->file([$header, $first, $sameMinute, $new])]);
+
+        $this->assertSame(3, IncomingEmail::query()->count());
+        $this->assertSame(1, IncomingEmail::query()->where('subject', 'Oficio uno')->count());
+    }
+
+    public function test_without_a_key_an_edited_row_is_imported_again(): void
+    {
+        $this->manualSource($this->own)->forceFill(['key_column' => null])->save();
+
+        $header = ['Fecha', 'Asunto', 'Estado'];
+        $row = ['hoy', 'Oficio uno', ''];
+
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), ['file' => $this->file([$header, $row])]);
+        $row[2] = 'ATENDIDO';
+        $this->signIn($this->coordinator)->post(route('sheet-sources.upload', $this->own), ['file' => $this->file([$header, $row])]);
+
+        // Es la razón de recomendar una clave: sin ella, la huella es toda la fila.
+        $this->assertSame(2, IncomingEmail::query()->count());
+    }
+
+    public function test_key_columns_are_split_on_pipes_and_trimmed(): void
+    {
+        $this->assertSame(['Fecha', 'Correo', 'Asunto'], SheetInboxImporter::keyColumns(' Fecha | Correo |Asunto| '));
+        $this->assertSame(['Folio'], SheetInboxImporter::keyColumns('Folio'));
+        $this->assertSame([], SheetInboxImporter::keyColumns(null));
+        $this->assertSame([], SheetInboxImporter::keyColumns(' | '));
     }
 
     public function test_sheet_can_be_saved_without_a_share_url_for_manual_mode(): void
