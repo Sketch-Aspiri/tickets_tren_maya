@@ -114,6 +114,8 @@ final class TicketService
 
         if ($isRejection) {
             $this->notifier->rejected($actor, $updated);
+        } else {
+            $this->notifier->statusChanged($actor, $updated, $to);
         }
 
         return $updated;

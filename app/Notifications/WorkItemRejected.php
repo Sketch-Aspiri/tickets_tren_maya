@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Aviso dentro del sistema: un ticket o una actividad tuya fue rechazada en la revisión y regresó a En proceso. El motivo
@@ -14,6 +17,7 @@ use Illuminate\Notifications\Notification;
  */
 final class WorkItemRejected extends Notification implements ShouldQueue
 {
+    use BuildsWebPush;
     use Queueable;
 
     public const TYPE = 'work_item_rejected';
@@ -29,11 +33,11 @@ final class WorkItemRejected extends Notification implements ShouldQueue
     }
 
     /**
-     * @return list<string>
+     * @return list<string|class-string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WebPushChannel::class];
     }
 
     /**
@@ -49,5 +53,15 @@ final class WorkItemRejected extends Notification implements ShouldQueue
             'title' => $this->title,
             'by' => $this->reviewerName,
         ];
+    }
+
+    public function toWebPush(object $notifiable, Notification $notification): WebPushMessage
+    {
+        return $this->webPush(
+            __('push.rejected.title'),
+            __('push.rejected.body', ['folio' => $this->folio, 'by' => $this->reviewerName]),
+            $this->itemUrl($this->kind, $this->itemId),
+            'status-'.$this->kind.'-'.$this->itemId,
+        );
     }
 }

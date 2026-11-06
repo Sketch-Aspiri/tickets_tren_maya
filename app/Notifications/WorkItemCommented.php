@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Aviso dentro del sistema: alguien comentó un ticket o una actividad en la que participas. Solo escalares; se guarda
@@ -14,6 +17,7 @@ use Illuminate\Notifications\Notification;
  */
 final class WorkItemCommented extends Notification implements ShouldQueue
 {
+    use BuildsWebPush;
     use Queueable;
 
     public const TYPE = 'work_item_commented';
@@ -29,11 +33,11 @@ final class WorkItemCommented extends Notification implements ShouldQueue
     }
 
     /**
-     * @return list<string>
+     * @return list<string|class-string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WebPushChannel::class];
     }
 
     /**
@@ -49,5 +53,15 @@ final class WorkItemCommented extends Notification implements ShouldQueue
             'title' => $this->title,
             'by' => $this->authorName,
         ];
+    }
+
+    public function toWebPush(object $notifiable, Notification $notification): WebPushMessage
+    {
+        return $this->webPush(
+            __('push.commented.title'),
+            __('push.commented.body', ['folio' => $this->folio, 'by' => $this->authorName]),
+            $this->itemUrl($this->kind, $this->itemId),
+            'comment-'.$this->kind.'-'.$this->itemId,
+        );
     }
 }

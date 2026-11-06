@@ -5,6 +5,15 @@ return [
         'invalid_endpoint' => 'El servicio de notificaciones del navegador no es válido.',
         'too_many' => 'Ya tienes el máximo de dispositivos con notificaciones activadas. Desactívalas en otro dispositivo primero.',
     ],
+    'assigned' => ['title' => 'Nueva asignación', 'body' => ':by te asignó :folio.'],
+    'commented' => ['title' => 'Nuevo comentario', 'body' => ':by comentó en :folio.'],
+    'rejected' => ['title' => 'Regresado a trabajo', 'body' => ':by rechazó la revisión de :folio.'],
+    'status' => ['title' => 'Cambio de estado', 'body' => ':by cambió :folio a «:status».'],
+    'chat' => [
+        'title' => 'Nuevo mensaje',
+        'body_direct' => ':by te escribió en el chat.',
+        'body_team' => ':by escribió en el canal :team.',
+    ],
     'ui' => [
         'title' => 'Notificaciones en este dispositivo',
         'intro' => 'Recibe avisos en tu celular o computadora aunque el sistema esté cerrado.',

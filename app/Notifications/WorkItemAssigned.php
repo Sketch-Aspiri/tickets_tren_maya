@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Aviso dentro del sistema: te asignaron un ticket o una actividad. Solo lleva escalares (serializa limpio en
@@ -14,6 +17,7 @@ use Illuminate\Notifications\Notification;
  */
 final class WorkItemAssigned extends Notification implements ShouldQueue
 {
+    use BuildsWebPush;
     use Queueable;
 
     public const TYPE = 'work_item_assigned';
@@ -30,11 +34,11 @@ final class WorkItemAssigned extends Notification implements ShouldQueue
     }
 
     /**
-     * @return list<string>
+     * @return list<string|class-string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WebPushChannel::class];
     }
 
     /**
@@ -51,5 +55,15 @@ final class WorkItemAssigned extends Notification implements ShouldQueue
             'role' => $this->role,
             'assigned_by' => $this->assignedByName,
         ];
+    }
+
+    public function toWebPush(object $notifiable, Notification $notification): WebPushMessage
+    {
+        return $this->webPush(
+            __('push.assigned.title'),
+            __('push.assigned.body', ['folio' => $this->folio, 'by' => $this->assignedByName]),
+            $this->itemUrl($this->kind, $this->itemId),
+            'assigned-'.$this->kind.'-'.$this->itemId,
+        );
     }
 }

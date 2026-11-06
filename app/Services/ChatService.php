@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\ConversationType;
+use App\Enums\UserStatus;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Attachment;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\User;
+use App\Notifications\ChatMessageReceived;
 use App\Support\AttachmentInspector;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -136,7 +138,7 @@ final class ChatService
         $path = null;
 
         try {
-            return DB::transaction(function () use ($actor, $conversation, $text, $file, $extension, $disk, &$path): ChatMessage {
+            $message = DB::transaction(function () use ($actor, $conversation, $text, $file, $extension, $disk, &$path): ChatMessage {
                 $message = new ChatMessage(['body' => $text, 'user_id' => $actor->getKey()]);
                 $conversation->messages()->save($message);
 
@@ -176,6 +178,35 @@ final class ChatService
             }
 
             throw $exception;
+        }
+
+        $this->notifyRecipients($actor, $conversation);
+
+        return $message;
+    }
+
+    /**
+     * Aviso Web Push (sin el texto del mensaje) a las demás personas activas de la conversación. Un fallo al
+     * encolar el aviso nunca debe impedir que el mensaje ya guardado se entregue.
+     */
+    private function notifyRecipients(User $actor, Conversation $conversation): void
+    {
+        try {
+            $isTeam = $conversation->type === ConversationType::Team;
+            $team = $isTeam ? $conversation->team : null;
+
+            $recipients = $team !== null ? $team->members() : $conversation->participants();
+
+            $users = $recipients
+                ->whereKeyNot($actor->getKey())
+                ->where('users.status', UserStatus::Active->value)
+                ->get();
+
+            foreach ($users as $user) {
+                $user->notify(new ChatMessageReceived((int) $conversation->getKey(), $actor->name, $team?->name));
+            }
+        } catch (Throwable $exception) {
+            report($exception);
         }
     }
 

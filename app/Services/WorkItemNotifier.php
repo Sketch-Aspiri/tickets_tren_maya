@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\TicketStatus;
 use App\Enums\UserStatus;
 use App\Models\Activity;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Notifications\WorkItemCommented;
 use App\Notifications\WorkItemRejected;
+use App\Notifications\WorkItemStatusChanged;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -29,6 +31,19 @@ final class WorkItemNotifier
                 (string) $item->folio,
                 (string) $item->title,
                 $author->name,
+            ));
+        }
+    }
+
+    public function statusChanged(User $actor, Ticket|Activity $item, TicketStatus $to): void
+    {
+        foreach ($this->recipients($item, $actor, includeCreator: true) as $user) {
+            $user->notify(new WorkItemStatusChanged(
+                $item instanceof Activity ? 'activity' : 'ticket',
+                (int) $item->getKey(),
+                (string) $item->folio,
+                $to->label(),
+                $actor->name,
             ));
         }
     }
