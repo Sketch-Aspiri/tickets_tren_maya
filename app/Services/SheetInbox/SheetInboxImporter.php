@@ -7,6 +7,7 @@ namespace App\Services\SheetInbox;
 use App\Enums\IncomingEmailStatus;
 use App\Models\IncomingEmail;
 use App\Models\SpreadsheetSource;
+use App\Models\User;
 use App\Notifications\NewIncomingEmailToReview;
 use App\Services\AuditLogger;
 use Illuminate\Support\Facades\Notification;
@@ -42,6 +43,37 @@ final class SheetInboxImporter
             throw $exception;
         }
 
+        return $this->finish($source, $result);
+    }
+
+    /**
+     * Importa un libro .xlsx subido a mano (sin cuenta de Microsoft): mismas columnas, mismo dedupe y misma revisión
+     * humana que la lectura automática. El contenido es dato no confiable: solo se leen valores, nunca fórmulas.
+     *
+     * @return array{created: int, skipped: int}
+     */
+    public function importUploaded(SpreadsheetSource $source, string $bytes, User $actor): array
+    {
+        try {
+            $result = $this->store($source, $this->reader->parse($bytes, $source));
+        } catch (SheetInboxException $exception) {
+            $source->forceFill(['last_error' => mb_substr($exception->getMessage(), 0, 500)])->save();
+            $this->audit->record('sheet_sources', 'upload_failed', $source->coordination, $actor, extra: ['reason' => $exception->getMessage()]);
+
+            throw $exception;
+        }
+
+        $this->audit->record('sheet_sources', 'uploaded', $source->coordination, $actor, extra: $result + ['bytes' => strlen($bytes)]);
+
+        return $this->finish($source, $result);
+    }
+
+    /**
+     * @param  array{created: int, skipped: int}  $result
+     * @return array{created: int, skipped: int}
+     */
+    private function finish(SpreadsheetSource $source, array $result): array
+    {
         $source->forceFill(['last_synced_at' => now(), 'last_error' => null])->save();
 
         if ($result['created'] > 0) {

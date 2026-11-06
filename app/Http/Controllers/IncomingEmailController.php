@@ -41,10 +41,24 @@ class IncomingEmailController extends Controller
             $coordinationId = null;
         }
 
+        // Filtro por estación/edificio: solo estaciones con alguna bandeja visible; una coordinación elegida manda.
+        $stationId = $request->stationFilter();
+
+        if ($stationId !== null && ! $mailboxes->contains('station_id', $stationId)) {
+            $stationId = null;
+        }
+
+        if ($coordinationId !== null) {
+            $stationId = null;
+        }
+
+        $stationMailboxIds = $stationId === null ? [] : $mailboxes->where('station_id', $stationId)->pluck('id')->all();
+
         $emails = IncomingEmail::query()
             ->visibleTo($request->user())
             ->with(['attachments', 'coordination:id,name,station_id', 'coordination.station:id,name'])
             ->when($coordinationId !== null, fn ($query) => $query->where('incoming_emails.coordination_id', $coordinationId))
+            ->when($stationId !== null, fn ($query) => $query->whereIn('incoming_emails.coordination_id', $stationMailboxIds))
             ->when($status !== 'all', fn ($query) => $query->where('status', $status))
             ->orderByDesc('received_at')
             ->paginate((int) config('mail_ingestion.per_page'))
@@ -54,6 +68,7 @@ class IncomingEmailController extends Controller
             'emails' => $emails,
             'status' => $status,
             'coordinationId' => $coordinationId,
+            'stationId' => $stationId,
             'mailboxes' => $mailboxes,
             'pendingByMailbox' => $pending,
         ]);

@@ -109,6 +109,8 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::post('coordinations/{coordination}/sheet-source/disconnect', [SpreadsheetSourceController::class, 'disconnect'])->name('sheet-sources.disconnect');
     Route::post('coordinations/{coordination}/sheet-source/sync', [SpreadsheetSourceController::class, 'sync'])
         ->middleware('throttle:mailbox-test')->name('sheet-sources.sync');
+    Route::post('coordinations/{coordination}/sheet-source/upload', [SpreadsheetSourceController::class, 'upload'])
+        ->middleware('throttle:mailbox-test')->name('sheet-sources.upload');
 
     // Categorias: solo jefe de zona (CategoryPolicy).
     Route::resource('categories', CategoryController::class)->except('show');

@@ -40,7 +40,7 @@ class SaveSpreadsheetSourceRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
-            'share_url' => ['required', 'string', 'max:2000', new OneDriveShareUrl],
+            'share_url' => ['nullable', 'string', 'max:2000', new OneDriveShareUrl],
             'worksheet' => self::COLUMN,
             'header_row' => ['required', 'integer', 'min:1', 'max:50'],
             'subject_column' => ['required', 'string', 'max:100'],
@@ -58,9 +58,14 @@ class SaveSpreadsheetSourceRequest extends FormRequest
      */
     public function payload(): array
     {
-        return $this->safe()->only([
+        $payload = $this->safe()->only([
             'name', 'share_url', 'worksheet', 'header_row', 'subject_column', 'body_columns',
             'requester_name_column', 'requester_email_column', 'key_column', 'active',
         ]);
+
+        // Sin enlace = solo carga manual del archivo (la columna no admite nulos).
+        $payload['share_url'] = (string) ($payload['share_url'] ?? '');
+
+        return $payload;
     }
 }

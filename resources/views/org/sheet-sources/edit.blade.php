@@ -9,9 +9,6 @@
 
     <x-card class="max-w-2xl">
         <p class="text-sm text-gray-700">{{ __('sheet_sources.form.intro') }}</p>
-        @unless ($configured)
-            <p class="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{{ __('sheet_sources.not_available') }}</p>
-        @endunless
 
         <form method="POST" action="{{ route('sheet-sources.update', $coordination) }}" class="mt-4 space-y-4" autocomplete="off">
             @csrf
@@ -25,7 +22,7 @@
 
             <div>
                 <x-input-label for="share_url" :value="__('sheet_sources.form.share_url')" />
-                <x-text-input id="share_url" name="share_url" type="url" class="mt-1 block w-full" :value="old('share_url', $source->share_url)" maxlength="2000" required aria-describedby="share_url_hint" />
+                <x-text-input id="share_url" name="share_url" type="url" class="mt-1 block w-full" :value="old('share_url', $source->share_url)" maxlength="2000" aria-describedby="share_url_hint" />
                 <p id="share_url_hint" class="mt-1 text-xs text-gray-600">{{ __('sheet_sources.form.share_url_hint') }}</p>
                 <x-input-error :messages="$errors->get('share_url')" class="mt-2" />
             </div>

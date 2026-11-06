@@ -14,22 +14,46 @@
     </x-slot>
 
     @if ($mailboxes->count() > 1 || auth()->user()->seesAllTeams())
+        @php
+            $totalPending = $pendingByMailbox->sum();
+            $groups = $mailboxes->groupBy('station_id')->sortBy(fn ($items) => $items->first()->station->name);
+            $allActive = $coordinationId === null && $stationId === null;
+        @endphp
         <x-card>
             <p class="mb-2 text-sm font-semibold text-brand-green">{{ __('emails.index.mailboxes') }}</p>
-            <nav class="flex flex-wrap gap-2" aria-label="{{ __('emails.index.mailboxes') }}">
-                @php $totalPending = $pendingByMailbox->sum(); @endphp
-                @if ($coordinationId === null)
-                    <x-primary-button :href="route('incoming-emails.index', ['status' => $status])" aria-current="true">{{ __('common.all') }} ({{ $totalPending }})</x-primary-button>
-                @else
-                    <x-secondary-button :href="route('incoming-emails.index', ['status' => $status])">{{ __('common.all') }} ({{ $totalPending }})</x-secondary-button>
-                @endif
-                @foreach ($mailboxes as $mailbox)
-                    @php $label = $mailbox->station->name.' › '.$mailbox->name.' ('.($pendingByMailbox[$mailbox->id] ?? 0).')'; @endphp
-                    @if ($mailbox->id === $coordinationId)
-                        <x-primary-button :href="route('incoming-emails.index', ['status' => $status, 'coordination_id' => $mailbox->id])" aria-current="true">{{ $label }}</x-primary-button>
+            <nav class="space-y-4" aria-label="{{ __('emails.index.mailboxes') }}">
+                <div>
+                    @if ($allActive)
+                        <x-primary-button :href="route('incoming-emails.index', ['status' => $status])" aria-current="true">{{ __('common.all') }} ({{ $totalPending }})</x-primary-button>
                     @else
-                        <x-secondary-button :href="route('incoming-emails.index', ['status' => $status, 'coordination_id' => $mailbox->id])">{{ $label }}</x-secondary-button>
+                        <x-secondary-button :href="route('incoming-emails.index', ['status' => $status])">{{ __('common.all') }} ({{ $totalPending }})</x-secondary-button>
                     @endif
+                </div>
+
+                @foreach ($groups as $group => $items)
+                    @php
+                        $station = $items->first()->station;
+                        $stationPending = $items->sum(fn ($mailbox) => $pendingByMailbox[$mailbox->id] ?? 0);
+                    @endphp
+                    <div class="space-y-2 rounded-lg border border-gray-200 p-3" role="group" aria-labelledby="station-{{ $station->id }}">
+                        <h2 id="station-{{ $station->id }}" class="flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-900">
+                            <x-icon name="building" class="h-5 w-5 text-brand-teal" />
+                            <a href="{{ route('incoming-emails.index', ['status' => $status, 'station_id' => $station->id]) }}"
+                               class="rounded hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal {{ $stationId === $station->id ? 'text-brand-green underline' : '' }}"
+                               @if ($stationId === $station->id) aria-current="true" @endif>{{ $station->name }}</a>
+                            <span class="text-xs font-normal text-gray-600">({{ $stationPending }})</span>
+                        </h2>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($items->sortBy('name') as $mailbox)
+                                @php $label = $mailbox->name.' ('.($pendingByMailbox[$mailbox->id] ?? 0).')'; @endphp
+                                @if ($mailbox->id === $coordinationId)
+                                    <x-primary-button :href="route('incoming-emails.index', ['status' => $status, 'coordination_id' => $mailbox->id])" aria-current="true">{{ $label }}</x-primary-button>
+                                @else
+                                    <x-secondary-button :href="route('incoming-emails.index', ['status' => $status, 'coordination_id' => $mailbox->id])">{{ $label }}</x-secondary-button>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 @endforeach
             </nav>
         </x-card>
@@ -39,9 +63,9 @@
         <nav class="flex flex-wrap gap-2" aria-label="{{ __('common.nav.incoming_emails') }}">
             @foreach ($statusOptions as $value => $label)
                 @if ($value === $status)
-                    <x-primary-button :href="route('incoming-emails.index', array_filter(['status' => $value, 'coordination_id' => $coordinationId]))" aria-current="true">{{ $label }}</x-primary-button>
+                    <x-primary-button :href="route('incoming-emails.index', array_filter(['status' => $value, 'coordination_id' => $coordinationId, 'station_id' => $stationId]))" aria-current="true">{{ $label }}</x-primary-button>
                 @else
-                    <x-secondary-button :href="route('incoming-emails.index', array_filter(['status' => $value, 'coordination_id' => $coordinationId]))">{{ $label }}</x-secondary-button>
+                    <x-secondary-button :href="route('incoming-emails.index', array_filter(['status' => $value, 'coordination_id' => $coordinationId, 'station_id' => $stationId]))">{{ $label }}</x-secondary-button>
                 @endif
             @endforeach
         </nav>

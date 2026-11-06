@@ -27,12 +27,20 @@ class IndexIncomingEmailsRequest extends FormRequest
         return [
             'status' => ['nullable', 'string', Rule::in(['pending_review', 'converted', 'discarded', 'all'])],
             'coordination_id' => ['nullable', 'integer', 'min:1'],
+            'station_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
     public function coordinationFilter(): ?int
     {
         $id = $this->validated('coordination_id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    public function stationFilter(): ?int
+    {
+        $id = $this->validated('station_id');
 
         return $id === null ? null : (int) $id;
     }

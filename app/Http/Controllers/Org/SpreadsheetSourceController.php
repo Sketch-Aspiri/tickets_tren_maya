@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Org;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Org\InboxActionRequest;
 use App\Http\Requests\Org\SaveSpreadsheetSourceRequest;
+use App\Http\Requests\Org\UploadSheetRequest;
 use App\Models\Coordination;
 use App\Models\SpreadsheetSource;
 use App\Services\AuditLogger;
@@ -144,6 +145,26 @@ class SpreadsheetSourceController extends Controller
         }
 
         return redirect()->to($this->home())->with('notice', __('sheet_sources.synced', $result));
+    }
+
+    /**
+     * Carga manual del libro: importa sus filas nuevas a la bandeja sin necesidad de conectar Microsoft.
+     */
+    public function upload(UploadSheetRequest $request, Coordination $coordination, SheetInboxImporter $importer): RedirectResponse
+    {
+        $source = $coordination->spreadsheetSource;
+
+        if ($source === null) {
+            return redirect()->to($this->home())->with('error', __('sheet_sources.errors.configure_first'));
+        }
+
+        try {
+            $result = $importer->importUploaded($source, (string) $request->file('file')?->get(), $request->user());
+        } catch (SheetInboxException $exception) {
+            return redirect()->to($this->home())->with('error', $exception->getMessage());
+        }
+
+        return redirect()->to($this->home())->with('notice', __('sheet_sources.uploaded', $result));
     }
 
     private function home(): string
