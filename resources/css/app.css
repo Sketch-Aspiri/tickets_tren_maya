@@ -5,3 +5,24 @@
 [x-cloak] {
     display: none !important;
 }
+
+/* Barra de carga superior (resources/js/ui.js): avanza hasta ~90 % mientras el servidor responde. */
+.app-loader-bar {
+    width: 0;
+    transition: width 8s cubic-bezier(0.1, 0.7, 0.2, 1);
+}
+
+#app-page-loader[data-state="running"] .app-loader-bar {
+    width: 90%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-loader-bar {
+        transition: none;
+    }
+
+    #app-page-loader[data-state="running"] .app-loader-bar {
+        width: 100%;
+        opacity: 0.6;
+    }
+}

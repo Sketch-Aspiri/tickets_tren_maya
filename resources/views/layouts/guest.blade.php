@@ -20,5 +20,7 @@
 
             <p class="mt-6 text-center text-xs text-gray-600">{{ config('app.name') }}</p>
         </div>
+
+        <x-app-ui />
     </body>
 </html>

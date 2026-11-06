@@ -30,7 +30,7 @@ final class MailboxPoller
 
         foreach (CoordinationMailbox::query()->active()
             ->whereHas('coordination', fn ($q) => $q->active()->whereHas('station', fn ($s) => $s->active()))
-            ->orderBy('id')->get() as $mailbox) {
+            ->with('coordination')->orderBy('id')->get() as $mailbox) {
             $summary[] = $this->poll($mailbox);
         }
 
@@ -52,7 +52,7 @@ final class MailboxPoller
         } catch (Throwable $exception) {
             $reason = $this->safeReason($exception, [$mailbox->password, $mailbox->username]);
             $mailbox->forceFill(['last_polled_at' => now(), 'last_error' => $reason])->save();
-            $this->audit->record('mailboxes', 'poll_failed', $mailbox->coordination, null, extra: ['reason' => $reason]);
+            $this->audit->record('mailboxes', 'poll_failed', $mailbox->loadMissing('coordination')->coordination, null, extra: ['reason' => $reason]);
 
             return ['coordination_id' => $mailbox->coordination_id, 'ok' => false, 'result' => null];
         }

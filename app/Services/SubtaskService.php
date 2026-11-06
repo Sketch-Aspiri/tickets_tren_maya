@@ -51,7 +51,7 @@ final class SubtaskService
     public function update(User $actor, Subtask $subtask, string $title, ?int $assignedTo): Subtask
     {
         return DB::transaction(function () use ($actor, $subtask, $title, $assignedTo): Subtask {
-            $locked = $this->lockOpen($actor, $subtask->activity, 'update', $subtask);
+            $locked = $this->lockOpen($actor, $subtask->loadMissing('activity')->activity, 'update', $subtask);
             $fresh = Subtask::query()->lockForUpdate()->findOrFail($subtask->getKey());
 
             $this->assertAssignee($locked, $assignedTo);
@@ -70,7 +70,7 @@ final class SubtaskService
     public function remove(User $actor, Subtask $subtask): void
     {
         DB::transaction(function () use ($actor, $subtask): void {
-            $locked = $this->lockOpen($actor, $subtask->activity, 'delete', $subtask);
+            $locked = $this->lockOpen($actor, $subtask->loadMissing('activity')->activity, 'delete', $subtask);
 
             $subtask->delete();
 
@@ -84,7 +84,7 @@ final class SubtaskService
     public function setDone(User $actor, Subtask $subtask, bool $done): Subtask
     {
         return DB::transaction(function () use ($actor, $subtask, $done): Subtask {
-            $locked = $this->lockOpen($actor, $subtask->activity, 'markDone', $subtask);
+            $locked = $this->lockOpen($actor, $subtask->loadMissing('activity')->activity, 'markDone', $subtask);
             $fresh = Subtask::query()->lockForUpdate()->findOrFail($subtask->getKey());
 
             if ($locked->isTemplate()) {

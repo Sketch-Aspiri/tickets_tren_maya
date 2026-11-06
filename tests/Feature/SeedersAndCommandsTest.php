@@ -153,7 +153,7 @@ class SeedersAndCommandsTest extends DatabaseTestCase
     {
         $this->seed(DemoDataSeeder::class);
 
-        foreach (Team::query()->whereNotNull('coordinator_id')->get() as $team) {
+        foreach (Team::query()->whereNotNull('coordinator_id')->with('coordinator')->get() as $team) {
             $this->assertTrue($team->canBeCoordinatedBy($team->coordinator));
         }
     }

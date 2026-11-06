@@ -140,6 +140,10 @@ class TicketViewsTest extends DatabaseTestCase
         $this->assertStringContainsString("from '@alpinejs/csp'", $js);
         $this->assertStringNotContainsString("from 'alpinejs'", $js);
 
+        // `confirmSubmit` vive en ui.js (diálogo propio en vez de window.confirm), que app.js importa y registra.
+        $this->assertStringContainsString('registerUi(Alpine)', $js);
+        $js .= (string) file_get_contents(resource_path('js/ui.js'));
+
         foreach (['sidebar', 'modal', 'modalTrigger', 'confirmSubmit', 'twoFactorChallenge'] as $component) {
             $this->assertStringContainsString("Alpine.data('{$component}'", $js);
         }

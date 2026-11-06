@@ -6,6 +6,7 @@ import Alpine from '@alpinejs/csp';
 import { registerChat } from './chat.js';
 import { registerTemayin } from './temayin.js';
 import { registerPush, registerServiceWorker } from './push.js';
+import { installGlobalUi, registerUi } from './ui.js';
 import { currentCoordination, currentTeam, filterOptions, fitsCoordination, registerOrgPicker, sameForm } from './org.js';
 
 window.Alpine = Alpine;
@@ -102,13 +103,6 @@ Alpine.data('modalTrigger', () => ({
 }));
 
 // Formulario con confirmacion nativa (data-confirm="texto ya traducido en el servidor").
-Alpine.data('confirmSubmit', () => ({
-    onSubmit(event) {
-        if (!window.confirm(this.$el.dataset.confirm ?? '')) {
-            event.preventDefault();
-        }
-    },
-}));
 
 // Desafio 2FA: alterna entre codigo de la app y codigo de recuperacion (data-recovery="1" para iniciar en recuperacion).
 Alpine.data('twoFactorChallenge', () => ({
@@ -290,6 +284,8 @@ Alpine.data('assigneePicker', () => ({
 
 registerChat(Alpine);
 registerPush(Alpine);
+registerUi(Alpine);
+installGlobalUi();
 registerOrgPicker(Alpine);
 registerServiceWorker();
 registerTemayin(Alpine);

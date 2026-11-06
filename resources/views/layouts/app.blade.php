@@ -37,5 +37,6 @@
         </div>
 
         <x-temayin-assistant />
+        <x-app-ui />
     </body>
 </html>

@@ -29,10 +29,17 @@ class ChatUserSearchController extends Controller
             ListingQuery::search($query, $term, ['users.name']);
         }
 
+        // Solo id, nombre y el nombre de su coordinación (ya público en el registro): con varias coordinaciones dos
+        // personas homónimas se distinguen sin exponer correo, equipo ni rol.
         $users = $query->orderBy('name')
             ->limit((int) config('tickets.chat.user_search_limit'))
+            ->with(['teams:id,coordination_id', 'teams.coordination:id,name'])
             ->get(['id', 'name'])
-            ->map(fn (User $user): array => ['id' => $user->getKey(), 'name' => $user->name])
+            ->map(fn (User $user): array => [
+                'id' => $user->getKey(),
+                'name' => $user->name,
+                'place' => (string) $user->teams->pluck('coordination.name')->filter()->unique()->sort()->implode(', '),
+            ])
             ->all();
 
         return response()->json(['success' => true, 'data' => $users, 'error' => null, 'meta' => null])

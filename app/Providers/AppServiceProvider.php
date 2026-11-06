@@ -23,6 +23,7 @@ use App\Support\AuditCoordinationResolver;
 use App\Support\EnvironmentSecurityCheck;
 use App\Support\MorphMap;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -49,6 +50,9 @@ class AppServiceProvider extends ServiceProvider
         (new EnvironmentSecurityCheck($this->app))->assertSecure();
 
         MorphMap::register();
+        // Fuera de produccion, una relacion no cargada de antemano (N+1) lanza excepcion: asi las pruebas y el uso
+        // local la detectan. En produccion nunca rompe una pantalla (solo seria mas lenta).
+        Model::preventLazyLoading(! $this->app->isProduction());
         $this->registerAuthorization();
         $this->configureTransportSecurity();
         $this->configurePasswordPolicy();

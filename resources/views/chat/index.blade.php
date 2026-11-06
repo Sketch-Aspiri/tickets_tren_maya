@@ -17,7 +17,10 @@
                             <form method="POST" action="{{ route('chat.direct') }}">
                                 @csrf
                                 <input type="hidden" name="user_id" x-bind:value="user.id">
-                                <button type="submit" x-text="user.name" class="flex min-h-[44px] w-full items-center rounded-md px-3 text-left text-sm font-medium text-gray-800 hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"></button>
+                                <button type="submit" class="flex min-h-[44px] w-full flex-col justify-center rounded-md px-3 py-1 text-left text-sm font-medium text-gray-800 hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">
+                                    <span x-text="user.name"></span>
+                                    <span x-text="user.place" class="text-xs font-normal text-gray-600"></span>
+                                </button>
                             </form>
                         </li>
                     </template>

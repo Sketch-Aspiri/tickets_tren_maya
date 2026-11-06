@@ -1,6 +1,26 @@
 <?php
 
 return [
+    'loading' => 'Cargando…',
+    'validation_ui' => [
+        'required' => 'Este campo es obligatorio.',
+        'choose' => 'Elige una opción.',
+        'checkbox' => 'Marca esta casilla para continuar.',
+        'email' => 'Escribe un correo válido (ejemplo: nombre@dominio.com).',
+        'url' => 'Escribe un enlace válido que empiece con https://.',
+        'too_short' => 'Escribe al menos :min caracteres.',
+        'too_long' => 'Escribe como máximo :max caracteres.',
+        'min' => 'El valor mínimo es :min.',
+        'max' => 'El valor máximo es :max.',
+        'pattern' => 'El formato no es válido.',
+        'number' => 'Escribe un número.',
+        'invalid' => 'Revisa este campo.',
+    ],
+    'dialog' => [
+        'title' => '¿Confirmas esta acción?',
+        'confirm' => 'Sí, continuar',
+        'cancel' => 'Cancelar',
+    ],
     'app_name' => 'Tren Maya Tickets',
     'logo_alt' => 'Tren Maya — Sistema de Tickets',
     'skip_to_content' => 'Saltar al contenido',

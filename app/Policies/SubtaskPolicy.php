@@ -33,7 +33,7 @@ class SubtaskPolicy
 
     public function update(User $user, Subtask $subtask): Response|bool
     {
-        return $this->inScope($user, $subtask->activity, fn (): bool => $this->canManage($user));
+        return $this->inScope($user, $subtask->loadMissing('activity')->activity, fn (): bool => $this->canManage($user));
     }
 
     public function delete(User $user, Subtask $subtask): Response|bool
@@ -43,10 +43,10 @@ class SubtaskPolicy
 
     public function markDone(User $user, Subtask $subtask): Response|bool
     {
-        return $this->inScope($user, $subtask->activity, fn (): bool => $this->hasPermission($user, PermissionName::ActivitiesWork)
+        return $this->inScope($user, $subtask->loadMissing('activity')->activity, fn (): bool => $this->hasPermission($user, PermissionName::ActivitiesWork)
             && ($this->canManage($user)
                 || (int) $subtask->assigned_to === (int) $user->getKey()
-                || $this->isResponsible($user, $subtask->activity)));
+                || $this->isResponsible($user, $subtask->loadMissing('activity')->activity)));
     }
 
     private function canManage(User $user): bool

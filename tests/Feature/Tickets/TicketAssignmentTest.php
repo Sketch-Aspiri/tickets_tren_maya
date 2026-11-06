@@ -332,9 +332,13 @@ class TicketAssignmentTest extends DatabaseTestCase
     {
         $ticket = Ticket::factory()->forTeam($this->teamA)->createdBy($this->coordA)->create();
 
+        // Se busca la ACCIÓN (el formulario a la ruta de tomar), no el texto: «Tomar este ticket» también aparece en
+        // una respuesta del asistente Temayin, presente en todas las páginas.
+        $takeAction = 'action="'.route('tickets.take', $ticket).'"';
+
         $this->signIn($this->empA1)->get("/tickets/{$ticket->id}")
             ->assertOk()
-            ->assertSee(__('tickets.actions.take'))
+            ->assertSee($takeAction, false)
             ->assertDontSee(__('tickets.assign.submit'));
 
         $this->signIn($this->coordA)->get("/tickets/{$ticket->id}")
@@ -344,8 +348,11 @@ class TicketAssignmentTest extends DatabaseTestCase
             ->assertSee($this->empA2->name)
             ->assertDontSee($this->empB1->name);
 
+        // El jefe (aunque supervise ambas coordinaciones) solo ofrece personas de la coordinación del ticket
+        // (decisión 81): teamB es de otra coordinación. Tampoco "toma" tickets de la bolsa.
         $this->signIn($this->jefe)->get("/tickets/{$ticket->id}")
-            ->assertSee($this->empB1->name)
-            ->assertDontSee(__('tickets.actions.take'));
+            ->assertSee($this->empA2->name)
+            ->assertDontSee($this->empB1->name)
+            ->assertDontSee($takeAction, false);
     }
 }

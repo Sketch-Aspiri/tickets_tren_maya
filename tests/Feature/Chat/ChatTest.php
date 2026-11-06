@@ -323,7 +323,8 @@ class ChatTest extends DatabaseTestCase
 
         $this->assertCount(1, $json);
         $this->assertSame($target->id, $json[0]['id']);
-        $this->assertSame(['id', 'name'], array_keys($json[0]));
+        // Solo id, nombre y coordinación (sin correo, equipo ni rol).
+        $this->assertSame(['id', 'name', 'place'], array_keys($json[0]));
     }
 
     public function test_user_search_excludes_self_and_escapes_like_wildcards(): void

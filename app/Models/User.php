@@ -437,7 +437,8 @@ class User extends Authenticatable
      */
     public function roleEnum(): ?UserRole
     {
-        $name = $this->roles->first()?->name;
+        // Una sola consulta si aún no se cargaron (p. ej. en consola); en los listados ya vienen con `with('roles')`.
+        $name = $this->loadMissing('roles')->roles->first()?->name;
 
         return $name === null ? null : UserRole::tryFrom($name);
     }
