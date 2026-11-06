@@ -20,7 +20,12 @@ class CoordinationBackfillMigrationTest extends TestCase
 
     private function rollbackCoordinationColumns(): void
     {
-        Artisan::call('migrate:rollback', ['--step' => 4, '--force' => true]);
+        // Se deshace de una en una (las más recientes primero) hasta quitar la columna, así migraciones
+        // posteriores a las de coordinación no rompen esta prueba.
+        for ($i = 0; $i < 20 && Schema::hasColumn('teams', 'coordination_id'); $i++) {
+            Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]);
+        }
+
         $this->assertFalse(Schema::hasColumn('teams', 'coordination_id'));
     }
 

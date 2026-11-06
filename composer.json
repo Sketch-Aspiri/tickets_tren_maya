@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.3",
         "bacon/bacon-qr-code": "^3.1",
+        "laravel-notification-channels/webpush": "^13.0",
         "laravel/framework": "^13.17",
         "maatwebsite/excel": "^4.0",
         "pragmarx/google2fa-laravel": "^3.0",

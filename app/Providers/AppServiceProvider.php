@@ -150,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
             'avatar-view' => ['avatar_view_per_minute', 'perMinute'],
             'notifications-poll' => ['notifications_poll_per_minute', 'perMinute'],
             'notifications-write' => ['notifications_write_per_minute', 'perMinute'],
+            'push-write' => ['push_write_per_minute', 'perMinute'],
             'mailbox-test' => ['mailbox_test_per_minute', 'perMinute'],
         ];
 

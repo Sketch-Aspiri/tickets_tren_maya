@@ -5,6 +5,7 @@
 import Alpine from '@alpinejs/csp';
 import { registerChat } from './chat.js';
 import { registerTemayin } from './temayin.js';
+import { registerPush, registerServiceWorker } from './push.js';
 
 window.Alpine = Alpine;
 
@@ -230,6 +231,8 @@ Alpine.data('assigneePicker', () => ({
 }));
 
 registerChat(Alpine);
+registerPush(Alpine);
+registerServiceWorker();
 registerTemayin(Alpine);
 
 Alpine.start();

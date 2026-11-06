@@ -13,6 +13,8 @@
     </x-slot>
 
     <div class="space-y-6">
+        <x-push-toggle />
+
         <x-card :title="__('notifications.ui.chat_section')">
             <ul class="divide-y divide-brand-green/10">
                 @forelse ($unreadChats as $conversation)

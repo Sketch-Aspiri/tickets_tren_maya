@@ -29,6 +29,7 @@ use App\Http\Controllers\Org\CoordinationController;
 use App\Http\Controllers\Org\MailboxController;
 use App\Http\Controllers\Org\StationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Push\PushSubscriptionController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Tickets\TicketAssignmentController;
 use App\Http\Controllers\Tickets\TicketAttachmentController;
@@ -178,6 +179,10 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
         Route::post('read-all', [NotificationController::class, 'readAll'])->middleware('throttle:notifications-write')->name('read-all');
         Route::get('{notification}', [NotificationController::class, 'open'])->middleware('throttle:notifications-write')->name('open');
     });
+
+    // Web Push (PWA): suscripción del navegador del propio usuario.
+    Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('throttle:push-write')->name('push.subscribe');
+    Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:push-write')->name('push.unsubscribe');
 
     // Chat interno (1 a 1 y canal de equipo). Polling JSON; las rutas estaticas van antes de `{conversation}`.
     Route::prefix('chat')->name('chat.')->group(function () {
