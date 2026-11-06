@@ -182,6 +182,19 @@ return [
     | Credenciales de una app de Entra ID con permiso de aplicacion `Sites.Selected` (ver decision 66).
     | `path`: ruta del archivo dentro de la biblioteca (`drive_id`). `max_rows`: tope de filas por hoja.
     */
+    /*
+    | Bandeja desde Excel (OneDrive personal): app registrada en Microsoft Entra con cuentas personales, flujo de
+    | autorizacion con PKCE (solo lectura: Files.Read.All). `tenant`: `consumers` (cuentas personales) o `common`.
+    */
+    'sheet_inbox' => [
+        'client_id' => env('SHEET_INBOX_CLIENT_ID'),
+        'client_secret' => env('SHEET_INBOX_CLIENT_SECRET'),
+        'tenant' => env('SHEET_INBOX_TENANT', 'consumers'),
+        'interval_minutes' => (int) env('SHEET_INBOX_INTERVAL_MINUTES', 15),
+        'max_rows_per_run' => (int) env('SHEET_INBOX_MAX_ROWS_PER_RUN', 200),
+        'max_file_kb' => (int) env('SHEET_INBOX_MAX_FILE_KB', 10240),
+    ],
+
     'cloud_sync' => [
         'enabled' => (bool) env('CLOUD_SYNC_ENABLED', false),
         'tenant_id' => env('CLOUD_SYNC_TENANT_ID'),

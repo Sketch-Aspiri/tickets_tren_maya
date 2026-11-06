@@ -36,7 +36,11 @@ return [
         'folder' => 'Carpeta',
         'active' => 'Revisar este buzón periódicamente',
     ],
+    'synced' => 'Buzón sincronizado: :count correo(s) nuevo(s) en la bandeja.',
+    'sync' => 'Sincronizar ahora',
     'errors' => [
+        'not_configured' => 'Esta coordinación no tiene un buzón activo configurado.',
+        'sync_failed' => 'No se pudo sincronizar el buzón: :reason',
         'not_configured' => 'Esta coordinación aún no tiene un buzón configurado.',
         'test_failed' => 'No se pudo conectar al buzón: :reason',
     ],

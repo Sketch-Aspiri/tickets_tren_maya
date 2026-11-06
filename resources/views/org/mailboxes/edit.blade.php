@@ -65,7 +65,7 @@
 
             <div class="mt-6 flex items-center gap-3">
                 <x-primary-button>{{ __('common.actions.save') }}</x-primary-button>
-                <x-text-link :href="route('mailboxes.index')">{{ __('common.actions.cancel') }}</x-text-link>
+                <x-text-link :href="auth()->user()->can('viewAny', \App\Models\CoordinationMailbox::class) ? route('mailboxes.index') : route('inbox-settings.index')">{{ __('common.actions.cancel') }}</x-text-link>
             </div>
         </form>
     </x-card>

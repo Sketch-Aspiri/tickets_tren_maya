@@ -26,7 +26,9 @@ use App\Http\Controllers\IncomingEmailConversionController;
 use App\Http\Controllers\IncomingEmailDiscardController;
 use App\Http\Controllers\Notifications\NotificationController;
 use App\Http\Controllers\Org\CoordinationController;
+use App\Http\Controllers\Org\InboxSettingsController;
 use App\Http\Controllers\Org\MailboxController;
+use App\Http\Controllers\Org\SpreadsheetSourceController;
 use App\Http\Controllers\Org\StationController;
 use App\Http\Controllers\OverduePurgeController;
 use App\Http\Controllers\ProfileController;
@@ -91,6 +93,22 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::delete('coordinations/{coordination}/mailbox', [MailboxController::class, 'destroy'])->name('mailboxes.destroy');
     Route::post('coordinations/{coordination}/mailbox/test', [MailboxController::class, 'test'])
         ->middleware('throttle:mailbox-test')->name('mailboxes.test');
+    Route::post('coordinations/{coordination}/mailbox/sync', [MailboxController::class, 'sync'])
+        ->middleware('throttle:mailbox-test')->name('mailboxes.sync');
+
+    // "Mi bandeja": jefe y coordinador configuran y sincronizan la bandeja de SUS coordinaciones (CoordinationPolicy
+    // `manageInbox`; otra coordinacion = 404). Hoja de Excel de OneDrive con inicio de sesion de Microsoft.
+    Route::get('inbox-settings', [InboxSettingsController::class, 'index'])->name('inbox-settings.index');
+    Route::get('sheet-sources/callback', [SpreadsheetSourceController::class, 'callback'])
+        ->middleware('throttle:mailbox-test')->name('sheet-sources.callback');
+    Route::get('coordinations/{coordination}/sheet-source', [SpreadsheetSourceController::class, 'edit'])->name('sheet-sources.edit');
+    Route::put('coordinations/{coordination}/sheet-source', [SpreadsheetSourceController::class, 'update'])->name('sheet-sources.update');
+    Route::delete('coordinations/{coordination}/sheet-source', [SpreadsheetSourceController::class, 'destroy'])->name('sheet-sources.destroy');
+    Route::post('coordinations/{coordination}/sheet-source/connect', [SpreadsheetSourceController::class, 'connect'])
+        ->middleware('throttle:mailbox-test')->name('sheet-sources.connect');
+    Route::post('coordinations/{coordination}/sheet-source/disconnect', [SpreadsheetSourceController::class, 'disconnect'])->name('sheet-sources.disconnect');
+    Route::post('coordinations/{coordination}/sheet-source/sync', [SpreadsheetSourceController::class, 'sync'])
+        ->middleware('throttle:mailbox-test')->name('sheet-sources.sync');
 
     // Categorias: solo jefe de zona (CategoryPolicy).
     Route::resource('categories', CategoryController::class)->except('show');

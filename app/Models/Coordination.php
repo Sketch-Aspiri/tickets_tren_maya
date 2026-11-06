@@ -88,6 +88,16 @@ class Coordination extends Model
     }
 
     /**
+     * Hoja de Excel (OneDrive) que alimenta su bandeja de revision.
+     *
+     * @return HasOne<SpreadsheetSource, $this>
+     */
+    public function spreadsheetSource(): HasOne
+    {
+        return $this->hasOne(SpreadsheetSource::class);
+    }
+
+    /**
      * Quienes reciben los avisos de la coordinacion (cuentas por aprobar, correos nuevos): sus jefes de zona
      * activos; si no tiene ninguno, los administradores activos.
      *

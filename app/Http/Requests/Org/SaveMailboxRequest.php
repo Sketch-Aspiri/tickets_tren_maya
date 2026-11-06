@@ -17,9 +17,7 @@ class SaveMailboxRequest extends FormRequest
 
     public function authorize(): bool
     {
-        $mailbox = $this->route('coordination')->mailbox ?? new CoordinationMailbox;
-
-        return $this->authorizeAbility($mailbox->exists ? 'update' : 'create', $mailbox->exists ? $mailbox : CoordinationMailbox::class);
+        return $this->authorizeAbility('manageInbox', $this->route('coordination'));
     }
 
     /**

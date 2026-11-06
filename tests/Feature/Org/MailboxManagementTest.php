@@ -146,7 +146,7 @@ class MailboxManagementTest extends DatabaseTestCase
         $this->save(['username' => ''])->assertInvalid(['username']);
     }
 
-    public function test_only_the_administrator_reaches_the_mailbox_screens(): void
+    public function test_the_global_list_is_admin_only_and_a_mailbox_is_reserved_to_its_coordination(): void
     {
         $this->save();
         $routes = [
@@ -157,10 +157,19 @@ class MailboxManagementTest extends DatabaseTestCase
             ['delete', "/coordinations/{$this->coordination->id}/mailbox"],
         ];
 
+        // El listado GLOBAL de buzones sigue siendo solo del administrador.
         foreach ([User::factory()->jefe()->create(), User::factory()->coordinador()->create(), User::factory()->empleado()->create()] as $user) {
-            foreach ($routes as [$method, $uri]) {
-                $this->signIn($user)->{$method}($uri, $this->payload())->assertForbidden();
-            }
+            $this->signIn($user)->get('/mailboxes')->assertForbidden();
+        }
+
+        // El buzon de UNA coordinacion: el empleado nunca (403); un coordinador de otra coordinacion no la ve (404).
+        // (Que el jefe/coordinador de la coordinacion SI lo gestione lo prueba InboxSettingsAndSheetSourceTest.)
+        $employee = User::factory()->empleado()->create();
+        $outsider = User::factory()->coordinador()->create();
+
+        foreach (array_slice($routes, 1) as [$method, $uri]) {
+            $this->signIn($employee)->{$method}($uri, $this->payload())->assertForbidden();
+            $this->signIn($outsider)->{$method}($uri, $this->payload())->assertNotFound();
         }
 
         $this->assertSame(1, CoordinationMailbox::query()->count());

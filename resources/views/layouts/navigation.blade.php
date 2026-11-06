@@ -61,6 +61,11 @@
             <x-sidebar-link icon="mail" :href="route('incoming-emails.index')" :active="request()->routeIs('incoming-emails.*')">
                 {{ __('common.nav.incoming_emails') }}
             </x-sidebar-link>
+            @can('viewInboxSettings', \App\Models\Coordination::class)
+                <x-sidebar-link icon="wrench" :href="route('inbox-settings.index')" :active="request()->routeIs('inbox-settings.*', 'sheet-sources.*')">
+                    {{ __('common.nav.inbox_settings') }}
+                </x-sidebar-link>
+            @endcan
         @endcan
 
         @can('viewAny', \App\Models\Conversation::class)
