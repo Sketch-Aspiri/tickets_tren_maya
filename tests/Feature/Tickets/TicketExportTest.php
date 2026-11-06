@@ -136,7 +136,7 @@ class TicketExportTest extends DatabaseTestCase
         $rows = $this->sheetRows($this->signIn($this->jefe)->get('/tickets/export')->assertOk());
 
         $this->assertSame(
-            ['Folio', 'Título', 'Estado', 'Prioridad', 'Categoría', 'Equipo', 'Responsable', 'Colaboradores', 'Fecha límite', 'Vencido', 'Creado', 'Completado', 'Origen'],
+            ['Folio', 'Título', 'Estado', 'Prioridad', 'Categoría', 'Equipo', 'Responsable', 'Colaboradores', 'Fecha límite', 'Vencido', 'Creado', 'Completado', 'Origen', 'Edificio', 'Coordinación'],
             $rows[0],
         );
         $this->assertSame([$ticket->folio, 'Impresora rota', 'Pendiente', 'Media', '', 'Equipo A', 'Emp A1', 'Emp A2', '2026-01-10', 'Sí'], array_slice($rows[1], 0, 10));

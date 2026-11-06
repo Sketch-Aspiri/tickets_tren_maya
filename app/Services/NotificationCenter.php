@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
+use App\Notifications\TicketArrivedInPool;
 use App\Notifications\WorkItemAssigned;
 use App\Notifications\WorkItemCommented;
 use App\Notifications\WorkItemRejected;
@@ -41,6 +42,7 @@ final class NotificationCenter
             WorkItemAssigned::TYPE => ($data['kind'] ?? null) === 'activity'
                 ? route('activities.show', (int) $data['id'])
                 : route('tickets.show', (int) $data['id']),
+            TicketArrivedInPool::TYPE => route('tickets.show', (int) $data['id']),
             WorkItemCommented::TYPE, WorkItemRejected::TYPE => (($data['kind'] ?? null) === 'activity'
                 ? route('activities.show', (int) $data['id'])
                 : route('tickets.show', (int) $data['id'])),

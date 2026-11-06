@@ -9,6 +9,7 @@ use App\Enums\UserStatus;
 use App\Models\Activity;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Notifications\TicketArrivedInPool;
 use App\Notifications\WorkItemCommented;
 use App\Notifications\WorkItemRejected;
 use App\Notifications\WorkItemStatusChanged;
@@ -20,6 +21,41 @@ use Illuminate\Database\Eloquent\Collection;
  */
 final class WorkItemNotifier
 {
+    /**
+     * Ticket nuevo en la bolsa de un equipo: avisa al coordinador del equipo y a quienes aprueban en su coordinacion
+     * (sus jefes, o los administradores si no tiene jefe activo). Nunca a quien lo creo.
+     */
+    public function arrivedInPool(User $creator, Ticket $ticket): void
+    {
+        $ticket->loadMissing('team.coordination');
+        $team = $ticket->team;
+
+        if ($team === null) {
+            return;
+        }
+
+        $recipients = $team->coordination?->approvers() ?? new Collection;
+
+        if ($team->coordinator_id !== null) {
+            $coordinator = User::query()->find($team->coordinator_id);
+
+            if ($coordinator !== null) {
+                $recipients->push($coordinator);
+            }
+        }
+
+        $recipients
+            ->unique('id')
+            ->reject(fn (User $user): bool => $user->is($creator) || ! $user->canAccessApplication())
+            ->each(fn (User $user) => $user->notify(new TicketArrivedInPool(
+                (int) $ticket->getKey(),
+                (string) $ticket->folio,
+                (string) $ticket->title,
+                (string) $team->name,
+                (string) $creator->name,
+            )));
+    }
+
     public function commented(User $author, Ticket|Activity $item): void
     {
         $recipients = $this->recipients($item, $author, includeCreator: true);

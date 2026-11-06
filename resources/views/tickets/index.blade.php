@@ -4,6 +4,15 @@
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('tickets.title') }}</h1>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
+                @php
+                    $sentOnly = (bool) ($filters['sent'] ?? false);
+                    $withoutSent = array_filter(\Illuminate\Support\Arr::except($filters, ['sent', 'page']), fn ($value) => $value !== null && $value !== false && $value !== '');
+                @endphp
+                @if ($sentOnly)
+                    <x-primary-button :href="route('tickets.index', $withoutSent)" aria-current="true">{{ __('tickets.filters.sent') }} ✕</x-primary-button>
+                @else
+                    <x-secondary-button :href="route('tickets.index', [...$withoutSent, 'sent' => 1])">{{ __('tickets.filters.sent') }}</x-secondary-button>
+                @endif
                 <x-overdue-purge-button />
                 @can('export', \App\Models\Ticket::class)
                     <x-secondary-button :href="route('tickets.export', array_filter($filters, fn ($value) => $value !== null && $value !== false && $value !== ''))">{{ __('tickets.export.button') }}</x-secondary-button>
@@ -58,7 +67,7 @@
                 <x-category-select :categories="$categories" :selected="$filters['category_id'] ?? null" :label="__('tickets.filters.category')" :placeholder="__('common.all')" />
 
             @if ($teams->isNotEmpty())
-                <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" id="team_id" name="team_id" :label="__('tickets.filters.team')" optional class="sm:col-span-full" />
+                <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" :selected-coordination="$filters['coordination_id'] ?? null" :selected-station="$filters['station_id'] ?? null" station-name="station_id" coordination-name="coordination_id" id="team_id" name="team_id" :label="__('tickets.filters.team')" optional class="sm:col-span-full" />
             @endif
 
             @if ($responsibles->isNotEmpty())

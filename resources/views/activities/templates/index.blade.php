@@ -52,7 +52,7 @@
                     <td class="hidden px-4 py-3 text-sm text-gray-800 md:table-cell">{{ __('activities.recurrence.summary.'.$rule->frequency->value, ['interval' => $rule->interval]) }}</td>
                     <td class="px-4 py-3"><x-status-badge :status="$template->status" /></td>
                     <td class="hidden px-4 py-3 lg:table-cell">{{ $template->category?->name ?? __('activities.form.no_category') }}</td>
-                    <td class="hidden px-4 py-3 xl:table-cell">{{ $template->team->name }}</td>
+                    <td class="hidden px-4 py-3 xl:table-cell">{{ $template->team->name }}<span class="block text-xs text-gray-600">{{ $template->team->coordination?->name }}</span></td>
                     <td class="px-2 py-3 text-right sm:px-4">
                         <div class="flex flex-wrap items-center justify-end gap-2">
                             @unless ($trashed)

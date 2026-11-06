@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 final class ActivityListingService
 {
     /** Relaciones que usan el listado y las exportaciones (tambien la sincronizacion a la nube). */
-    public const EAGER_LOADS = ['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name', 'parent:id,folio', 'assignments.user:id,name'];
+    public const EAGER_LOADS = ['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name,station_id', 'team.coordination.station:id,name', 'parent:id,folio', 'assignments.user:id,name'];
 
     /** Columnas por las que se permite ordenar (lista blanca; la validación vive en IndexActivitiesRequest). */
     public const SORTABLE = ['created_at', 'due_date', 'priority', 'status', 'folio', 'title'];
@@ -88,6 +88,8 @@ final class ActivityListingService
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('activities.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('activities.category_id', $id))
             ->when($filters['team_id'] ?? null, fn (Builder $q, int $id) => $q->where('activities.team_id', $id))
+            ->when($filters['coordination_id'] ?? null, fn (Builder $q, int $id) => $q->whereIn('activities.team_id', DB::table('teams')->select('id')->where('coordination_id', $id)))
+            ->when($filters['station_id'] ?? null, fn (Builder $q, int $id) => $q->whereIn('activities.team_id', DB::table('teams')->select('teams.id')->join('coordinations', 'coordinations.id', '=', 'teams.coordination_id')->where('coordinations.station_id', $id)))
             ->when($filters['responsible_id'] ?? null, fn (Builder $q, int $id) => $this->filterByResponsible($q, $id))
             ->when($filters['overdue'] ?? false, fn (Builder $q) => $q->overdue())
             ->when($filters['due_today'] ?? false, fn (Builder $q) => $this->filterDueToday($q))
@@ -145,7 +147,7 @@ final class ActivityListingService
         return $query->visibleTo($user)
             ->templates()
             ->withProgress()
-            ->with(['category:id,name', 'team:id,name', 'assignments.user:id,name'])
+            ->with(['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name', 'assignments.user:id,name'])
             ->orderBy('activities.title')
             ->paginate((int) config('tickets.activities_per_page'))
             ->withQueryString();

@@ -49,7 +49,7 @@ final class ActivitiesExport implements FromCollection, ShouldAutoSize, WithCust
     {
         return array_map(
             fn (string $key): string => __('activities.export.columns.'.$key),
-            ['folio', 'title', 'status', 'priority', 'category', 'team', 'responsible', 'collaborators', 'start_date', 'due_date', 'progress', 'overdue', 'recurrence', 'created'],
+            ['folio', 'title', 'status', 'priority', 'category', 'team', 'responsible', 'collaborators', 'start_date', 'due_date', 'progress', 'overdue', 'recurrence', 'created', 'station', 'coordination'],
         );
     }
 
@@ -74,6 +74,8 @@ final class ActivitiesExport implements FromCollection, ShouldAutoSize, WithCust
             $row->isOverdue() ? __('common.yes') : __('common.no'),
             $this->recurrence($row),
             $this->local($row->created_at),
+            $row->team?->coordination?->station?->name,
+            $row->team?->coordination?->name,
         ]);
     }
 

@@ -48,6 +48,9 @@
                                     @case(\App\Notifications\WorkItemRejected::TYPE)
                                         {{ __('notifications.ui.work_item_rejected.'.($data['kind'] ?? 'ticket'), ['folio' => $data['folio'] ?? '', 'title' => $data['title'] ?? '', 'by' => $data['by'] ?? '']) }}
                                         @break
+                                    @case(\App\Notifications\TicketArrivedInPool::TYPE)
+                                        {{ __('notifications.ui.arrived', ['folio' => $data['folio'] ?? '', 'title' => $data['title'] ?? '', 'team' => $data['team'] ?? '', 'by' => $data['by'] ?? '']) }}
+                                        @break
                                     @case('user_pending_approval')
                                         {{ __('notifications.new_user_pending.line', ['name' => $data['name'] ?? '', 'email' => $data['email'] ?? '']) }}
                                         @break

@@ -48,7 +48,7 @@ final class TicketsExport implements FromCollection, ShouldAutoSize, WithCustomV
     {
         return array_map(
             fn (string $key): string => __('tickets.export.columns.'.$key),
-            ['folio', 'title', 'status', 'priority', 'category', 'team', 'responsible', 'collaborators', 'due_date', 'overdue', 'created', 'completed', 'source'],
+            ['folio', 'title', 'status', 'priority', 'category', 'team', 'responsible', 'collaborators', 'due_date', 'overdue', 'created', 'completed', 'source', 'station', 'coordination'],
         );
     }
 
@@ -72,6 +72,8 @@ final class TicketsExport implements FromCollection, ShouldAutoSize, WithCustomV
             $this->local($row->created_at),
             $this->local($row->completed_at),
             $row->source->label(),
+            $row->team?->coordination?->station?->name,
+            $row->team?->coordination?->name,
         ]);
     }
 

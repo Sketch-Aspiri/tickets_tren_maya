@@ -31,6 +31,9 @@ class IndexActivitiesRequest extends FormRequest
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
             'responsible_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'team_id' => ['nullable', 'integer', Rule::exists('teams', 'id')],
+            // Solo estrechan: el listado siempre parte del alcance del usuario.
+            'station_id' => ['nullable', 'integer', Rule::exists('stations', 'id')],
+            'coordination_id' => ['nullable', 'integer', Rule::exists('coordinations', 'id')],
             'overdue' => ['nullable', 'boolean'],
             'due_today' => ['nullable', 'boolean'],
             'kind' => ['nullable', 'string', Rule::in(ActivityListingService::KINDS)],
@@ -47,7 +50,7 @@ class IndexActivitiesRequest extends FormRequest
     public function filters(): array
     {
         return [
-            ...$this->safe()->only(['status', 'priority', 'category_id', 'responsible_id', 'team_id', 'kind', 'q', 'sort', 'direction']),
+            ...$this->safe()->only(['status', 'priority', 'category_id', 'responsible_id', 'team_id', 'station_id', 'coordination_id', 'kind', 'q', 'sort', 'direction']),
             'overdue' => $this->boolean('overdue'),
             'due_today' => $this->boolean('due_today'),
         ];

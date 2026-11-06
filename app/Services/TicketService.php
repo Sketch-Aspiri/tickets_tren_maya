@@ -64,6 +64,9 @@ final class TicketService
                 'comment' => null,
             ]);
 
+            // Nace en la bolsa del equipo destino: que su coordinador y su coordinacion se enteren (tras el commit).
+            $this->notifier->arrivedInPool($actor, $ticket);
+
             return $ticket;
         });
     }

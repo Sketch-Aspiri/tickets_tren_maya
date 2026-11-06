@@ -26,6 +26,8 @@ return [
         'template' => 'Plantilla',
         'instance' => 'Instancia de :folio',
         'columns' => [
+            'station' => 'Edificio',
+            'coordination' => 'Coordinación',
             'folio' => 'Folio',
             'title' => 'Título',
             'status' => 'Estado',

@@ -31,8 +31,12 @@ class IndexTicketsRequest extends FormRequest
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
             'responsible_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'team_id' => ['nullable', 'integer', Rule::exists('teams', 'id')],
+            // Solo estrechan: el listado siempre parte del alcance del usuario.
+            'station_id' => ['nullable', 'integer', Rule::exists('stations', 'id')],
+            'coordination_id' => ['nullable', 'integer', Rule::exists('coordinations', 'id')],
             'overdue' => ['nullable', 'boolean'],
             'unassigned' => ['nullable', 'boolean'],
+            'sent' => ['nullable', 'boolean'],
             'q' => ['nullable', 'string', 'max:100'],
             'sort' => ['nullable', 'string', Rule::in(TicketListingService::SORTABLE)],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
@@ -46,9 +50,10 @@ class IndexTicketsRequest extends FormRequest
     public function filters(): array
     {
         return [
-            ...$this->safe()->only(['status', 'priority', 'category_id', 'responsible_id', 'team_id', 'q', 'sort', 'direction']),
+            ...$this->safe()->only(['status', 'priority', 'category_id', 'responsible_id', 'team_id', 'station_id', 'coordination_id', 'q', 'sort', 'direction']),
             'overdue' => $this->boolean('overdue'),
             'unassigned' => $this->boolean('unassigned'),
+            'sent' => $this->boolean('sent'),
         ];
     }
 }

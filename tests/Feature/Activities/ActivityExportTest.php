@@ -155,7 +155,7 @@ class ActivityExportTest extends DatabaseTestCase
         $rows = $this->sheetRows($this->signIn($this->jefe)->get('/activities/export')->assertOk());
 
         $this->assertSame(
-            ['Folio', 'Título', 'Estado', 'Prioridad', 'Categoría', 'Equipo', 'Responsable', 'Colaboradores', 'Fecha de inicio', 'Fecha límite', 'Avance', 'Vencida', 'Recurrencia', 'Creada'],
+            ['Folio', 'Título', 'Estado', 'Prioridad', 'Categoría', 'Equipo', 'Responsable', 'Colaboradores', 'Fecha de inicio', 'Fecha límite', 'Avance', 'Vencida', 'Recurrencia', 'Creada', 'Edificio', 'Coordinación'],
             $rows[0],
         );
         $this->assertSame(

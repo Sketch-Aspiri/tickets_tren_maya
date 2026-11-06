@@ -6,6 +6,7 @@ return [
         'too_many' => 'Ya tienes el máximo de dispositivos con notificaciones activadas. Desactívalas en otro dispositivo primero.',
     ],
     'assigned' => ['title' => 'Nueva asignación', 'body' => ':by te asignó :folio.'],
+    'arrived' => ['title' => 'Ticket nuevo en la bolsa', 'body' => ':by envió :folio a :team.'],
     'commented' => ['title' => 'Nuevo comentario', 'body' => ':by comentó en :folio.'],
     'rejected' => ['title' => 'Regresado a trabajo', 'body' => ':by rechazó la revisión de :folio.'],
     'status' => ['title' => 'Cambio de estado', 'body' => ':by cambió :folio a «:status».'],

@@ -71,7 +71,7 @@
                 <x-category-select :categories="$categories" :selected="$filters['category_id'] ?? null" :label="__('activities.filters.category')" :placeholder="__('common.all')" />
 
             @if ($teams->isNotEmpty())
-                <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" id="team_id" name="team_id" :label="__('activities.filters.team')" optional class="sm:col-span-full" />
+                <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" :selected-coordination="$filters['coordination_id'] ?? null" :selected-station="$filters['station_id'] ?? null" station-name="station_id" coordination-name="coordination_id" id="team_id" name="team_id" :label="__('activities.filters.team')" optional class="sm:col-span-full" />
             @endif
 
             @if ($responsibles->isNotEmpty())

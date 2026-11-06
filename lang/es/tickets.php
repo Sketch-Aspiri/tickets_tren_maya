@@ -31,6 +31,8 @@ return [
         'sheet' => 'Tickets',
         'truncated' => 'La exportación incluye como máximo :max tickets; afina los filtros para obtener el resto.',
         'columns' => [
+            'station' => 'Edificio',
+            'coordination' => 'Coordinación',
             'folio' => 'Folio',
             'title' => 'Título',
             'status' => 'Estado',
@@ -62,6 +64,7 @@ return [
         'created' => 'Creado',
     ],
     'filters' => [
+        'sent' => 'Enviados por mí',
         'search' => 'Buscar por folio o título',
         'status' => 'Estado',
         'priority' => 'Prioridad',

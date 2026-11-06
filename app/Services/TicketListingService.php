@@ -15,6 +15,7 @@ use App\Support\LocalTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Listados de tickets. TODA consulta parte de `Ticket::visibleTo($user)` (alcance por rol), de modo
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Collection;
 final class TicketListingService
 {
     /** Relaciones que usan el listado y las exportaciones (tambien la sincronizacion a la nube). */
-    public const EAGER_LOADS = ['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name', 'assignments.user:id,name'];
+    public const EAGER_LOADS = ['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name,station_id', 'team.coordination.station:id,name', 'assignments.user:id,name'];
 
     /** Columnas por las que se permite ordenar (lista blanca; la validación vive en IndexTicketsRequest). */
     public const SORTABLE = ['created_at', 'due_date', 'priority', 'status', 'folio', 'title'];
@@ -70,11 +71,19 @@ final class TicketListingService
     private function filtered(User $user, array $filters): Builder
     {
         return $this->baseQuery($user)
-            ->when($user->scopedTeamIdsQuery(), fn (Builder $q, $teams) => $q->whereIn('tickets.team_id', $teams))
+            // "Enviados por mi": lo que el usuario creo, vaya al equipo que vaya (p. ej. a Soporte del sistema); sin esto
+            // un ticket mandado a otra coordinacion no aparecia en ningun listado. Sigue dentro de `visibleTo`.
+            ->when(
+                $filters['sent'] ?? false,
+                fn (Builder $q) => $q->where('tickets.created_by', $user->getKey()),
+                fn (Builder $q) => $q->when($user->scopedTeamIdsQuery(), fn (Builder $inner, $teams) => $inner->whereIn('tickets.team_id', $teams)),
+            )
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('tickets.status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $priority) => $q->where('tickets.priority', $priority))
             ->when($filters['category_id'] ?? null, fn (Builder $q, int $id) => $q->where('tickets.category_id', $id))
             ->when($filters['team_id'] ?? null, fn (Builder $q, int $id) => $q->where('tickets.team_id', $id))
+            ->when($filters['coordination_id'] ?? null, fn (Builder $q, int $id) => $q->whereIn('tickets.team_id', DB::table('teams')->select('id')->where('coordination_id', $id)))
+            ->when($filters['station_id'] ?? null, fn (Builder $q, int $id) => $q->whereIn('tickets.team_id', DB::table('teams')->select('teams.id')->join('coordinations', 'coordinations.id', '=', 'teams.coordination_id')->where('coordinations.station_id', $id)))
             ->when($filters['responsible_id'] ?? null, fn (Builder $q, int $id) => $this->filterByResponsible($q, $id))
             ->when($filters['overdue'] ?? false, fn (Builder $q) => $q->overdue())
             ->when($filters['unassigned'] ?? false, fn (Builder $q) => $q->unassigned())
