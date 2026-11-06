@@ -8,6 +8,12 @@ export function registerTemayin(Alpine) {
 
         init() {
             try {
+                this.bubbleDismissed = window.sessionStorage.getItem('temayin-bubble-dismissed') === '1';
+            } catch {
+                this.bubbleDismissed = false;
+            }
+
+            try {
                 this.faqs = JSON.parse(this.$el.dataset.faqs ?? '{}');
             } catch {
                 this.faqs = {};
@@ -28,6 +34,24 @@ export function registerTemayin(Alpine) {
 
         get activeAnswer() {
             return this.hasActive ? this.faqs[this.activeId].a : '';
+        },
+
+        // Burbuja "recuerda crear un ticket a Soporte": visible mientras el panel está cerrado, hasta que se descarta
+        // (se recuerda en la sesión del navegador; si sessionStorage no está disponible, solo dura en esta página).
+        bubbleDismissed: false,
+
+        get showBubble() {
+            return !this.open && !this.bubbleDismissed;
+        },
+
+        dismissBubble() {
+            this.bubbleDismissed = true;
+
+            try {
+                window.sessionStorage.setItem('temayin-bubble-dismissed', '1');
+            } catch {
+                // Almacenamiento bloqueado: basta con ocultarla en esta página.
+            }
         },
 
         get toggleExpanded() {

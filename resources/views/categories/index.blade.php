@@ -21,6 +21,15 @@
         </thead>
         <tbody class="divide-y divide-brand-green/10">
             @forelse ($categories as $category)
+                @php $groupKey = $category->coordination_id ?? 'general'; @endphp
+                @if ($groupKey !== ($currentGroup ?? null))
+                    @php $currentGroup = $groupKey; @endphp
+                    <tr class="bg-brand-mist/70">
+                        <th colspan="5" scope="colgroup" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-green">
+                            {{ $category->coordination ? $category->coordination->station->name.' › '.$category->coordination->name : __('categories.general') }}
+                        </th>
+                    </tr>
+                @endif
                 <tr>
                     <td class="px-4 py-3 font-medium text-gray-900">{{ $category->name }}</td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $category->coordination?->name ?? __('categories.global') }}</td>

@@ -10,7 +10,7 @@
 
 <div class="space-y-4">
     @if ($teams->isNotEmpty())
-        <x-team-cascade :teams="$teams" :selected="$selectedTeam" id="team_id" name="team_id" :label="__('tickets.form.team')" :hint="__('tickets.form.team_hint')" required :messages="$errors->get('team_id')" />
+        <x-team-cascade :teams="$teams" :selected="$selectedTeam" :selected-coordination="old('team_id') ? null : ($defaultCoordinationId ?? null)" id="team_id" name="team_id" :label="__('tickets.form.team')" :hint="__('tickets.form.team_hint')" required :messages="$errors->get('team_id')" />
     @endif
 
     <div>
@@ -36,16 +36,7 @@
             <x-input-error :messages="$errors->get('priority')" class="mt-2" />
         </div>
 
-        <div>
-            <x-input-label for="category_id" :value="__('tickets.form.category')" />
-            <x-select-input id="category_id" name="category_id" class="mt-1 block w-full">
-                <option value="">{{ __('tickets.form.no_category') }}</option>
-                @foreach ($categories as $category)
-                    <option value="{{ $category->id }}" @selected((int) $selectedCategory === $category->id)>{{ $category->name }}{{ $category->active ? '' : ' '.__('tickets.form.inactive_category') }}</option>
-                @endforeach
-            </x-select-input>
-            <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
-        </div>
+        <x-category-select :categories="$categories" :selected="$selectedCategory" :label="__('tickets.form.category')" :placeholder="__('tickets.form.no_category')" :inactive-label="__('tickets.form.inactive_category')" :messages="$errors->get('category_id')" />
     </div>
 
     <div>

@@ -159,7 +159,8 @@ class WorkflowUiTest extends DatabaseTestCase
 
         $this->assertStringContainsString('name="responsible_id"', $html);
         $this->assertStringContainsString('name="collaborator_ids[]"', $html);
-        $this->assertMatchesRegularExpression('/<option value="'.$this->empA1->id.'" selected/', $html);
+        // La opción lleva además `data-coordinations`/`data-teams` (filtro de la cascada) antes de `selected`.
+        $this->assertMatchesRegularExpression('/<option value="'.$this->empA1->id.'"[^>]*selected/', $html);
         $this->assertMatchesRegularExpression('/name="collaborator_ids\[\]" value="'.$this->empA2->id.'"[^>]*checked/', $html);
         $this->assertDoesNotMatchRegularExpression('/name="collaborator_ids\[\]" value="'.$this->empA1->id.'"[^>]*checked/', $html);
         $this->assertStringContainsString('data-max="'.config('tickets.max_collaborators').'"', $html);

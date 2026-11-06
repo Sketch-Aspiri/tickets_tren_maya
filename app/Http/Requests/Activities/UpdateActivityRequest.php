@@ -8,6 +8,7 @@ use App\Http\Requests\Concerns\AuthorizesWithGate;
 use App\Http\Requests\Concerns\ValidatesRecurrence;
 use App\Http\Requests\Concerns\ValidatesWorkItemFields;
 use App\Models\Activity;
+use App\Rules\CategoryFitsTeam;
 use App\Support\LocalTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -41,6 +42,7 @@ class UpdateActivityRequest extends FormRequest
                 Rule::exists('categories', 'id')->where(fn ($query) => $query
                     ->where('active', true)
                     ->orWhere('id', $activity->category_id)),
+                new CategoryFitsTeam($activity->team_id, $activity->category_id),
             ],
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'due_date' => $this->dueDateRules($activity),

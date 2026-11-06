@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Collection;
 final class TicketListingService
 {
     /** Relaciones que usan el listado y las exportaciones (tambien la sincronizacion a la nube). */
-    public const EAGER_LOADS = ['category:id,name', 'team:id,name', 'assignments.user:id,name'];
+    public const EAGER_LOADS = ['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name', 'assignments.user:id,name'];
 
     /** Columnas por las que se permite ordenar (lista blanca; la validación vive en IndexTicketsRequest). */
     public const SORTABLE = ['created_at', 'due_date', 'priority', 'status', 'folio', 'title'];

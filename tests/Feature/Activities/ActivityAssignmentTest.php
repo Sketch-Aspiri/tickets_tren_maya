@@ -90,14 +90,18 @@ class ActivityAssignmentTest extends DatabaseTestCase
         $this->assertSame([[$this->empA1->id, 'responsable']], $this->assignments());
     }
 
-    public function test_jefe_can_assign_active_people_of_any_team_but_not_inactive_ones(): void
+    public function test_jefe_can_assign_only_active_members_of_the_activity_team(): void
     {
         $inactive = User::factory()->empleado()->inactive()->create(['team_id' => $this->teamA->id]);
 
-        $this->assign($this->jefe, ['responsible_id' => $this->empB1->id, 'collaborator_ids' => [$this->empA2->id]])->assertSessionHasNoErrors();
-        $this->assertEqualsCanonicalizing([[$this->empB1->id, 'responsable'], [$this->empA2->id, 'colaborador']], $this->assignments());
+        $this->assign($this->jefe, ['responsible_id' => $this->empA1->id, 'collaborator_ids' => [$this->empA2->id]])->assertSessionHasNoErrors();
+        $this->assertEqualsCanonicalizing([[$this->empA1->id, 'responsable'], [$this->empA2->id, 'colaborador']], $this->assignments());
 
+        // La actividad la atiende su equipo: nadie de otro equipo (aunque el jefe lo supervise) ni inactivos.
+        $this->assign($this->jefe, ['responsible_id' => $this->empB1->id])->assertSessionHas('error');
+        $this->assign($this->jefe, ['responsible_id' => $this->empA1->id, 'collaborator_ids' => [$this->empB1->id]])->assertSessionHas('error');
         $this->assign($this->jefe, ['responsible_id' => $inactive->id])->assertSessionHas('error');
+        $this->assertEqualsCanonicalizing([[$this->empA1->id, 'responsable'], [$this->empA2->id, 'colaborador']], $this->assignments());
     }
 
     public function test_at_most_the_configured_number_of_collaborators(): void

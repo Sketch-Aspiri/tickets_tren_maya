@@ -36,66 +36,25 @@
                 <x-input-error :messages="$errors->get('to')" class="mt-1" />
             </div>
 
-            @if ($stations->isNotEmpty())
-                <div class="lg:col-span-1">
-                    <x-input-label for="station_id" :value="__('tracking.filters.station')" />
-                    <x-select-input id="station_id" name="station_id" class="mt-1 block w-full">
-                        <option value="">{{ __('common.all') }}</option>
-                        @foreach ($stations as $station)
-                            <option value="{{ $station->id }}" @selected($filters->stationId === $station->id)>{{ $station->name }}</option>
-                        @endforeach
-                    </x-select-input>
-                    <x-input-error :messages="$errors->get('station_id')" class="mt-1" />
-                </div>
-            @endif
-
-            @if ($coordinations->isNotEmpty())
-                <div class="lg:col-span-1">
-                    <x-input-label for="coordination_id" :value="__('tracking.filters.coordination')" />
-                    <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full">
-                        <option value="">{{ __('common.all') }}</option>
-                        @foreach ($coordinations as $coordination)
-                            <option value="{{ $coordination->id }}" @selected($filters->coordinationId === $coordination->id)>{{ $coordination->name }}</option>
-                        @endforeach
-                    </x-select-input>
-                    <x-input-error :messages="$errors->get('coordination_id')" class="mt-1" />
-                </div>
-            @endif
-
             @if ($teams->isNotEmpty())
-                <div class="lg:col-span-1">
-                    <x-input-label for="team_id" :value="__('tracking.filters.team')" />
-                    <x-select-input id="team_id" name="team_id" class="mt-1 block w-full">
-                        <option value="">{{ __('common.all') }}</option>
-                        @foreach ($teams as $team)
-                            <option value="{{ $team->id }}" @selected($filters->teamId === $team->id)>{{ $team->name }}</option>
-                        @endforeach
-                    </x-select-input>
-                    <x-input-error :messages="$errors->get('team_id')" class="mt-1" />
+                <x-team-cascade :teams="$teams" :selected="$filters->teamId" :selected-coordination="$filters->coordinationId" :selected-station="$filters->stationId"
+                    station-name="station_id" coordination-name="coordination_id" id="team_id" name="team_id" :label="__('tracking.filters.team')" optional class="sm:col-span-full" />
+                <div class="sm:col-span-full -mt-2 space-y-1 empty:hidden">
+                    <x-input-error :messages="$errors->get('station_id')" />
+                    <x-input-error :messages="$errors->get('coordination_id')" />
+                    <x-input-error :messages="$errors->get('team_id')" />
                 </div>
             @endif
 
             @if ($employees->isNotEmpty())
                 <div class="lg:col-span-1">
-                    <x-input-label for="user_id" :value="__('tracking.filters.employee')" />
-                    <x-select-input id="user_id" name="user_id" class="mt-1 block w-full">
-                        <option value="">{{ __('common.all') }}</option>
-                        @foreach ($employees as $employee)
-                            <option value="{{ $employee->id }}" @selected($filters->userId === $employee->id)>{{ $employee->name }}</option>
-                        @endforeach
-                    </x-select-input>
+                    <x-user-select :users="$employees" :selected="$filters->userId" id="user_id" name="user_id" :label="__('tracking.filters.employee')" :placeholder="__('common.all')" />
                     <x-input-error :messages="$errors->get('user_id')" class="mt-1" />
                 </div>
             @endif
 
             <div class="lg:col-span-1">
-                <x-input-label for="category_id" :value="__('tracking.filters.category')" />
-                <x-select-input id="category_id" name="category_id" class="mt-1 block w-full">
-                    <option value="">{{ __('common.all') }}</option>
-                    @foreach ($categories as $category)
-                        <option value="{{ $category->id }}" @selected($filters->categoryId === $category->id)>{{ $category->name }}</option>
-                    @endforeach
-                </x-select-input>
+                <x-category-select :categories="$categories" :selected="$filters->categoryId" :label="__('tracking.filters.category')" :placeholder="__('common.all')" />
                 <x-input-error :messages="$errors->get('category_id')" class="mt-1" />
             </div>
 

@@ -49,16 +49,7 @@
             <x-input-error :messages="$errors->get('priority')" class="mt-2" />
         </div>
 
-        <div>
-            <x-input-label for="category_id" :value="__('activities.form.category')" />
-            <x-select-input id="category_id" name="category_id" class="mt-1 block w-full">
-                <option value="">{{ __('activities.form.no_category') }}</option>
-                @foreach ($categories as $category)
-                    <option value="{{ $category->id }}" @selected((int) $selectedCategory === $category->id)>{{ $category->name }}{{ $category->active ? '' : ' '.__('activities.form.inactive_category') }}</option>
-                @endforeach
-            </x-select-input>
-            <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
-        </div>
+        <x-category-select :categories="$categories" :selected="$selectedCategory" :label="__('activities.form.category')" :placeholder="__('activities.form.no_category')" :inactive-label="__('activities.form.inactive_category')" :messages="$errors->get('category_id')" />
 
         <div>
             <x-input-label for="start_date" :value="__('activities.form.start_date')" />
@@ -78,7 +69,7 @@
     {{-- Asignacion inicial (solo al crear; despues se cambia desde el detalle). --}}
     @if (! $isEditing)
         <div class="grid gap-4 sm:grid-cols-2">
-            <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('activities.form.responsible')" :select-responsible="__('activities.form.select_responsible')" :collaborators-label="__('activities.form.collaborators')" id-prefix="new" />
+            <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('activities.form.responsible')" :select-responsible="__('activities.form.select_responsible')" :collaborators-label="__('activities.form.collaborators')" id-prefix="new" filter-by="team" />
         </div>
     @else
         <p class="text-sm text-gray-700">{{ __('activities.form.assignment_after') }}</p>

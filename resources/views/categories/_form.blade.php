@@ -6,8 +6,12 @@
         @if (auth()->user()->seesAllTeams())
             <option value="">{{ __('categories.form.global') }}</option>
         @endif
-        @foreach ($coordinations as $coordination)
-            <option value="{{ $coordination->id }}" @selected((int) old('coordination_id', $category->coordination_id) === $coordination->id)>{{ $coordination->station->name }} › {{ $coordination->name }}</option>
+        @foreach ($coordinations->sortBy(fn ($coordination) => mb_strtolower($coordination->station->name.'|'.$coordination->name))->groupBy(fn ($coordination) => $coordination->station->name) as $stationName => $group)
+            <optgroup label="{{ $stationName }}">
+                @foreach ($group as $coordination)
+                    <option value="{{ $coordination->id }}" @selected((int) old('coordination_id', $category->coordination_id) === $coordination->id)>{{ $coordination->name }}</option>
+                @endforeach
+            </optgroup>
         @endforeach
     </x-select-input>
     <x-input-error :messages="$errors->get('coordination_id')" class="mt-2" />

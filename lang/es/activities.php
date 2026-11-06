@@ -222,6 +222,8 @@ return [
         'pending_subtasks' => 'Hay :count subtarea(s) sin hacer. Termínalas (o elimínalas) antes de enviar a revisión o aprobar.',
         'invalid_assignee' => 'Solo se puede asignar a usuarios activos con rol.',
         'assignee_out_of_team' => 'Solo puedes asignar a usuarios activos de tu equipo.',
+        'assignee_out_of_coordination' => 'Solo puedes asignar a personas de la coordinación del equipo de la actividad.',
+        'assignee_out_of_activity_team' => 'Solo puedes asignar a integrantes del equipo de la actividad.',
         'too_many_collaborators' => 'Máximo :max colaboradores por actividad.',
         'too_many_attachments' => 'Esta actividad ya tiene el máximo de :max archivos adjuntos.',
         'upload_failed' => 'No se pudo guardar el archivo. Inténtalo de nuevo.',

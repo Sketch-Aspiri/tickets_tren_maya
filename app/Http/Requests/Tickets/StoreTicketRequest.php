@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tickets;
 
 use App\Http\Requests\Concerns\ValidatesWorkItemFields;
 use App\Models\Ticket;
+use App\Rules\CategoryFitsTeam;
 use App\Support\LocalTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -31,7 +32,7 @@ class StoreTicketRequest extends FormRequest
     {
         return [
             ...$this->workItemFieldRules(),
-            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('active', true)],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('active', true), new CategoryFitsTeam($this->user()?->ticketTeamIdFor($this->filled('team_id') ? $this->integer('team_id') : null))],
             'due_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:'.LocalTime::today()],
             'team_id' => $this->ticketTeamRules(),
         ];

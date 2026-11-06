@@ -76,7 +76,7 @@
 
         <dl class="grid gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('tickets.columns.category') }}</dt><dd class="font-medium">{{ $activity->category?->name ?? __('activities.form.no_category') }}</dd></div>
-            <div><dt class="text-gray-600">{{ __('activities.columns.team') }}</dt><dd class="font-medium">{{ $activity->team->name }}</dd></div>
+            <div><dt class="text-gray-600">{{ __('activities.columns.team') }}</dt><dd class="font-medium">{{ $activity->team->name }} <span class="block text-xs font-normal text-gray-600">{{ $activity->team->coordination->station->name }} › {{ $activity->team->coordination->name }}</span></dd></div>
             <div><dt class="text-gray-600">{{ __('activities.show.start_date') }}</dt><dd class="font-medium">{{ $activity->start_date?->format('d/m/Y') ?? __('activities.show.no_date') }}</dd></div>
             <div><dt class="text-gray-600">{{ __('activities.columns.due_date') }}</dt><dd class="font-medium">{{ $activity->due_date?->format('d/m/Y') ?? __('activities.show.no_date') }}</dd></div>
             <div><dt class="text-gray-600">{{ __('activities.show.created_by') }}</dt><dd class="font-medium">{{ $activity->creator->name }}</dd></div>

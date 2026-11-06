@@ -79,6 +79,10 @@ export function registerOrgPicker(Alpine) {
             this.apply();
         },
 
+        onTeam() {
+            this.notify(this.coordination.value);
+        },
+
         apply() {
             const stationId = this.station.value;
             const coordinations = this.allCoordinations.filter((item) => item.parent === stationId);
@@ -95,6 +99,76 @@ export function registerOrgPicker(Alpine) {
             }
 
             fill(this.team, teams, placeholder, this.team.value, this.autoTeam);
+            this.notify(coordinationId);
+        },
+
+        // Avisa a los selects del MISMO formulario (categorías, personas) para que solo ofrezcan lo de esa
+        // coordinación o, en actividades, lo de ese equipo.
+        notify(coordinationId) {
+            this.$dispatch('cascade-coordination', { coordinationId, teamId: this.team.value });
         },
     }));
+
+    // Filtra las opciones de un <select> (categorías o personas) por la coordinación elegida en la cascada del mismo
+    // formulario. Cada opción declara `data-coordinations` (ids separados por coma; vacío = sirve en cualquiera, p. ej.
+    // categorías generales). Sin coordinación elegida se muestran todas. El servidor valida igual: esto solo evita
+    // ofrecer combinaciones que serían rechazadas.
+    Alpine.data('coordinationFilter', () => ({
+        init() {
+            this.select = this.$el.querySelector('select') ?? this.$el;
+            this.apply(currentCoordination(this.$el));
+        },
+
+        onCoordination(event) {
+            if (sameForm(event.target, this.$el)) {
+                this.apply(String(event.detail?.coordinationId ?? ''));
+            }
+        },
+
+        apply(coordinationId) {
+            filterOptions(this.select, coordinationId);
+        },
+    }));
+}
+
+// Coordinación elegida actualmente en la cascada del mismo formulario ('' si no hay cascada o no se eligió).
+export function currentCoordination(element) {
+    const scope = element.closest('form') ?? document;
+
+    return scope.querySelector('[data-cascade="coordination"]')?.value ?? '';
+}
+
+// Equipo elegido en la cascada del mismo formulario; `null` si el formulario no tiene cascada (un solo equipo posible).
+export function currentTeam(element) {
+    const scope = element.closest('form') ?? document;
+    const select = scope.querySelector('[data-cascade="team"]');
+
+    return select ? select.value : null;
+}
+
+export function sameForm(a, b) {
+    return (a.closest('form') ?? null) === (b.closest('form') ?? null);
+}
+
+export function fitsCoordination(element, coordinationId) {
+    const list = element.dataset.coordinations ?? '';
+
+    return coordinationId === '' || list === '' || list.split(',').includes(coordinationId);
+}
+
+// Oculta y deshabilita las opciones que no caben; si la elegida queda fuera, se limpia la selección.
+export function filterOptions(select, coordinationId) {
+    for (const option of select.querySelectorAll('option[data-coordinations]')) {
+        const fits = fitsCoordination(option, coordinationId);
+        option.hidden = !fits;
+        option.disabled = !fits;
+    }
+
+    for (const group of select.querySelectorAll('optgroup')) {
+        group.hidden = Array.from(group.querySelectorAll('option')).every((option) => option.hidden);
+    }
+
+    if (select.selectedOptions[0]?.disabled) {
+        select.value = '';
+    }
 }

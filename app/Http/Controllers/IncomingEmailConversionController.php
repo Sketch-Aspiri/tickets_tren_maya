@@ -48,10 +48,10 @@ class IncomingEmailConversionController extends Controller
             'email' => $incomingEmail,
             'activity' => $activity,
             'priorities' => Priority::cases(),
-            'categories' => $this->categories->selectable($request->user(), $activity->category_id),
+            'categories' => $this->categories->selectable($request->user(), null, $incomingEmail->coordination_id),
             'frequencies' => RecurrenceFrequency::cases(),
             'teams' => $this->teamOptions($request->user(), $incomingEmail),
-            'assignableUsers' => $this->assignments->assignableUsers($request->user()),
+            'assignableUsers' => $this->assignments->assignableUsers($request->user(), $incomingEmail->coordination_id),
             'rule' => null,
             'showRecurrence' => false,
         ]);
@@ -81,8 +81,9 @@ class IncomingEmailConversionController extends Controller
         $teams = Team::query()
             ->where('coordination_id', $email->coordination_id)
             ->when(! $actor->seesAllTeams(), fn ($query) => $query->whereIn('id', $actor->workingTeamIds()))
+            ->with('coordination:id,name,station_id', 'coordination.station:id,name')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'coordination_id']);
 
         return $actor->seesAllTeams() || $teams->count() > 1 || ($teams->count() === 1 && count($actor->workingTeamIds()) > 1) ? $teams : new Collection;
     }

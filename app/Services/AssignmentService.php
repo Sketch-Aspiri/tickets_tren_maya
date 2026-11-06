@@ -9,11 +9,13 @@ use App\Enums\UserStatus;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Activity;
 use App\Models\Assignment;
+use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Notifications\WorkItemAssigned;
 use App\Support\WorkflowSubject;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -33,19 +35,36 @@ final class AssignmentService
     public function __construct(private readonly AuditLogger $audit) {}
 
     /**
-     * Usuarios a los que ESTE actor puede asignar (para el formulario).
+     * Usuarios a los que ESTE actor puede asignar (para el formulario): activos, con rol y de algun equipo dentro de
+     * su alcance. Con `$coordinationId` (la del ticket) solo los de esa coordinacion; con `$teamId` (la actividad)
+     * solo los integrantes de ese equipo. Lo mismo exige `assertAssignable`. Sus equipos viajan con coordinacion y
+     * edificio para mostrarlos agrupados y filtrarlos en la cascada.
      *
      * @return Collection<int, User>
      */
-    public function assignableUsers(User $actor): Collection
+    public function assignableUsers(User $actor, ?int $coordinationId = null, ?int $teamId = null): Collection
     {
         return User::query()
             ->where('status', UserStatus::Active->value)
             ->whereHas('roles')
+            ->whereHas('teams')
             ->when($actor->scopedTeamIdsQuery(), fn ($query, $teams) => $query->whereIn('users.id', DB::table('team_user')->select('user_id')->whereIn('team_id', $teams)))
+            ->when($coordinationId, fn ($query, int $id) => $query->whereIn('users.id', $this->membersOfCoordination($id)))
+            ->when($teamId, fn ($query, int $id) => $query->memberOfAny([$id]))
             ->orderBy('name')
-            ->with('teams:id,name')
+            ->with(['teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name'])
             ->get(['id', 'name', 'avatar_path']);
+    }
+
+    /**
+     * Subconsulta: ids de los integrantes de algun equipo de la coordinacion.
+     */
+    private function membersOfCoordination(int $coordinationId): QueryBuilder
+    {
+        return DB::table('team_user')
+            ->select('team_user.user_id')
+            ->join('teams', 'teams.id', '=', 'team_user.team_id')
+            ->where('teams.coordination_id', $coordinationId);
     }
 
     /**
@@ -193,6 +212,23 @@ final class AssignmentService
             if ($scopedTeamIds !== null && array_intersect($scopedTeamIds, $candidate->teamIds()) === []) {
                 throw BusinessRuleException::because(WorkflowSubject::error($subject, 'assignee_out_of_team'));
             }
+        }
+
+        // Una ACTIVIDAD la atiende personal de SU equipo; un TICKET, personal de la coordinacion de su equipo (puede
+        // pasar de un equipo a otro dentro de ella). Tambien el administrador, con alcance global, elige ahi.
+        if ($subject instanceof Activity) {
+            $members = DB::table('team_user')->where('team_id', $subject->team_id)->whereIn('user_id', $userIds)->pluck('user_id');
+            $error = 'assignee_out_of_activity_team';
+        } else {
+            $coordinationId = Team::query()->whereKey($subject->team_id)->value('coordination_id');
+            $members = $coordinationId === null ? collect() : $this->membersOfCoordination((int) $coordinationId)
+                ->whereIn('team_user.user_id', $userIds)
+                ->pluck('team_user.user_id');
+            $error = 'assignee_out_of_coordination';
+        }
+
+        if (array_diff($userIds, $members->map(fn (mixed $id): int => (int) $id)->all()) !== []) {
+            throw BusinessRuleException::because(WorkflowSubject::error($subject, $error));
         }
     }
 

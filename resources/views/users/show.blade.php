@@ -48,7 +48,7 @@
                         <x-input-error :messages="$errors->get('role')" class="mt-2" />
                     </div>
                     <div>
-                        <x-team-checkboxes prefix="approve_team" :teams="$teams" :selected="$selectedTeamIds" :legend="__('users.show.teams')" :hint="__('users.show.teams_hint')" />
+                        <x-team-checkboxes prefix="approve_team" :teams="$teams" :primary-coordinations="$homeCoordinationIds" :selected="$selectedTeamIds" :legend="__('users.show.teams')" :hint="__('users.show.teams_hint')" />
                         <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
                         <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
                     </div>
@@ -105,7 +105,7 @@
                         <x-input-error :messages="$errors->get('role')" class="mt-2" />
                     </div>
                     <div>
-                        <x-team-checkboxes prefix="update_team" :teams="$teams" :selected="$selectedTeamIds" :legend="__('users.show.teams')" :hint="__('users.show.teams_hint')" />
+                        <x-team-checkboxes prefix="update_team" :teams="$teams" :primary-coordinations="$homeCoordinationIds" :selected="$selectedTeamIds" :legend="__('users.show.teams')" :hint="__('users.show.teams_hint')" />
                         <x-input-error :messages="$errors->get('team_ids')" class="mt-2" />
                         <x-input-error :messages="$errors->get('team_ids.*')" class="mt-2" />
                     </div>

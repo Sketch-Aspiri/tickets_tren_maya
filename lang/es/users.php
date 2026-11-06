@@ -45,6 +45,7 @@ return [
         'no_coordinations_available' => 'Aún no hay coordinaciones. El administrador debe crearlas primero.',
         'teams_hint' => 'Puede pertenecer a varios equipos a la vez. Obligatorio al menos uno, salvo para administrador y jefe.',
         'no_teams_available' => 'Aún no hay equipos creados.',
+        'other_coordinations_teams' => 'Mostrar equipos de otras coordinaciones',
         'select_role' => 'Selecciona un rol',
         'select_team' => 'Selecciona un equipo',
         'save_role_team' => 'Guardar cambios',

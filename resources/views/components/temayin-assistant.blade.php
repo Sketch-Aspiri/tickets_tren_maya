@@ -52,6 +52,19 @@
             </div>
         </section>
 
+        {{-- Burbuja flotante: recuerda abrir un ticket a Soporte del sistema. Se cierra y no vuelve en la sesión. --}}
+        @php $support = \App\Support\SupportDesk::coordination(); @endphp
+        <div x-show="showBubble" x-cloak class="mb-2 flex justify-end">
+            <div role="note" class="relative max-w-[16rem] rounded-xl border border-brand-teal/30 bg-white py-2 pe-8 ps-3 text-sm text-gray-800 shadow-lg">
+                <p>{{ __('assistant.bubble.text') }}</p>
+                <a href="{{ $support ? route('tickets.create', ['coordination_id' => $support->id]) : route('tickets.create') }}" class="mt-1 inline-flex min-h-[44px] items-center font-semibold text-brand-teal hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('assistant.bubble.action') }}</a>
+                <button type="button" x-on:click="dismissBubble" aria-label="{{ __('assistant.bubble.dismiss') }}" class="absolute end-1 top-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">
+                    <x-icon name="close" class="h-4 w-4" />
+                </button>
+                <span class="absolute -bottom-1.5 end-6 h-3 w-3 rotate-45 border-b border-e border-brand-teal/30 bg-white" aria-hidden="true"></span>
+            </div>
+        </div>
+
         <div class="flex justify-end">
             <button type="button" x-ref="toggle" x-on:click="toggle" x-bind:aria-expanded="toggleExpanded" aria-controls="temayin-panel" aria-label="{{ __('assistant.open') }}"
                     class="h-14 w-14 overflow-hidden rounded-full border-2 border-white bg-white shadow-lg transition hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2 motion-reduce:transition-none">

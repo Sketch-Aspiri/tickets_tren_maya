@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Concerns;
 
+use App\Rules\CategoryFitsTeam;
 use App\Support\LocalTime;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ trait ValidatesNewActivityFields
     {
         return [
             ...$this->workItemFieldRules(),
-            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('active', true)],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('active', true), new CategoryFitsTeam($this->user()?->workTeamIdFor($this->filled('team_id') ? $this->integer('team_id') : null))],
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'due_date' => $this->newActivityDueDateRules(),
             'team_id' => $this->newWorkItemTeamRules(),

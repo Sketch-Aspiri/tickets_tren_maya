@@ -10,12 +10,14 @@
     'messages' => null,
     'coordinationName' => null,
     'selectedCoordination' => null,
+    'stationName' => null,
+    'selectedStation' => null,
 ])
 
 {{-- Selector en cascada Edificio → Coordinación → Equipo. Los equipos nunca se listan revueltos: sin JavaScript
      se agrupan por coordinación (<optgroup>); con JavaScript (Alpine.data('teamCascade'), resources/js/org.js) cada
-     nivel solo muestra lo que pertenece al anterior. Solo se envía `$name` (y `$coordinationName` si se indica, para
-     filtros por coordinación); el edificio es solo de apoyo. `$teams` debe traer `coordination.station` cargada. --}}
+     nivel solo muestra lo que pertenece al anterior. Solo se envía `$name` (y `$coordinationName` / `$stationName` si se
+     indican, para filtros por coordinación o edificio). `$teams` debe traer `coordination.station` cargada. --}}
 @php
     $teams->loadMissing('coordination.station');
 
@@ -30,6 +32,7 @@
         ?? ($selectedCoordination ? $coordinations->firstWhere('id', (int) $selectedCoordination)?->id : null)
         ?? ($coordinations->count() === 1 ? $coordinations->first()->id : null);
     $selectedStationId = $coordinations->firstWhere('id', $selectedCoordinationId)?->station_id
+        ?? ($selectedStation ? $stations->firstWhere('id', (int) $selectedStation)?->id : null)
         ?? ($stations->count() === 1 ? $stations->first()->id : null);
 
     $labels = [
@@ -47,7 +50,7 @@
      {{ $attributes->class(['grid gap-3 sm:grid-cols-3']) }}>
     <div data-cascade-wrap="station" @class(['hidden' => $stations->count() <= 1])>
         <x-input-label :for="$id.'_station'" :value="__('cascade.station')" />
-        <x-select-input :id="$id.'_station'" data-cascade="station" x-on:change="onStation" class="mt-1 block w-full">
+        <x-select-input :id="$id.'_station'" :name="$stationName" data-cascade="station" x-on:change="onStation" class="mt-1 block w-full">
             <option value="">{{ $labels['station'] }}</option>
             @foreach ($stations as $station)
                 <option value="{{ $station->id }}" @selected($selectedStationId === $station->id)>{{ $station->name }}</option>
@@ -67,7 +70,7 @@
 
     <div data-cascade-wrap="team">
         <x-input-label :for="$id" :value="$label ?? __('cascade.team')" />
-        <x-select-input :id="$id" :name="$name" data-cascade="team" class="mt-1 block w-full" :required="$required" :aria-describedby="$hint ? $id.'_hint' : null">
+        <x-select-input :id="$id" :name="$name" data-cascade="team" x-on:change="onTeam" class="mt-1 block w-full" :required="$required" :aria-describedby="$hint ? $id.'_hint' : null">
             <option value="">{{ $labels['team'] }}</option>
             @foreach ($sorted->groupBy('coordination_id') as $group)
                 <optgroup label="{{ $group->first()->coordination->station->name }} › {{ $group->first()->coordination->name }}">

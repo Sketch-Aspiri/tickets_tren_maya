@@ -163,10 +163,9 @@ class Ticket extends Model
         $scope->whereHas('assignments', fn (Builder $assignment) => $assignment->where('user_id', $user->getKey()))
             ->orWhereIn('tickets.team_id', $user->scopedTeamIdsQuery() ?? $user->teamIdsQuery());
 
-        // El jefe de zona tambien abre lo que el mismo creo, aunque lo haya enviado a un equipo ajeno.
-        if ($user->roleEnum() === UserRole::JefeZona) {
-            $scope->orWhere('tickets.created_by', $user->getKey());
-        }
+        // Jefe y coordinador tambien abren lo que ellos crearon, aunque lo hayan enviado a un equipo de otra
+        // coordinacion (p. ej. a Soporte del sistema): sin esto, al crearlo recibirian 404.
+        $scope->orWhere('tickets.created_by', $user->getKey());
     }
 
     /**

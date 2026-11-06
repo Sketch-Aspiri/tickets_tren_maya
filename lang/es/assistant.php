@@ -6,6 +6,11 @@ return [
     'subtitle' => 'Asistente virtual',
     'avatar_alt' => 'Temayin, asistente virtual',
     'open' => 'Abrir asistente Temayin',
+    'bubble' => [
+        'text' => '¿Algún problema con el sistema? Recuerda crear un ticket a Soporte del sistema.',
+        'action' => 'Crear ticket a Soporte',
+        'dismiss' => 'Cerrar recordatorio',
+    ],
     'close' => 'Cerrar asistente',
     'greeting' => '¡Hola! Soy Temayin. Elige una pregunta y te explico cómo funciona el sistema.',
     'choose' => 'Preguntas frecuentes',

@@ -39,10 +39,20 @@ class UserController extends Controller
     {
         $this->authorize('view', $user);
 
+        $user->load(['roles:id,name', 'teams:id,name,coordination_id', 'coordinations:id,name']);
+
         return view('users.show', [
-            'managedUser' => $user->load(['roles:id,name', 'teams:id,name', 'coordinations:id,name']),
-            'teams' => Team::query()->manageableBy($request->user())->orderBy('name')->get(['id', 'name']),
-            'coordinations' => Coordination::query()->with('station:id,name')->orderBy('name')->get(['id', 'station_id', 'name']),
+            'managedUser' => $user,
+            // Coordinacion(es) de la persona: la de sus equipos, la que solicito y las que supervisa (si es jefe). La
+            // seccion "Roles y equipos" muestra solo esos equipos; los demas quedan plegados para poder moverla.
+            'homeCoordinationIds' => $user->teams->pluck('coordination_id')
+                ->merge($user->coordinations->pluck('id'))
+                ->push($user->requested_coordination_id)
+                ->filter()->map(fn (mixed $id): int => (int) $id)->unique()->values()->all(),
+            'teams' => Team::query()->manageableBy($request->user())->with('coordination:id,name,station_id', 'coordination.station:id,name')->orderBy('name')->get(['id', 'name', 'coordination_id']),
+            // Por edificio y luego por nombre (la casilla muestra «Edificio › Coordinación»).
+            'coordinations' => Coordination::query()->with('station:id,name')->get(['id', 'station_id', 'name'])
+                ->sortBy(fn (Coordination $coordination): string => mb_strtolower($coordination->station->name.'|'.$coordination->name))->values(),
             'roles' => $this->assignableRoles($request->user()),
         ]);
     }

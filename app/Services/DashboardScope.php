@@ -135,6 +135,8 @@ final class DashboardScope
         $query = User::query()
             ->where('status', UserStatus::Active->value)
             ->whereHas('roles')
+            // Con sus equipos (y coordinacion/edificio) para agruparlas y filtrarlas con la cascada del panel.
+            ->with(['teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name'])
             ->orderBy('name');
 
         return match ($user->roleEnum()) {
@@ -149,7 +151,11 @@ final class DashboardScope
      */
     public function selectableCategories(User $user): Collection
     {
-        return Category::query()->visibleTo($user)->orderBy('name')->get(['id', 'name']);
+        return Category::query()
+            ->visibleTo($user)
+            ->with(['coordination:id,name,station_id', 'coordination.station:id,name'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'active', 'coordination_id']);
     }
 
     /**

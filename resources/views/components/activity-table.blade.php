@@ -54,7 +54,7 @@
                 <td class="hidden px-4 py-3 md:table-cell"><x-priority-badge :priority="$activity->priority" /></td>
                 <td class="hidden px-4 py-3 lg:table-cell {{ $responsible ? '' : 'italic text-gray-700' }}">{{ $responsible?->user->name ?? __('activities.show.no_assignees') }}</td>
                 @if ($showTeam)
-                    <td class="hidden px-4 py-3 xl:table-cell">{{ $activity->team->name }}</td>
+                    <td class="hidden px-4 py-3 xl:table-cell">{{ $activity->team->name }}<span class="block text-xs text-gray-600">{{ $activity->team->coordination?->name }}</span></td>
                 @endif
                 <td class="hidden whitespace-nowrap px-4 py-3 md:table-cell {{ $activity->isOverdue() ? 'font-semibold text-red-800' : '' }}">
                     {{ $activity->due_date?->format('d/m/Y') ?? __('common.none') }}

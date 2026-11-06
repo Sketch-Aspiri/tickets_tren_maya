@@ -19,6 +19,12 @@ return [
     | Limites de peticiones (RateLimiter)
     |--------------------------------------------------------------------------
     */
+    // Coordinacion "Soporte del sistema" (edificio zonal): codigo o nombre. Todos pueden abrirle tickets y sus
+    // categorias se ofrecen a cualquiera al crear un ticket. Vacio = sin soporte configurado.
+    'support' => [
+        'coordination' => env('SUPPORT_COORDINATION', 'Soporte del sistema'),
+    ],
+
     'rate_limits' => [
         'login_per_minute' => 5,
         'login_per_ip_per_minute' => 20,

@@ -68,30 +68,14 @@
                 </x-select-input>
             </div>
 
-            <div>
-                <x-input-label for="category_id" :value="__('activities.filters.category')" />
-                <x-select-input id="category_id" name="category_id" class="mt-1 block w-full">
-                    <option value="">{{ __('common.all') }}</option>
-                    @foreach ($categories as $category)
-                        <option value="{{ $category->id }}" @selected((int) ($filters['category_id'] ?? 0) === $category->id)>{{ $category->name }}</option>
-                    @endforeach
-                </x-select-input>
-            </div>
+                <x-category-select :categories="$categories" :selected="$filters['category_id'] ?? null" :label="__('activities.filters.category')" :placeholder="__('common.all')" />
 
             @if ($teams->isNotEmpty())
                 <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" id="team_id" name="team_id" :label="__('activities.filters.team')" optional class="sm:col-span-full" />
             @endif
 
             @if ($responsibles->isNotEmpty())
-                <div>
-                    <x-input-label for="responsible_id" :value="__('activities.filters.responsible')" />
-                    <x-select-input id="responsible_id" name="responsible_id" class="mt-1 block w-full">
-                        <option value="">{{ __('common.all') }}</option>
-                        @foreach ($responsibles as $responsible)
-                            <option value="{{ $responsible->id }}" @selected((int) ($filters['responsible_id'] ?? 0) === $responsible->id)>{{ $responsible->name }}</option>
-                        @endforeach
-                    </x-select-input>
-                </div>
+                <x-user-select :users="$responsibles" :selected="$filters['responsible_id'] ?? null" id="responsible_id" name="responsible_id" :label="__('activities.filters.responsible')" :placeholder="__('common.all')" />
             @endif
 
             <div>

@@ -13,6 +13,7 @@ return [
     'active' => 'Activa',
     'inactive' => 'Inactiva',
     'global' => 'Global (todas)',
+    'general' => 'General (todas las coordinaciones)',
     'form' => [
         'coordination' => 'Coordinación',
         'global' => 'Global (todas las coordinaciones)',
@@ -22,5 +23,6 @@ return [
     'delete_confirm' => '¿Eliminar esta categoría?',
     'errors' => [
         'has_tickets' => 'No se puede eliminar una categoría que tiene tickets. Desactívala para que deje de ofrecerse.',
+        'wrong_coordination' => 'La categoría no pertenece a la coordinación del equipo elegido.',
     ],
 ];

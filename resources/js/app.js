@@ -6,7 +6,7 @@ import Alpine from '@alpinejs/csp';
 import { registerChat } from './chat.js';
 import { registerTemayin } from './temayin.js';
 import { registerPush, registerServiceWorker } from './push.js';
-import { registerOrgPicker } from './org.js';
+import { currentCoordination, currentTeam, filterOptions, fitsCoordination, registerOrgPicker, sameForm } from './org.js';
 
 window.Alpine = Alpine;
 
@@ -169,11 +169,67 @@ Alpine.data('assigneePicker', () => ({
     max: 10,
     query: '',
     noResults: false,
+    noTeam: false,
+    byTeam: false,
 
     init() {
         this.max = Number(this.$el.dataset.max) || 10;
         this.ready = true;
+        this.byTeam = this.$el.dataset.filterBy === 'team';
+        this.applyScope(currentCoordination(this.$el), currentTeam(this.$el));
         this.sync();
+    },
+
+    // Solo se ofrecen personas de la coordinación elegida en la cascada del mismo formulario o, con
+    // `data-filter-by="team"` (actividades), solo integrantes del equipo elegido. El servidor exige lo mismo.
+    onCoordination(event) {
+        if (sameForm(event.target, this.$el)) {
+            this.applyScope(String(event.detail?.coordinationId ?? ''), String(event.detail?.teamId ?? ''));
+            this.sync();
+        }
+    },
+
+    fits(element, coordinationId, teamId) {
+        if (!this.byTeam || teamId === null) {
+            return fitsCoordination(element, coordinationId);
+        }
+
+        // Sin equipo elegido todavía no se ofrece a nadie (primero se elige el equipo).
+        return teamId !== '' && (element.dataset.teams ?? '').split(',').includes(teamId);
+    },
+
+    applyScope(coordinationId, teamId) {
+        const responsible = this.$el.querySelector('select[data-responsible]');
+
+        if (responsible) {
+            for (const option of responsible.querySelectorAll('option[data-teams]')) {
+                const fits = this.fits(option, coordinationId, teamId);
+                option.hidden = !fits;
+                option.disabled = !fits;
+            }
+
+            if (responsible.selectedOptions[0]?.disabled) {
+                responsible.value = '';
+            }
+        }
+
+        let shown = 0;
+
+        this.boxes().forEach((box) => {
+            const row = box.closest('[data-row]');
+            const fits = this.fits(row, coordinationId, teamId);
+            shown += fits ? 1 : 0;
+
+            row.classList.toggle('hidden', !fits);
+            row.toggleAttribute('data-out-of-coordination', !fits);
+
+            if (!fits) {
+                box.checked = false;
+            }
+        });
+
+        this.noTeam = this.byTeam && teamId === '';
+        this.noResults = !this.noTeam && shown === 0;
     },
 
     boxes() {
@@ -216,7 +272,8 @@ Alpine.data('assigneePicker', () => ({
 
         this.boxes().forEach((box) => {
             const row = box.closest('[data-row]');
-            const matches = this.query === '' || row.textContent.toLowerCase().includes(this.query);
+            const matches = !row.hasAttribute('data-out-of-coordination')
+                && (this.query === '' || row.textContent.toLowerCase().includes(this.query));
             row.classList.toggle('hidden', !matches);
             if (matches) {
                 shown += 1;

@@ -7,6 +7,7 @@ namespace App\Http\Requests\Tickets;
 use App\Http\Requests\Concerns\AuthorizesWithGate;
 use App\Http\Requests\Concerns\ValidatesWorkItemFields;
 use App\Models\Ticket;
+use App\Rules\CategoryFitsTeam;
 use App\Support\LocalTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -39,6 +40,7 @@ class UpdateTicketRequest extends FormRequest
                 Rule::exists('categories', 'id')->where(fn ($query) => $query
                     ->where('active', true)
                     ->orWhere('id', $ticket->category_id)),
+                new CategoryFitsTeam($ticket->team_id, $ticket->category_id),
             ],
             'due_date' => array_values(array_filter([
                 'nullable',

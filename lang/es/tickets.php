@@ -168,6 +168,7 @@ return [
         'comment_required' => 'Debes escribir un comentario para esta acción.',
         'invalid_assignee' => 'Solo se puede asignar a usuarios activos con rol.',
         'assignee_out_of_team' => 'Solo puedes asignar a usuarios activos de tu equipo.',
+        'assignee_out_of_coordination' => 'Solo puedes asignar a personas de la coordinación del equipo del ticket.',
         'too_many_collaborators' => 'Máximo :max colaboradores por ticket.',
         'not_assigned' => 'El ticket ya está sin asignar.',
         'already_taken' => 'Otra persona ya tomó o recibió este ticket.',

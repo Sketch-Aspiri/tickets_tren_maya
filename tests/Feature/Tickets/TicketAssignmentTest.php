@@ -6,6 +6,7 @@ namespace Tests\Feature\Tickets;
 
 use App\Enums\AssignmentRole;
 use App\Exceptions\BusinessRuleException;
+use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\AssignmentService;
@@ -106,13 +107,19 @@ class TicketAssignmentTest extends DatabaseTestCase
         ])->assertInvalid('collaborator_ids.0');
     }
 
-    public function test_jefe_can_assign_to_any_active_user_including_other_teams(): void
+    public function test_jefe_can_assign_people_of_other_teams_of_the_same_coordination_only(): void
     {
         $ticket = $this->makeTicket($this->teamA);
+        // Otro equipo de la MISMA coordinacion que el del ticket (teamB es de otra coordinacion).
+        $sibling = Team::factory()->create(['coordination_id' => $this->teamA->coordination_id]);
+        $siblingMember = User::factory()->empleado()->inTeams($sibling)->create();
 
-        $this->assign($this->jefe, $ticket, $this->empB1->id, [$this->coordA->id])->assertSessionHasNoErrors();
+        $this->assign($this->jefe, $ticket, $siblingMember->id, [$this->coordA->id])->assertSessionHasNoErrors();
+        $this->assertEquals([$siblingMember->id => 'responsable', $this->coordA->id => 'colaborador'], $this->roles($ticket));
 
-        $this->assertEquals([$this->empB1->id => 'responsable', $this->coordA->id => 'colaborador'], $this->roles($ticket));
+        // Nadie de otra coordinacion, ni siquiera para quien supervisa ambas.
+        $this->from('/x')->assign($this->jefe, $ticket, $this->empB1->id)->assertSessionHas('error');
+        $this->assertEquals([$siblingMember->id => 'responsable', $this->coordA->id => 'colaborador'], $this->roles($ticket));
     }
 
     public function test_coordinator_can_only_assign_active_members_of_their_own_team(): void

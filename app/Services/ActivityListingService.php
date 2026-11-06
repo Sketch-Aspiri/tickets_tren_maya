@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 final class ActivityListingService
 {
     /** Relaciones que usan el listado y las exportaciones (tambien la sincronizacion a la nube). */
-    public const EAGER_LOADS = ['category:id,name', 'team:id,name', 'parent:id,folio', 'assignments.user:id,name'];
+    public const EAGER_LOADS = ['category:id,name', 'team:id,name,coordination_id', 'team.coordination:id,name', 'parent:id,folio', 'assignments.user:id,name'];
 
     /** Columnas por las que se permite ordenar (lista blanca; la validación vive en IndexActivitiesRequest). */
     public const SORTABLE = ['created_at', 'due_date', 'priority', 'status', 'folio', 'title'];

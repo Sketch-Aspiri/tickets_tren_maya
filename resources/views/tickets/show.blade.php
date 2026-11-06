@@ -51,7 +51,7 @@
     <x-card :title="__('tickets.show.details')">
         <dl class="grid gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('tickets.columns.category') }}</dt><dd class="font-medium">{{ $ticket->category?->name ?? __('tickets.form.no_category') }}</dd></div>
-            <div><dt class="text-gray-600">{{ __('tickets.columns.team') }}</dt><dd class="font-medium">{{ $ticket->team->name }}</dd></div>
+            <div><dt class="text-gray-600">{{ __('tickets.columns.team') }}</dt><dd class="font-medium">{{ $ticket->team->name }} <span class="block text-xs font-normal text-gray-600">{{ $ticket->team->coordination->station->name }} › {{ $ticket->team->coordination->name }}</span></dd></div>
             <div><dt class="text-gray-600">{{ __('tickets.columns.due_date') }}</dt><dd class="font-medium">{{ $ticket->due_date?->format('d/m/Y') ?? __('tickets.show.no_due_date') }}</dd></div>
             <div><dt class="text-gray-600">{{ __('tickets.show.created_by') }}</dt><dd class="font-medium">{{ $ticket->creator->name }}</dd></div>
             <div><dt class="text-gray-600">{{ __('tickets.show.created_at') }}</dt><dd><x-local-datetime :value="$ticket->created_at" /></dd></div>

@@ -46,6 +46,7 @@ return [
         'filter_placeholder' => 'Escribe un nombre',
         'counter' => ':count de :max seleccionados',
         'no_results' => 'Ninguna persona coincide con la búsqueda.',
+        'choose_team_first' => 'Primero elige el equipo: solo se muestra su personal.',
         'is_responsible' => '(responsable)',
         'hint' => 'Opcional. Marca a quienes colaboran; el responsable no se puede repetir aquí.',
         'no_users' => 'No hay personas disponibles para asignar.',

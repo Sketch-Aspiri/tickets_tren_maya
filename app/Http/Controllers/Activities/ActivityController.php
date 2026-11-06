@@ -14,7 +14,6 @@ use App\Http\Requests\Activities\IndexActivitiesRequest;
 use App\Http\Requests\Activities\StoreActivityRequest;
 use App\Http\Requests\Activities\UpdateActivityRequest;
 use App\Models\Activity;
-use App\Models\Category;
 use App\Models\User;
 use App\Services\ActivityListingService;
 use App\Services\ActivityService;
@@ -46,7 +45,7 @@ class ActivityController extends Controller
             'statuses' => TicketStatus::cases(),
             'priorities' => Priority::cases(),
             'kinds' => ActivityListingService::KINDS,
-            'categories' => Category::query()->visibleTo(request()->user())->orderBy('name')->get(['id', 'name']),
+            'categories' => $this->categories->filterable($user),
             // Filtro por equipo: solo quien ve mas de un equipo (alcance global o varios equipos).
             'teams' => $user->selectableTeams(),
             'responsibles' => $this->assignments->assignableUsers($user),
@@ -80,7 +79,9 @@ class ActivityController extends Controller
         $activity->loadCount(['subtasks', 'subtasks as subtasks_done_count' => fn ($subtask) => $subtask->where('done', true)])
             ->load([
                 'category:id,name',
-                'team:id,name',
+                'team:id,name,coordination_id',
+                'team.coordination:id,name,station_id',
+                'team.coordination.station:id,name',
                 'creator:id,name',
                 'parent:id,folio',
                 'assignments' => fn ($query) => $query->orderBy('id'),
@@ -100,7 +101,7 @@ class ActivityController extends Controller
         return view('activities.show', [
             'activity' => $activity,
             'transitions' => $this->activities->availableTransitions($user, $activity),
-            'assignableUsers' => $canAssign ? $this->assignments->assignableUsers($user) : collect(),
+            'assignableUsers' => $canAssign ? $this->assignments->assignableUsers($user, null, $activity->team_id) : collect(),
             'recurrence' => $activity->isTemplate() ? RecurrenceRule::fromArray((array) $activity->recurrence_rule) : null,
             'subtaskAbilities' => $this->subtaskAbilities($user, $activity),
         ]);
@@ -161,7 +162,8 @@ class ActivityController extends Controller
         return [
             'activity' => $activity,
             'priorities' => Priority::cases(),
-            'categories' => $this->categories->selectable(request()->user(), $activity->category_id),
+            // Al editar, solo las generales y las de la coordinacion del equipo de la actividad.
+            'categories' => $this->categories->selectable(request()->user(), $activity->category_id, $creating ? null : $activity->team->coordination_id),
             'frequencies' => RecurrenceFrequency::cases(),
             // Elige el equipo de la actividad nueva quien tiene alcance global o varios equipos.
             'teams' => $creating ? $request->user()->selectableTeams() : collect(),
