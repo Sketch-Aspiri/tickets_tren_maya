@@ -23,6 +23,14 @@
         </thead>
         <tbody class="divide-y divide-brand-green/10">
             @forelse ($teams as $team)
+                @if ($team->coordination_id !== ($currentCoordination ?? null))
+                    @php $currentCoordination = $team->coordination_id; @endphp
+                    <tr class="bg-brand-mist/70">
+                        <th colspan="5" scope="colgroup" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-green">
+                            {{ $team->coordination->station->name }} › {{ $team->coordination->name }}
+                        </th>
+                    </tr>
+                @endif
                 <tr>
                     <td class="px-4 py-3 font-medium text-gray-900">
                         <a href="{{ route('teams.show', $team) }}" class="text-brand-green hover:underline">{{ $team->name }}</a>

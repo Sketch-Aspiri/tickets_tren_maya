@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CRUD de equipos. La bitacora de create/update/delete la genera el trait
@@ -29,7 +30,11 @@ final class TeamService
             ->manageableBy($actor)
             ->with(['coordinator:id,name', 'coordination.station'])
             ->withCount('members')
-            ->orderBy('name')
+            // Agrupado por edificio y coordinacion (la vista pone un encabezado por coordinacion), luego por nombre.
+            ->orderBy(DB::table('coordinations')->join('stations', 'stations.id', '=', 'coordinations.station_id')->select('stations.name')->whereColumn('coordinations.id', 'teams.coordination_id'))
+            ->orderBy(DB::table('coordinations')->select('name')->whereColumn('coordinations.id', 'teams.coordination_id'))
+            ->orderBy('teams.coordination_id')
+            ->orderBy('teams.name')
             ->paginate((int) config('tickets.users_per_page'));
     }
 

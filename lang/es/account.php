@@ -6,15 +6,15 @@ return [
         'title' => 'Estado de tu cuenta',
         'pending' => [
             'heading' => 'Cuenta pendiente de aprobación',
-            'body' => 'Recibimos tu solicitud. El jefe de zona de la coordinación que elegiste debe aprobarla y asignarte rol y equipo antes de que puedas usar el sistema.',
+            'body' => 'Recibimos tu solicitud. El jefe de la coordinación que elegiste debe aprobarla y asignarte rol y equipo antes de que puedas usar el sistema.',
         ],
         'inactive' => [
             'heading' => 'Cuenta inactiva',
-            'body' => 'Tu cuenta no tiene acceso al sistema. Si crees que es un error, contacta al jefe de zona de tu coordinación o al administrador.',
+            'body' => 'Tu cuenta no tiene acceso al sistema. Si crees que es un error, contacta al jefe de tu coordinación o al administrador.',
         ],
         'no_role' => [
             'heading' => 'Cuenta sin rol asignado',
-            'body' => 'Tu cuenta todavía no tiene un rol asignado. Contacta al jefe de zona de tu coordinación o al administrador.',
+            'body' => 'Tu cuenta todavía no tiene un rol asignado. Contacta al jefe de tu coordinación o al administrador.',
         ],
     ],
 ];

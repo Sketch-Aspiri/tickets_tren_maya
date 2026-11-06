@@ -4,7 +4,7 @@ return [
     'title' => 'Mi perfil',
     'info' => [
         'title' => 'Información del perfil',
-        'intro' => 'Puedes actualizar tu nombre. El correo lo administra el jefe de zona de tu coordinación o el administrador.',
+        'intro' => 'Puedes actualizar tu nombre. El correo lo administra el jefe de tu coordinación o el administrador.',
         'name' => 'Nombre',
         'email' => 'Correo electrónico',
         'submit' => 'Guardar',

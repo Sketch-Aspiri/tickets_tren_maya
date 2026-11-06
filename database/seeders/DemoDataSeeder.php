@@ -46,7 +46,7 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         if (! app()->environment(self::ALLOWED_ENVIRONMENTS)) {
-            $this->command?->warn('DemoDataSeeder solo corre en local. Crea el primer jefe de zona con: php artisan users:create-jefe correo@dominio');
+            $this->command?->warn('DemoDataSeeder solo corre en local. Crea el primer jefe con: php artisan users:create-jefe correo@dominio');
 
             return;
         }
@@ -57,7 +57,7 @@ class DemoDataSeeder extends Seeder
 
         $this->createUser('Administrador Demo', 'admin@demo.test', $hash, UserRole::Administrador, null);
         $this->createUser('Administrador Demo', 'admin@demo.test', $hash, UserRole::Administrador, null);
-        $jefe = $this->createUser('Jefe de Zona Demo', 'jefe@demo.test', $hash, UserRole::JefeZona, null);
+        $jefe = $this->createUser('Jefe Demo', 'jefe@demo.test', $hash, UserRole::JefeZona, null);
 
         $station = Station::query()->firstOrCreate(['name' => 'Estación Demo'], ['active' => true]);
         $coordination = Coordination::query()->firstOrCreate(
@@ -72,7 +72,7 @@ class DemoDataSeeder extends Seeder
             ['code' => 'DEMO-N'],
             ['station_id' => $northStation->id, 'name' => 'Coordinación Norte Demo', 'active' => true],
         );
-        $this->createUser('Jefe de Zona Norte Demo', 'jefe.norte@demo.test', $hash, UserRole::JefeZona, null)
+        $this->createUser('Jefe Norte Demo', 'jefe.norte@demo.test', $hash, UserRole::JefeZona, null)
             ->coordinations()->syncWithoutDetaching([$northCoordination->id]);
 
         foreach (self::TEAM_NAMES as $index => $teamName) {

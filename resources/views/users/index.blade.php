@@ -31,15 +31,7 @@
                 </x-select-input>
             </div>
 
-            <div>
-                <x-input-label for="team_id" :value="__('users.index.filter_team')" />
-                <x-select-input id="team_id" name="team_id" class="mt-1 block w-full">
-                    <option value="">{{ __('common.all') }}</option>
-                    @foreach ($teams as $team)
-                        <option value="{{ $team->id }}" @selected((int) ($filters['team_id'] ?? 0) === $team->id)>{{ $team->name }}</option>
-                    @endforeach
-                </x-select-input>
-            </div>
+            <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" :selected-coordination="$filters['coordination_id'] ?? null" coordination-name="coordination_id" id="team_id" name="team_id" :label="__('users.index.filter_team')" optional class="sm:col-span-2 lg:col-span-5" />
 
             <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
                 <x-primary-button>{{ __('common.actions.filter') }}</x-primary-button>
@@ -63,6 +55,15 @@
         </thead>
         <tbody class="divide-y divide-brand-green/10">
             @forelse ($users as $listedUser)
+                @php $group = $listedUser->primaryCoordination(); $groupKey = $group?->id ?? 'none'; @endphp
+                @if ($groupKey !== ($currentGroup ?? null))
+                    @php $currentGroup = $groupKey; @endphp
+                    <tr class="bg-brand-mist/70">
+                        <th colspan="8" scope="colgroup" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-green">
+                            {{ $group ? $group->station->name.' › '.$group->name : __('users.index.no_coordination_group') }}
+                        </th>
+                    </tr>
+                @endif
                 <tr>
                     <td class="px-4 py-3">
                         <p class="font-medium text-gray-900">{{ $listedUser->name }}</p>

@@ -7,11 +7,13 @@ namespace App\Providers;
 use App\Contracts\HostResolver;
 use App\Contracts\MailboxClient;
 use App\Contracts\MailboxResolver;
+use App\Enums\PermissionName;
 use App\Infrastructure\DnsHostResolver;
 use App\Infrastructure\WebklexMailboxClient;
 use App\Infrastructure\WebklexMailboxResolver;
 use App\Listeners\LogAuthenticationActivity;
 use App\Models\IncomingEmail;
+use App\Models\User;
 use App\Policies\AuditLogPolicy;
 use App\Policies\DashboardPolicy;
 use App\Policies\IncomingEmailPolicy;
@@ -65,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
     private function registerAuthorization(): void
     {
         Gate::define('view-dashboard', [DashboardPolicy::class, 'view']);
+        // Eliminar en bloque lo vencido: quien gestiona tickets Y actividades (jefe, coordinador, administrador).
+        Gate::define('purge-overdue', fn (User $user): bool => $user->canAccessApplication()
+            && $user->checkPermissionTo(PermissionName::TicketsManage->value)
+            && $user->checkPermissionTo(PermissionName::ActivitiesManage->value));
         Gate::policy(ActivityLogEntry::class, AuditLogPolicy::class);
         Gate::policy(IncomingEmail::class, IncomingEmailPolicy::class);
     }
@@ -150,6 +156,7 @@ class AppServiceProvider extends ServiceProvider
             'avatar-view' => ['avatar_view_per_minute', 'perMinute'],
             'notifications-poll' => ['notifications_poll_per_minute', 'perMinute'],
             'notifications-write' => ['notifications_write_per_minute', 'perMinute'],
+            'overdue-purge' => ['overdue_purge_per_hour', 'perHour'],
             'push-write' => ['push_write_per_minute', 'perMinute'],
             'mailbox-test' => ['mailbox_test_per_minute', 'perMinute'],
         ];

@@ -4,6 +4,7 @@
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('activities.title') }}</h1>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <x-overdue-purge-button />
                 {{-- Alterna el filtro "vencen hoy" conservando el resto de filtros. Activo = boton resaltado que lo quita. --}}
                 @php
                     $dueToday = (bool) ($filters['due_today'] ?? false);
@@ -78,15 +79,7 @@
             </div>
 
             @if ($teams->isNotEmpty())
-                <div>
-                    <x-input-label for="team_id" :value="__('activities.filters.team')" />
-                    <x-select-input id="team_id" name="team_id" class="mt-1 block w-full">
-                        <option value="">{{ __('common.all') }}</option>
-                        @foreach ($teams as $team)
-                            <option value="{{ $team->id }}" @selected((int) ($filters['team_id'] ?? 0) === $team->id)>{{ $team->name }}</option>
-                        @endforeach
-                    </x-select-input>
-                </div>
+                <x-team-cascade :teams="$teams" :selected="$filters['team_id'] ?? null" id="team_id" name="team_id" :label="__('activities.filters.team')" optional class="sm:col-span-full" />
             @endif
 
             @if ($responsibles->isNotEmpty())
@@ -148,7 +141,7 @@
         @endif
     @endcan
 
-    <x-activity-table :activities="$activities" :show-team="auth()->user()->mustChooseTeam()" />
+    <x-activity-table :activities="$activities" :show-team="auth()->user()->mustChooseTeam()" :group-by-team="auth()->user()->mustChooseTeam()" />
 
     {{ $activities->links() }}
 </x-app-layout>

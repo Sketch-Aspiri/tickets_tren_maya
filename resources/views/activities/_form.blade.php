@@ -23,17 +23,7 @@
 
 <div class="space-y-4">
     @if ($teams->isNotEmpty())
-        <div>
-            <x-input-label for="team_id" :value="__('activities.form.team')" />
-            <x-select-input id="team_id" name="team_id" class="mt-1 block w-full" required aria-describedby="team_id_hint">
-                <option value="">{{ __('activities.form.select_team') }}</option>
-                @foreach ($teams as $team)
-                    <option value="{{ $team->id }}" @selected((int) old('team_id') === $team->id)>{{ $team->name }}</option>
-                @endforeach
-            </x-select-input>
-            <p id="team_id_hint" class="mt-1 text-xs text-gray-600">{{ __('activities.form.team_hint') }}</p>
-            <x-input-error :messages="$errors->get('team_id')" class="mt-2" />
-        </div>
+        <x-team-cascade :teams="$teams" :selected="old('team_id')" id="team_id" name="team_id" :label="__('activities.form.team')" :hint="__('activities.form.team_hint')" required :messages="$errors->get('team_id')" />
     @endif
 
     <div>

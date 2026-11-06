@@ -128,7 +128,7 @@ class TicketController extends Controller
             'priorities' => Priority::cases(),
             'categories' => $this->categories->selectable(request()->user(), $ticket->category_id),
             // Un ticket nuevo puede mandarse a cualquier equipo (p. ej. al de TI), no solo al del creador.
-            'teams' => $ticket->exists ? collect() : Team::query()->orderBy('name')->get(['id', 'name']),
+            'teams' => $ticket->exists ? collect() : Team::query()->with('coordination:id,name,station_id', 'coordination.station:id,name')->orderBy('name')->get(['id', 'name', 'coordination_id']),
             'defaultTeamId' => $ticket->exists ? null : ($user->teamIds()[0] ?? null),
         ];
     }

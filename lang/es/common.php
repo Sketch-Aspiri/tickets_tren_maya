@@ -79,6 +79,7 @@ return [
         'ticket-created' => 'Ticket creado.',
         'ticket-updated' => 'Ticket actualizado.',
         'ticket-deleted' => 'Ticket eliminado.',
+        'overdue-purged' => 'Se eliminaron los tickets y actividades vencidos.',
         'ticket-status-changed' => 'Estado actualizado.',
         'ticket-assigned' => 'Asignación guardada.',
         'ticket-unassigned' => 'El ticket volvió a la bolsa del equipo.',

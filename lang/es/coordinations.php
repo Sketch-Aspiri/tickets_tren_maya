@@ -10,7 +10,7 @@ return [
         'code' => 'Código',
         'status' => 'Estado',
         'teams' => 'Equipos',
-        'bosses' => 'Jefes de zona',
+        'bosses' => 'Jefes',
     ],
     'users' => 'Usuarios de esta coordinación',
     'active' => 'Activa',
@@ -26,7 +26,7 @@ return [
     'delete_confirm' => '¿Eliminar esta coordinación?',
     'errors' => [
         'has_teams' => 'No se puede eliminar una coordinación que tiene equipos. Desactívala o mueve los equipos primero.',
-        'has_bosses' => 'No se puede eliminar una coordinación que tiene jefes de zona asignados. Quítalos primero.',
+        'has_bosses' => 'No se puede eliminar una coordinación que tiene jefes asignados. Quítalos primero.',
         'has_categories' => 'No se puede eliminar una coordinación que tiene categorías propias.',
     ],
 ];

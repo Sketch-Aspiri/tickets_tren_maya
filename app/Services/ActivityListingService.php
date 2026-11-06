@@ -15,6 +15,7 @@ use App\Support\LocalTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Listados de actividades. TODA consulta parte de `Activity::visibleTo($user)` (alcance por rol), de modo que
@@ -44,6 +45,8 @@ final class ActivityListingService
     {
         $query = $this->filtered($user, $filters);
 
+        $this->groupByTeam($query, $user);
+
         $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
 
         return $query->paginate((int) config('tickets.activities_per_page'))->withQueryString();
@@ -59,6 +62,8 @@ final class ActivityListingService
     {
         $query = $this->filtered($user, $filters);
 
+        // Mismo orden que el listado (agrupado por equipo), para que la exportacion lo refleje.
+        $this->groupByTeam($query, $user);
         $this->applySort($query, $filters['sort'] ?? null, $filters['direction'] ?? null);
 
         return $query->limit($limit)->get();
@@ -196,6 +201,25 @@ final class ActivityListingService
             'single' => $query->whereNull('activities.parent_activity_id'),
             default => $query,
         };
+    }
+
+    /**
+     * Quien ve mas de un equipo recibe las actividades agrupadas por edificio, coordinacion y equipo (la vista pone
+     * un encabezado por equipo); el orden elegido aplica dentro de cada equipo.
+     *
+     * @param  Builder<Activity>  $query
+     */
+    private function groupByTeam(Builder $query, User $user): void
+    {
+        if (! $user->mustChooseTeam()) {
+            return;
+        }
+
+        $query->with(['team:id,name,coordination_id', 'team.coordination:id,name,station_id', 'team.coordination.station:id,name'])
+            ->orderBy(DB::table('teams')->join('coordinations', 'coordinations.id', '=', 'teams.coordination_id')->join('stations', 'stations.id', '=', 'coordinations.station_id')->select('stations.name')->whereColumn('teams.id', 'activities.team_id'))
+            ->orderBy(DB::table('teams')->join('coordinations', 'coordinations.id', '=', 'teams.coordination_id')->select('coordinations.name')->whereColumn('teams.id', 'activities.team_id'))
+            ->orderBy(DB::table('teams')->select('name')->whereColumn('teams.id', 'activities.team_id'))
+            ->orderBy('activities.team_id');
     }
 
     /**

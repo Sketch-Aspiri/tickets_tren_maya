@@ -8,7 +8,7 @@ return [
     ],
     'user_role' => [
         'administrador' => 'Administrador',
-        'jefe_zona' => 'Jefe de zona',
+        'jefe_zona' => 'Jefe',
         'coordinador' => 'Coordinador',
         'empleado' => 'Empleado',
     ],

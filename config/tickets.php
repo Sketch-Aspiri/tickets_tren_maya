@@ -56,6 +56,7 @@ return [
         'avatar_view_per_minute' => 600,
         'notifications_write_per_minute' => 60,
         'push_write_per_minute' => 20,
+        'overdue_purge_per_hour' => 10,
     ],
 
     /*

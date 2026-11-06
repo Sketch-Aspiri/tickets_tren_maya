@@ -12,14 +12,14 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 /**
- * Crea el primer jefe de zona (el sistema no puede aprobar cuentas sin al menos uno).
+ * Crea el primer jefe (el sistema no puede aprobar cuentas sin al menos uno).
  * La contrasena se pide de forma interactiva u oculta: nunca como argumento (quedaria en el historial del shell).
  */
 class CreateJefeZonaCommand extends Command
 {
-    protected $signature = 'users:create-jefe {email : Correo del jefe de zona} {--name= : Nombre completo}';
+    protected $signature = 'users:create-jefe {email : Correo del jefe} {--name= : Nombre completo}';
 
-    protected $description = 'Crea un usuario jefe de zona activo (debera configurar 2FA en su primer inicio de sesion)';
+    protected $description = 'Crea un usuario jefe activo (debera configurar 2FA en su primer inicio de sesion)';
 
     public function handle(UserRegistrationService $registration): int
     {
@@ -49,7 +49,7 @@ class CreateJefeZonaCommand extends Command
 
         $registration->createJefe($name, $email, $password);
 
-        $this->info("Jefe de zona {$email} creado. Configurara 2FA al iniciar sesion.");
+        $this->info("Jefe {$email} creado. Configurara 2FA al iniciar sesion.");
 
         return self::SUCCESS;
     }

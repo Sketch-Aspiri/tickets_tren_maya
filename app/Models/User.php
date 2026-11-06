@@ -109,6 +109,27 @@ class User extends Authenticatable
     }
 
     /**
+     * Coordinacion bajo la que se agrupa al usuario en los listados: la de sus equipos, si no la que supervisa
+     * (jefe de zona) y si no la que solicito al registrarse; con varias gana la de menor nombre. Usa las
+     * relaciones YA cargadas (`teams.coordination`, `coordinations`, `requestedCoordination`): sin consultas.
+     * Debe coincidir con el orden SQL de `UserService::paginate`.
+     */
+    public function primaryCoordination(): ?Coordination
+    {
+        $candidates = $this->teams->pluck('coordination')->filter();
+
+        if ($candidates->isEmpty()) {
+            $candidates = $this->coordinations;
+        }
+
+        if ($candidates->isEmpty()) {
+            return $this->requestedCoordination;
+        }
+
+        return $candidates->sortBy('name')->first();
+    }
+
+    /**
      * Ids de sus equipos, siempre leidos de la base (nunca de una relacion cargada que pudo quedar vieja).
      *
      * @return list<int>
@@ -271,15 +292,21 @@ class User extends Authenticatable
      */
     public function selectableTeams(): Collection
     {
+        // `coordination.station` viaja cargada: los selectores muestran los equipos por edificio y coordinacion.
+        $withOrg = fn () => Team::query()->with('coordination:id,name,station_id', 'coordination.station:id,name')->orderBy('name');
+
         if ($this->seesAllTeams()) {
-            return Team::query()->orderBy('name')->get(['id', 'name']);
+            return $withOrg()->get(['id', 'name', 'coordination_id']);
         }
 
         if ($this->roleEnum() === UserRole::JefeZona) {
-            return Team::query()->whereIn('coordination_id', $this->coordinationIdsQuery())->orderBy('name')->get(['id', 'name']);
+            return $withOrg()->whereIn('coordination_id', $this->coordinationIdsQuery())->get(['id', 'name', 'coordination_id']);
         }
 
-        $teams = $this->teams()->orderBy('teams.name')->get(['teams.id', 'teams.name']);
+        $teams = $this->teams()
+            ->with('coordination:id,name,station_id', 'coordination.station:id,name')
+            ->orderBy('teams.name')
+            ->get(['teams.id', 'teams.name', 'teams.coordination_id']);
 
         return $teams->count() > 1 ? $teams : new Collection;
     }

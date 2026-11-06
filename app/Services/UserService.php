@@ -47,14 +47,42 @@ final class UserService
     {
         return User::query()
             ->when($actor, fn (Builder $q, User $viewer) => $q->manageableBy($viewer))
-            ->with(['roles:id,name', 'teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name', 'coordinations:id,name,station_id', 'coordinations.station:id,name'])
+            ->with(['roles:id,name', 'teams:id,name,coordination_id', 'teams.coordination:id,name,station_id', 'teams.coordination.station:id,name', 'coordinations:id,name,station_id', 'coordinations.station:id,name', 'requestedCoordination:id,name,station_id', 'requestedCoordination.station:id,name'])
             ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('status', $status))
             ->when($filters['role'] ?? null, fn (Builder $q, string $role) => $q->role($role))
             ->when($filters['team_id'] ?? null, fn (Builder $q, int $teamId) => $q->memberOfAny([$teamId]))
+            ->when($filters['coordination_id'] ?? null, fn (Builder $q, int $coordinationId) => $this->filterByCoordination($q, $coordinationId))
             ->when($filters['q'] ?? null, fn (Builder $q, string $term) => $this->applySearch($q, $term))
+            // Agrupado por coordinacion (la vista pone un encabezado por grupo); sin coordinacion al final.
+            ->orderByRaw('case when '.self::GROUP_SQL.' is null then 1 else 0 end')
+            ->orderByRaw(self::GROUP_SQL)
             ->latest('id')
             ->paginate($perPage ?? (int) config('tickets.users_per_page'))
             ->withQueryString();
+    }
+
+    /**
+     * Misma regla que `User::primaryCoordination()`: nombre de la coordinacion de sus equipos; si no tiene, la que
+     * supervisa; si no, la que solicito. SQL fijo (sin datos del usuario).
+     */
+    private const GROUP_SQL = 'coalesce('
+        .'(select min(c.name) from coordinations c join teams t on t.coordination_id = c.id join team_user tu on tu.team_id = t.id where tu.user_id = users.id), '
+        .'(select min(c.name) from coordinations c join coordination_user cu on cu.coordination_id = c.id where cu.user_id = users.id), '
+        .'(select c.name from coordinations c where c.id = users.requested_coordination_id))';
+
+    /**
+     * Usuarios de una coordinacion: integrantes de sus equipos, jefes que la supervisan o cuentas que la solicitaron.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    private function filterByCoordination(Builder $query, int $coordinationId): Builder
+    {
+        return $query->where(function (Builder $scope) use ($coordinationId): void {
+            $scope->whereHas('teams', fn (Builder $teams) => $teams->where('teams.coordination_id', $coordinationId))
+                ->orWhereHas('coordinations', fn (Builder $coordinations) => $coordinations->whereKey($coordinationId))
+                ->orWhere('users.requested_coordination_id', $coordinationId);
+        });
     }
 
     public function pendingCount(?User $actor = null): int

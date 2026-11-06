@@ -1,4 +1,4 @@
-@props(['activities', 'showTeam' => false, 'emptyMessage' => null])
+@props(['activities', 'showTeam' => false, 'groupByTeam' => false, 'emptyMessage' => null])
 
 {{-- Tabla de actividades compartida por el listado y "Mis pendientes". Las actividades ya vienen filtradas por
      alcance y con sus relaciones y conteos de avance cargados (category, team, parent, assignments.user,
@@ -24,6 +24,14 @@
             @php
                 $responsible = $activity->assignments->firstWhere('role', \App\Enums\AssignmentRole::Responsable);
             @endphp
+            @if ($groupByTeam && $activity->team_id !== ($currentTeam ?? null))
+                @php $currentTeam = $activity->team_id; @endphp
+                <tr class="bg-brand-mist/70">
+                    <th colspan="{{ $showTeam ? 9 : 8 }}" scope="colgroup" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-brand-green">
+                        {{ $activity->team->coordination->station->name }} › {{ $activity->team->coordination->name }} › {{ $activity->team->name }}
+                    </th>
+                </tr>
+            @endif
             <tr class="{{ $activity->isOverdue() ? 'bg-red-50/60' : '' }}">
                 <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-700 {{ $activity->isOverdue() ? 'border-l-4 border-red-600' : 'border-l-4 border-transparent' }}">{{ $activity->folio }}</td>
                 <td class="px-4 py-3">

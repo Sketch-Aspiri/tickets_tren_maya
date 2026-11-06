@@ -26,6 +26,7 @@ class IndexUsersRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::enum(UserStatus::class)],
             'role' => ['nullable', 'string', Rule::enum(UserRole::class)],
             'team_id' => ['nullable', 'integer', Rule::exists('teams', 'id')],
+            'coordination_id' => ['nullable', 'integer', Rule::exists('coordinations', 'id')],
             'q' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];

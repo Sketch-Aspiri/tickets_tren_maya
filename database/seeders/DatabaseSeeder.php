@@ -20,6 +20,6 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $this->command?->warn('Datos demo omitidos en este entorno. Crea el primer jefe de zona con: php artisan users:create-jefe correo@dominio');
+        $this->command?->warn('Datos demo omitidos en este entorno. Crea el primer jefe con: php artisan users:create-jefe correo@dominio');
     }
 }

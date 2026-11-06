@@ -28,6 +28,7 @@ use App\Http\Controllers\Notifications\NotificationController;
 use App\Http\Controllers\Org\CoordinationController;
 use App\Http\Controllers\Org\MailboxController;
 use App\Http\Controllers\Org\StationController;
+use App\Http\Controllers\OverduePurgeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Push\PushSubscriptionController;
 use App\Http\Controllers\Teams\TeamController;
@@ -179,6 +180,9 @@ Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
         Route::post('read-all', [NotificationController::class, 'readAll'])->middleware('throttle:notifications-write')->name('read-all');
         Route::get('{notification}', [NotificationController::class, 'open'])->middleware('throttle:notifications-write')->name('open');
     });
+
+    // Eliminar en bloque tickets y actividades vencidos (jefe, coordinador y administrador).
+    Route::post('overdue/purge', [OverduePurgeController::class, 'store'])->middleware('throttle:overdue-purge')->name('overdue.purge');
 
     // Web Push (PWA): suscripción del navegador del propio usuario.
     Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('throttle:push-write')->name('push.subscribe');

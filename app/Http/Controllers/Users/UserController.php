@@ -28,8 +28,8 @@ class UserController extends Controller
 
         return view('users.index', [
             'users' => $this->users->paginate($request->validated(), null, $request->user()),
-            'filters' => $request->safe()->only(['status', 'role', 'team_id', 'q']),
-            'teams' => Team::query()->manageableBy($request->user())->orderBy('name')->get(['id', 'name']),
+            'filters' => $request->safe()->only(['status', 'role', 'team_id', 'coordination_id', 'q']),
+            'teams' => Team::query()->manageableBy($request->user())->with('coordination:id,name,station_id', 'coordination.station:id,name')->orderBy('name')->get(['id', 'name', 'coordination_id']),
             'statuses' => UserStatus::cases(),
             'roles' => UserRole::cases(),
         ]);
