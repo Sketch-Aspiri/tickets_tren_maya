@@ -92,6 +92,13 @@
 .dark .file\:bg-white::file-selector-button, .dark .file\:bg-brand-mist::file-selector-button { background-color: var(--o-sup3); color: var(--o-marca); }
 .dark progress { accent-color: var(--o-marca); }
 
+/* Variantes arbitrarias del componente de tabla y de la barra de avance. */
+.dark .\[\&_thead\]\:bg-brand-mist thead { background-color: var(--o-sup2); }
+.dark .\[\&_thead\]\:text-gray-700 thead { color: var(--o-texto2); }
+.dark .\[\&_thead\]\:border-brand-green\/15 thead { border-color: var(--o-borde); }
+.dark .\[\&_tbody_tr\:hover\]\:bg-brand-mist\/70 tbody tr:hover { background-color: rgb(33 56 51 / 0.6); }
+.dark .\[\&\:\:-webkit-progress-bar\]\:bg-gray-200::-webkit-progress-bar { background-color: var(--o-sup3); }
+
 /* El logotipo es verde oscuro: en modo oscuro va sobre una placa clara. */
 .dark .logo-placa { background-color: #f2f7f5; border-radius: 0.5rem; padding: 0.125rem 0.25rem; }
 
