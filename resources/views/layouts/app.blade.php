@@ -21,7 +21,7 @@
                 </div>
 
                 @isset($header)
-                    <header class="border-b border-brand-green/10 bg-white [&_h1]:text-xl [&_h1]:font-bold [&_h1]:tracking-tight sm:[&_h1]:text-2xl">
+                    <header class="border-b border-brand-green/10 bg-white [&_h1]:font-heading [&_h1]:text-xl [&_h1]:font-bold [&_h1]:tracking-tight sm:[&_h1]:text-2xl">
                         <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
@@ -33,6 +33,8 @@
 
                     {{ $slot }}
                 </main>
+
+                <x-ecosistema-pie />
             </div>
         </div>
 

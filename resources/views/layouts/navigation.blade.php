@@ -15,6 +15,10 @@
         </button>
     </div>
 
+    <div class="border-b border-brand-green/10 px-3 py-2">
+        <x-ecosistema-selector class="flex w-full [&>a]:flex-1 [&>a]:justify-center" />
+    </div>
+
     <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 py-3" aria-label="{{ __('common.nav.main') }}">
         <x-sidebar-link icon="home" :href="route('dashboard')" :active="request()->routeIs('dashboard')">
             {{ __('common.nav.dashboard') }}

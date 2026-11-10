@@ -16,9 +16,11 @@ export default {
 
     theme: {
         extend: {
-            // Fuente del sistema: sin CDN externos (CSP `font-src 'self'`).
+            // Misma tipografia que el Dashboard (ecosistema), servida desde este sitio con
+            // @fontsource (sin CDN externos: CSP `font-src 'self'`).
             fontFamily: {
-                sans: [...defaultTheme.fontFamily.sans],
+                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                heading: ['Poppins', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 // Identidad visual Tren Maya (mismos tokens que el dashboard hermano), muestreada de public/logo.png.

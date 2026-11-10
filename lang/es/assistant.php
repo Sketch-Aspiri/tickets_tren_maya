@@ -86,6 +86,16 @@ return [
             'q' => 'Olvidé mi contraseña',
             'a' => 'En la pantalla de inicio de sesión elige «¿Olvidaste tu contraseña?» y escribe tu correo. Si la cuenta existe, recibirás un enlace para crear una nueva.',
         ],
+        'dashboard' => [
+            'audience' => 'all',
+            'q' => '¿Qué es el Dashboard y cómo llego?',
+            'a' => 'Es el otro sistema de la Zona Oriente: personal, control de asistencia, secciones con documentos e insumos del fondo rotatorio. Usa el selector «Dashboard | Tickets» de la barra lateral para pasar de uno a otro. Si no tienes cuenta ahí, pídela al administrador.',
+        ],
+        'theme' => [
+            'audience' => 'all',
+            'q' => '¿Puedo usar el modo oscuro?',
+            'a' => 'Sí. En la barra lateral, junto a «Tema», elige el del sistema, claro u oscuro. Se recuerda en este navegador y también se aplica en el Dashboard.',
+        ],
         'assign' => [
             'audience' => 'manage',
             'q' => '¿Cómo asigno o reasigno un ticket o actividad?',

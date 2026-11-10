@@ -3,6 +3,13 @@
 // registra aqui con Alpine.data(...) y las vistas solo referencian propiedades y metodos por nombre.
 // Los datos del servidor viajan en atributos `data-*` (texto plano), nunca dentro de expresiones.
 import Alpine from '@alpinejs/csp';
+// Tipografia del ecosistema (igual que el Dashboard), empaquetada por Vite: mismo origen.
+import '@fontsource/figtree/400.css';
+import '@fontsource/figtree/500.css';
+import '@fontsource/figtree/600.css';
+import '@fontsource/figtree/700.css';
+import '@fontsource/poppins/600.css';
+import '@fontsource/poppins/700.css';
 import { registerChat } from './chat.js';
 import { registerTemayin } from './temayin.js';
 import { registerPush, registerServiceWorker } from './push.js';

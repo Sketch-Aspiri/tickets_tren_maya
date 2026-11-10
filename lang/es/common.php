@@ -24,6 +24,12 @@ return [
     'app_name' => 'Tren Maya Tickets',
     'logo_alt' => 'Tren Maya — Sistema de Tickets',
     'skip_to_content' => 'Saltar al contenido',
+    'ecosystem' => [
+        'label' => 'Sistemas de la Zona Oriente',
+        'footer' => 'Ecosistema Zona Oriente · Tren Maya',
+        'dashboard' => 'Dashboard',
+        'tickets' => 'Tickets',
+    ],
     'theme' => [
         'label' => 'Tema',
         'system' => 'Usar el tema del sistema',
