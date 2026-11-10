@@ -18,6 +18,8 @@ import {
     Tooltip,
 } from 'chart.js';
 
+import { isDarkTheme } from './theme.js';
+
 Chart.register(
     ArcElement,
     BarController,
@@ -52,6 +54,34 @@ const PALETTES = {
 
 const TYPES = new Set(['line', 'bar', 'doughnut']);
 
+// Colores de textos, rejilla y separacion de la dona segun el tema (claro u oscuro).
+function surfaceColor() {
+    return isDarkTheme() ? '#12201D' : '#FFFFFF';
+}
+
+function applyThemeDefaults() {
+    const dark = isDarkTheme();
+    Chart.defaults.color = dark ? '#B6C7C2' : '#4B5563';
+    Chart.defaults.borderColor = dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+}
+
+function repaintCharts() {
+    applyThemeDefaults();
+    Object.values(Chart.instances).forEach((chart) => {
+        if (chart.config.type === 'doughnut') {
+            chart.data.datasets.forEach((dataset) => {
+                dataset.borderColor = surfaceColor();
+            });
+        }
+        chart.options.color = Chart.defaults.color;
+        Object.values(chart.options.scales ?? {}).forEach((scale) => {
+            scale.ticks.color = Chart.defaults.color;
+            scale.grid.color = Chart.defaults.borderColor;
+        });
+        chart.update('none');
+    });
+}
+
 function colorsFor(config) {
     const palette = PALETTES[config.palette];
 
@@ -85,7 +115,7 @@ function buildDatasets(config) {
             label: String(dataset.label),
             data: dataset.data,
             backgroundColor: colors,
-            borderColor: config.type === 'doughnut' ? '#FFFFFF' : colors,
+            borderColor: config.type === 'doughnut' ? surfaceColor() : colors,
             borderWidth: config.type === 'doughnut' ? 2 : 0,
         };
     });
@@ -130,6 +160,8 @@ function parse(canvas) {
 }
 
 export function initCharts(root = document) {
+    applyThemeDefaults();
+    window.addEventListener('theme-changed', repaintCharts);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     root.querySelectorAll('canvas[data-chart]').forEach((canvas) => {

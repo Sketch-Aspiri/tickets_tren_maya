@@ -7,6 +7,7 @@ import { registerChat } from './chat.js';
 import { registerTemayin } from './temayin.js';
 import { registerPush, registerServiceWorker } from './push.js';
 import { installGlobalUi, registerUi } from './ui.js';
+import { registerTheme } from './theme.js';
 import { currentCoordination, currentTeam, filterOptions, fitsCoordination, registerOrgPicker, sameForm } from './org.js';
 
 window.Alpine = Alpine;
@@ -289,6 +290,7 @@ installGlobalUi();
 registerOrgPicker(Alpine);
 registerServiceWorker();
 registerTemayin(Alpine);
+registerTheme(Alpine);
 
 Alpine.start();
 

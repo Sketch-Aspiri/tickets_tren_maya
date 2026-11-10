@@ -19,4 +19,7 @@
     <meta name="vapid-public-key" content="{{ config('webpush.vapid.public_key') }}">
 @endif
 
+{{-- Tema claro/oscuro antes de pintar (archivo propio, sincrono; sin scripts en linea por la CSP). --}}
+<script src="{{ asset('js/tema.js') }}"></script>
+
 @vite(['resources/css/app.css', 'resources/js/app.js'])

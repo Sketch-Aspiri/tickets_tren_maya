@@ -127,6 +127,7 @@
                 @endif
             </div>
         </div>
+        <x-theme-toggle class="pb-2" />
         <x-sidebar-link icon="user" :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
             {{ __('common.nav.profile') }}
         </x-sidebar-link>

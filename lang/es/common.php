@@ -24,6 +24,12 @@ return [
     'app_name' => 'Tren Maya Tickets',
     'logo_alt' => 'Tren Maya — Sistema de Tickets',
     'skip_to_content' => 'Saltar al contenido',
+    'theme' => [
+        'label' => 'Tema',
+        'system' => 'Usar el tema del sistema',
+        'light' => 'Tema claro',
+        'dark' => 'Tema oscuro',
+    ],
     'nav' => [
         'dashboard' => 'Inicio',
         'users' => 'Usuarios',
