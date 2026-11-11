@@ -163,6 +163,7 @@ class AppServiceProvider extends ServiceProvider
             'overdue-purge' => ['overdue_purge_per_hour', 'perHour'],
             'push-write' => ['push_write_per_minute', 'perMinute'],
             'mailbox-test' => ['mailbox_test_per_minute', 'perMinute'],
+            'ecosystem-sso' => ['ecosystem_sso_per_minute', 'perMinute'],
         ];
 
         foreach ($limits as $name => [$configKey, $window]) {

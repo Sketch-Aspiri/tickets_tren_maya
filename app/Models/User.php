@@ -53,6 +53,19 @@ class User extends Authenticatable
     /**
      * @return array<string, string>
      */
+    /**
+     * Si cambia el correo se rompe el vinculo con el Dashboard (el inicio de sesion unico se basa en el
+     * correo, decision 88): hay que volver a vincular con contrasena.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (User $user): void {
+            if ($user->isDirty('email')) {
+                $user->sso_linked_at = null;
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -60,6 +73,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'status' => UserStatus::class,
             'two_factor_secret' => 'encrypted',
+            'sso_linked_at' => 'datetime',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_last_timestamp' => 'integer',

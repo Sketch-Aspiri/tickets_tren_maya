@@ -6,6 +6,12 @@ return [
     'throttle' => 'Demasiados intentos de acceso. Inténtalo de nuevo en :seconds segundos.',
     'registered' => 'Tu registro fue recibido. El jefe de la coordinación que elegiste revisará tu cuenta y, cuando la apruebe, podrás usar el sistema.',
 
+    'ecosystem' => [
+        'no_account' => 'Entraste al Dashboard con :email, pero esa cuenta no existe (o no está activa) en Tickets. Inicia sesión con tu cuenta de Tickets o regístrate.',
+        'link_first' => 'Para unir tu cuenta de Tickets con el Dashboard, inicia sesión aquí una sola vez. Después ya no te lo pediremos en ningún dispositivo.',
+        'leaving' => 'Cerrando la sesión también en el Dashboard…',
+        'continue' => 'Continuar',
+    ],
     'login' => [
         'title' => 'Iniciar sesión',
         'email' => 'Correo electrónico',

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EcosystemSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -35,6 +36,14 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->middleware('throttle:password-reset')
         ->name('password.store');
+});
+
+// Inicio y cierre de sesion unicos con el Dashboard (decision 88). Sin `auth`: llegan por redireccion
+// del navegador y todo se decide con codigos firmados de un solo uso.
+Route::middleware('throttle:ecosystem-sso')->prefix('ecosistema')->name('ecosistema.')->group(function (): void {
+    Route::get('sso', [EcosystemSessionController::class, 'ask'])->name('sso');
+    Route::get('entrar', [EcosystemSessionController::class, 'enter'])->name('entrar');
+    Route::get('salir', [EcosystemSessionController::class, 'leave'])->name('salir');
 });
 
 Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])

@@ -18,4 +18,15 @@ return [
         'tickets' => rtrim((string) env('ECOSISTEMA_TICKETS_URL', 'https://tickets.zonaorientetm.tech'), '/'),
     ],
 
+    // Inicio de sesion unico entre los dos sistemas (App\Services\Ecosystem\SingleSignOnService, decision 88).
+    // ECOSISTEMA_SSO_SECRET: el MISMO valor en los .env de ambos sistemas (32+ caracteres aleatorios).
+    // Sin el, cada sistema pide su propio login.
+    'sso' => [
+        'secreto' => env('ECOSISTEMA_SSO_SECRET'),
+        // Vigencia de cada codigo firmado, en segundos.
+        'vigencia' => 60,
+        // Tras preguntarle al otro sistema, no se vuelve a preguntar en estos minutos (evita ciclos).
+        'reintento_minutos' => 5,
+    ],
+
 ];

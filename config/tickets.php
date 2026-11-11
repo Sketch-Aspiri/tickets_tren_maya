@@ -62,6 +62,8 @@ return [
         'avatar_view_per_minute' => 600,
         'notifications_write_per_minute' => 60,
         'push_write_per_minute' => 20,
+        // Inicio/cierre de sesion unico con el Dashboard (decision 88), por IP o usuario.
+        'ecosystem_sso_per_minute' => 30,
         'overdue_purge_per_hour' => 10,
     ],
 
