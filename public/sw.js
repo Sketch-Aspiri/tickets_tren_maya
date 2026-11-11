@@ -3,7 +3,7 @@
 // Seguridad: NO se cachea ninguna respuesta autenticada ni dinamica (paginas, JSON, adjuntos, avatares).
 // Solo se guardan la pagina de "sin conexion", los iconos y los assets versionados de /build/ (nombres con
 // hash, sin datos de usuario). Subir la version invalida la cache anterior.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `tickets-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/icons/icon-512.png'];
@@ -76,13 +76,18 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    // Solo se abren URLs del mismo origen (el payload es dato no confiable).
+    // Solo se abren URLs de este sitio o de otro sistema del ecosistema (https y *.zonaorientetm.tech): el
+    // payload es dato no confiable aunque lo mande nuestro servidor, que ya valida el destino al enviarlo.
     let target = new URL('/', self.location.origin);
 
     try {
         const candidate = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
 
-        if (candidate.origin === self.location.origin) {
+        const sameSite = candidate.origin === self.location.origin;
+        const ecosystem = candidate.protocol === 'https:' && !candidate.username && !candidate.password
+            && candidate.hostname.endsWith('.zonaorientetm.tech');
+
+        if (sameSite || ecosystem) {
             target = candidate;
         }
     } catch {

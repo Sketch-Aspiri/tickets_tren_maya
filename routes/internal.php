@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Internal\EcosystemNoticeController;
 use App\Http\Controllers\Internal\PendingSummaryController;
 use Illuminate\Support\Facades\Route;
 
@@ -9,3 +10,6 @@ use Illuminate\Support\Facades\Route;
  * bootstrap/app.php con el prefijo `interno` y `throttle:ecosystem-bridge`.
  */
 Route::get('pendientes', PendingSummaryController::class)->name('pendientes');
+
+// Avisos del Dashboard (campana + Web Push), decision 91.
+Route::post('avisos', EcosystemNoticeController::class)->name('avisos');

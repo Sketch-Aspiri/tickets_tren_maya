@@ -17,6 +17,7 @@ return [
         'unread' => 'Sin leer:',
         'generic' => 'Aviso del sistema.',
         'arrived' => ':by envió el ticket :folio — :title a la bolsa de :team.',
+        'ecosystem' => ':title — :body',
         'work_item_commented' => [
             'ticket' => ':by comentó en el ticket :folio — :title',
             'activity' => ':by comentó en la actividad :folio — :title',

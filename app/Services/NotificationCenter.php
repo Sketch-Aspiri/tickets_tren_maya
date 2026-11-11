@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
+use App\Notifications\EcosystemNotice;
 use App\Notifications\TicketArrivedInPool;
 use App\Notifications\WorkItemAssigned;
 use App\Notifications\WorkItemCommented;
 use App\Notifications\WorkItemRejected;
+use App\Support\EcosystemUrl;
 use Illuminate\Notifications\DatabaseNotification;
 
 /**
@@ -46,6 +48,10 @@ final class NotificationCenter
             WorkItemCommented::TYPE, WorkItemRejected::TYPE => (($data['kind'] ?? null) === 'activity'
                 ? route('activities.show', (int) $data['id'])
                 : route('tickets.show', (int) $data['id'])),
+            // El destino se vuelve a validar al abrir (solo Tickets o un sistema del ecosistema).
+            EcosystemNotice::TYPE => ($normalized = EcosystemUrl::normalize((string) ($data['url'] ?? ''))) !== null
+                ? EcosystemUrl::absolute($normalized)
+                : route('notifications.index'),
             'user_pending_approval' => route('users.show', (int) $data['user_id']),
             'incoming_email_pending' => route('incoming-emails.index'),
             default => route('notifications.index'),

@@ -51,6 +51,9 @@
                                     @case(\App\Notifications\TicketArrivedInPool::TYPE)
                                         {{ __('notifications.ui.arrived', ['folio' => $data['folio'] ?? '', 'title' => $data['title'] ?? '', 'team' => $data['team'] ?? '', 'by' => $data['by'] ?? '']) }}
                                         @break
+                                    @case(\App\Notifications\EcosystemNotice::TYPE)
+                                        {{ __('notifications.ui.ecosystem', ['title' => $data['title'] ?? '', 'body' => $data['body'] ?? '']) }}
+                                        @break
                                     @case('user_pending_approval')
                                         {{ __('notifications.new_user_pending.line', ['name' => $data['name'] ?? '', 'email' => $data['email'] ?? '']) }}
                                         @break
