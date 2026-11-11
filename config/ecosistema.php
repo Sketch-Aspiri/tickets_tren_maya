@@ -29,4 +29,21 @@ return [
         'reintento_minutos' => 5,
     ],
 
+    // Puente interno entre los dos servidores (decision 89): llamadas firmadas con HMAC, nunca desde el navegador.
+    // Un secreto por direccion, el MISMO valor en los dos .env (32+ caracteres aleatorios cada uno):
+    //   ECOSISTEMA_PUENTE_SECRETO_DASHBOARD firma lo que el Dashboard le pide a Tickets;
+    //   ECOSISTEMA_PUENTE_SECRETO_TICKETS firma lo que Tickets le pide al Dashboard.
+    // Sin secretos, el puente queda apagado (las rutas /interno responden 404) y nada cambia.
+    'puente' => [
+        'secreto_entrada' => env('ECOSISTEMA_PUENTE_SECRETO_DASHBOARD'),
+        'secreto_salida' => env('ECOSISTEMA_PUENTE_SECRETO_TICKETS'),
+        // Direccion con la que este servidor llama al otro (por omision, la publica).
+        'url' => rtrim((string) (env('ECOSISTEMA_PUENTE_DASHBOARD_URL') ?: env('ECOSISTEMA_DASHBOARD_URL', 'https://dashboard.zonaorientetm.tech')), '/'),
+        // IPs desde las que se aceptan llamadas (separadas por coma; vacio = cualquiera, solo vale la firma).
+        'ips' => array_values(array_filter(array_map('trim', explode(',', (string) env('ECOSISTEMA_PUENTE_IPS', ''))))),
+        // Diferencia maxima de reloj aceptada, en segundos.
+        'ventana' => 300,
+        'timeout' => 3,
+    ],
+
 ];

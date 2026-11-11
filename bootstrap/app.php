@@ -5,17 +5,26 @@ use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureTwoFactorVerified;
 use App\Http\Middleware\NoStore;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\VerifyBridge;
 use App\Support\TrustedHosts;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Puente interno con el Dashboard (decision 89): fuera del grupo `web` (sin sesion ni CSRF).
+        then: function (): void {
+            Route::middleware(['throttle:ecosystem-bridge', VerifyBridge::class])
+                ->prefix('interno')
+                ->name('interno.')
+                ->group(base_path('routes/internal.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

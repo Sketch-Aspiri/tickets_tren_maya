@@ -64,6 +64,8 @@ return [
         'push_write_per_minute' => 20,
         // Inicio/cierre de sesion unico con el Dashboard (decision 88), por IP o usuario.
         'ecosystem_sso_per_minute' => 30,
+        // Puente interno con el Dashboard (decision 89), por IP del servidor que llama.
+        'ecosystem_bridge_per_minute' => 240,
         'overdue_purge_per_hour' => 10,
     ],
 

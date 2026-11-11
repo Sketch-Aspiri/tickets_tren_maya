@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tickets;
 use App\Enums\Priority;
 use App\Enums\TicketStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tickets\CreateTicketRequest;
 use App\Http\Requests\Tickets\DeleteTicketRequest;
 use App\Http\Requests\Tickets\IndexTicketsRequest;
 use App\Http\Requests\Tickets\StoreTicketRequest;
@@ -15,6 +16,7 @@ use App\Models\Team;
 use App\Models\Ticket;
 use App\Services\AssignmentService;
 use App\Services\CategoryService;
+use App\Services\Ecosystem\SupportPrefillService;
 use App\Services\TicketListingService;
 use App\Services\TicketService;
 use App\Support\SupportDesk;
@@ -49,11 +51,23 @@ class TicketController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(CreateTicketRequest $request, SupportPrefillService $prefill): View
     {
-        $this->authorize('create', Ticket::class);
+        $ticket = new Ticket(['priority' => Priority::Medium]);
+        $coordinationId = $request->coordinationId();
 
-        return view('tickets.create', $this->formData($request, new Ticket(['priority' => Priority::Medium])));
+        // "Reportar una falla" desde el Dashboard (decision 89): titulo y descripcion prellenados (texto plano que
+        // la persona revisa) y, si no pidio otra coordinacion, Soporte del sistema.
+        $prefillId = $request->prefillId();
+        $context = $prefillId === null ? null : $prefill->fetch($request->user(), $prefillId);
+
+        if ($context !== null) {
+            $ticket->title = $context['title'];
+            $ticket->description = $context['description'];
+            $coordinationId ??= SupportDesk::coordinationId();
+        }
+
+        return view('tickets.create', $this->formData($request, $ticket, $coordinationId));
     }
 
     public function store(StoreTicketRequest $request): RedirectResponse
@@ -121,7 +135,7 @@ class TicketController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(Request $request, Ticket $ticket): array
+    private function formData(Request $request, Ticket $ticket, ?int $coordinationId = null): array
     {
         $user = $request->user();
 
@@ -137,8 +151,8 @@ class TicketController extends Controller
             'teams' => $ticket->exists ? collect() : Team::query()->with('coordination:id,name,station_id', 'coordination.station:id,name')->orderBy('name')->get(['id', 'name', 'coordination_id']),
             // `?coordination_id=` (p. ej. el acceso directo a Soporte del sistema) preselecciona esa coordinacion en
             // la cascada en vez del equipo propio; un id desconocido simplemente no preselecciona nada.
-            'defaultCoordinationId' => $ticket->exists ? null : ($request->integer('coordination_id') ?: null),
-            'defaultTeamId' => $ticket->exists || $request->integer('coordination_id') ? null : ($user->teamIds()[0] ?? null),
+            'defaultCoordinationId' => $ticket->exists ? null : $coordinationId,
+            'defaultTeamId' => $ticket->exists || $coordinationId !== null ? null : ($user->teamIds()[0] ?? null),
         ];
     }
 }

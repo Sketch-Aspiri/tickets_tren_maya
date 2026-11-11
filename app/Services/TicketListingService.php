@@ -102,6 +102,19 @@ final class TicketListingService
      */
     public function pendingFor(User $user, PendingScope $scope = PendingScope::Mine, bool $dueToday = false): LengthAwarePaginator
     {
+        return $this->pendingQuery($user, $scope, $dueToday)
+            ->paginate((int) config('tickets.tickets_per_page'))
+            ->withQueryString();
+    }
+
+    /**
+     * La consulta de "Mis pendientes" ya ordenada, sin paginar: la reutiliza el resumen que se comparte con el
+     * Dashboard (decision 89) para que su alcance sea exactamente el mismo.
+     *
+     * @return Builder<Ticket>
+     */
+    public function pendingQuery(User $user, PendingScope $scope = PendingScope::Mine, bool $dueToday = false): Builder
+    {
         $query = $this->baseQuery($user)->open();
 
         if ($scope === PendingScope::Team && PendingScope::canUseTeam($user)) {
@@ -117,9 +130,7 @@ final class TicketListingService
         ListingQuery::orderByDateNullsLast($query, 'tickets.due_date', 'asc');
         ListingQuery::orderByEnum($query, 'tickets.priority', Priority::cases(), 'desc');
 
-        return $query->orderBy('tickets.id')
-            ->paginate((int) config('tickets.tickets_per_page'))
-            ->withQueryString();
+        return $query->orderBy('tickets.id');
     }
 
     /**
