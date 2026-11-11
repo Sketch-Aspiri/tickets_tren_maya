@@ -32,3 +32,6 @@ Schedule::command('exports:sync-cloud')
     ->hourly()
     ->when(fn (): bool => (bool) config('tickets.cloud_sync.enabled'))
     ->withoutOverlapping();
+
+// Limpia los trabajos fallidos con mas de 7 dias (los avisos del ecosistema guardan textos y correos).
+Schedule::command('queue:prune-failed --hours=168')->daily();

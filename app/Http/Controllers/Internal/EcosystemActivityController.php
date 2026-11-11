@@ -28,7 +28,12 @@ class EcosystemActivityController extends Controller
                 $request->normalizedUrl(),
             );
         } catch (EcosystemActivityException $e) {
-            return response()->json(['error' => $e->reason], 422);
+            return response()->json(['error' => $e->reason], $e->reason === 'demasiadas' ? 429 : 422);
+        }
+
+        // El hecho ya tuvo una actividad que se elimino: no se recrea ni se entrega un folio que ya no abre.
+        if ($result['deleted']) {
+            return response()->json(['creada' => false, 'eliminada' => true]);
         }
 
         return response()->json([

@@ -391,6 +391,9 @@ class User extends Authenticatable
      */
     public function scopeManageableBy(Builder $query, User $actor): Builder
     {
+        // La cuenta de sistema del ecosistema no se gestiona desde la interfaz (404 en la Policy, fuera de listados).
+        $query->where('users.email', '!=', mb_strtolower((string) config('ecosistema.actividades.usuario_sistema.correo')));
+
         if ($actor->seesAllTeams()) {
             return $query;
         }
@@ -468,6 +471,15 @@ class User extends Authenticatable
     public function canAccessApplication(): bool
     {
         return $this->isActive() && $this->roleEnum() !== null;
+    }
+
+    /**
+     * Cuenta de sistema «Dashboard (automatico)» que figura como creadora de las actividades del Dashboard
+     * (decision 92/93). No se gestiona desde la interfaz: ni se lista, ni se aprueba, activa o edita.
+     */
+    public function isEcosystemSystem(): bool
+    {
+        return mb_strtolower((string) $this->email) === mb_strtolower((string) config('ecosistema.actividades.usuario_sistema.correo'));
     }
 
     /**

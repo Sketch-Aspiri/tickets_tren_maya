@@ -85,6 +85,17 @@ final class UserService
         });
     }
 
+    /**
+     * La cuenta de sistema del ecosistema (decision 93) nunca recibe rol, equipos ni acceso: defensa en profundidad
+     * por si algun otro camino llegara a un servicio sin pasar por la Policy.
+     */
+    private function assertNotSystemAccount(User $target): void
+    {
+        if ($target->isEcosystemSystem()) {
+            throw BusinessRuleException::because('users.errors.system_account');
+        }
+    }
+
     public function pendingCount(?User $actor = null): int
     {
         return User::query()
@@ -101,6 +112,8 @@ final class UserService
      */
     public function approve(User $actor, User $target, UserRole $role, array $teamIds, array $coordinationIds = []): User
     {
+        $this->assertNotSystemAccount($target);
+
         if ($target->isActive()) {
             throw BusinessRuleException::because('users.errors.already_active');
         }
@@ -142,6 +155,8 @@ final class UserService
 
     public function activate(User $actor, User $target): User
     {
+        $this->assertNotSystemAccount($target);
+
         if (! $target->isInactive()) {
             throw BusinessRuleException::because('users.errors.not_inactive');
         }
@@ -200,6 +215,8 @@ final class UserService
      */
     public function updateRoleAndTeams(User $actor, User $target, UserRole $role, array $teamIds, ?array $coordinationIds = null): User
     {
+        $this->assertNotSystemAccount($target);
+
         if (! $target->isActive()) {
             throw BusinessRuleException::because('users.errors.not_active');
         }

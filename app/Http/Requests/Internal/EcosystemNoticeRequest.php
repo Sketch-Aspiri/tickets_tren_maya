@@ -30,8 +30,9 @@ class EcosystemNoticeRequest extends FormRequest
         return [
             'correos' => ['required', 'array', 'min:1', 'max:50'],
             'correos.*' => ['required', 'string', 'email:rfc', 'max:255'],
-            'titulo' => ['required', 'string', 'max:60', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
-            'cuerpo' => ['required', 'string', 'max:120', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
+            // Sin control ni formato Unicode (bidi, ancho cero, separadores de linea): se leen en la pantalla bloqueada.
+            'titulo' => ['required', 'string', 'max:60', 'regex:/^[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+$/u'],
+            'cuerpo' => ['required', 'string', 'max:120', 'regex:/^[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+$/u'],
             'url' => ['required', 'string', 'max:300', function (string $attribute, mixed $value, \Closure $fail): void {
                 if (! is_string($value) || EcosystemUrl::normalize($value) === null) {
                     $fail('invalid');

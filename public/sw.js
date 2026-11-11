@@ -3,7 +3,12 @@
 // Seguridad: NO se cachea ninguna respuesta autenticada ni dinamica (paginas, JSON, adjuntos, avatares).
 // Solo se guardan la pagina de "sin conexion", los iconos y los assets versionados de /build/ (nombres con
 // hash, sin datos de usuario). Subir la version invalida la cache anterior.
-const VERSION = 'v2';
+const VERSION = 'v3';
+
+// Sistemas del ecosistema a los que puede llevar una notificacion (ademas de este sitio). Lista exacta, sin
+// comodines: un subdominio de terceros no debe abrirse desde un aviso del sistema. Mantenerla igual a
+// config('ecosistema.urls') y cambiarla junto con VERSION si cambian los dominios.
+const ECOSYSTEM_HOSTS = ['tickets.zonaorientetm.tech', 'dashboard.zonaorientetm.tech'];
 const CACHE = `tickets-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/icons/icon-512.png'];
@@ -76,7 +81,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    // Solo se abren URLs de este sitio o de otro sistema del ecosistema (https y *.zonaorientetm.tech): el
+    // Solo se abren URLs de este sitio o de otro sistema del ecosistema (https, sin puerto, host de la lista): el
     // payload es dato no confiable aunque lo mande nuestro servidor, que ya valida el destino al enviarlo.
     let target = new URL('/', self.location.origin);
 
@@ -84,8 +89,8 @@ self.addEventListener('notificationclick', (event) => {
         const candidate = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
 
         const sameSite = candidate.origin === self.location.origin;
-        const ecosystem = candidate.protocol === 'https:' && !candidate.username && !candidate.password
-            && candidate.hostname.endsWith('.zonaorientetm.tech');
+        const ecosystem = candidate.protocol === 'https:' && candidate.port === '' && !candidate.username && !candidate.password
+            && ECOSYSTEM_HOSTS.includes(candidate.hostname);
 
         if (sameSite || ecosystem) {
             target = candidate;

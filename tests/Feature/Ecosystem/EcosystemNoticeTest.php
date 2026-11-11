@@ -7,6 +7,7 @@ namespace Tests\Feature\Ecosystem;
 use App\Enums\UserStatus;
 use App\Models\User;
 use App\Notifications\EcosystemNotice;
+use App\Services\Ecosystem\EcosystemNoticeService;
 use App\Support\EcosystemUrl;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -217,6 +218,17 @@ class EcosystemNoticeTest extends DatabaseTestCase
             'fragmento' => ['/tickets/12#x', null],
             'puerto distinto' => ['https://dashboard.ejemplo.test:8443/x', null],
             'vacia' => ['', null],
+            'raiz del sitio' => ['/', '/'],
+            'cierre de sesion' => ['https://dashboard.ejemplo.test/ecosistema/salir?codigo=x', null],
+            'salida unica local' => ['/ecosistema/salir', null],
+            'logout' => ['/logout', null],
+            'exportacion de tickets' => ['/tickets/export?q=x', null],
+            'exportacion de actividades' => ['/activities/export', null],
+            'descarga del dashboard' => ['https://dashboard.ejemplo.test/insumos/facturas/descargar?anio=2026', null],
+            'archivos' => ['/storage/avatars/x.jpg', null],
+            'puente' => ['/interno/avisos', null],
+            'ruta fuera de la lista' => ['/users', null],
+            'punto punto' => ['/tickets/../users', null],
             'relativa sin diagonal' => ['tickets/12', null],
         ];
     }
@@ -285,13 +297,49 @@ class EcosystemNoticeTest extends DatabaseTestCase
 
     // --- Service worker ---------------------------------------------------------------------------------------------------------------
 
+    public function test_titles_and_bodies_reject_invisible_and_direction_characters(): void
+    {
+        $this->linked();
+
+        foreach (["\u{202E}evil", "a\u{200B}b", "a\u{2028}b", "a\u{0085}b", "a\u{FEFF}b"] as $text) {
+            $this->send($this->payload(['titulo' => $text]))->assertStatus(422);
+            $this->send($this->payload(['cuerpo' => $text]))->assertStatus(422);
+        }
+
+        $this->send($this->payload(['titulo' => 'Solicitud · Estación', 'cuerpo' => 'Tulum: revisa «observaciones» ñ á 📌']))->assertOk();
+    }
+
+    public function test_a_failed_delivery_releases_the_ref_so_the_retry_is_sent(): void
+    {
+        $user = $this->linked();
+        // El envio falla (p. ej. la cola o la base no responden) DESPUES de reservar el `ref`.
+        $original = Notification::getFacadeRoot();
+        Notification::shouldReceive('send')->once()->andThrow(new \RuntimeException('boom'));
+
+        try {
+            app(EcosystemNoticeService::class)->send('dashboard', [$user->email], 't', 'c', '/tickets', 'ref-fallo');
+            $this->fail('Debio fallar.');
+        } catch (\RuntimeException) {
+            // esperado
+        }
+
+        Notification::swap($original);
+
+        $this->assertSame(1, app(EcosystemNoticeService::class)->send('dashboard', [$user->email], 't', 'c', '/tickets', 'ref-fallo'));
+        $this->assertSame(0, app(EcosystemNoticeService::class)->send('dashboard', [$user->email], 't', 'c', '/tickets', 'ref-fallo'));
+    }
+
     public function test_the_service_worker_opens_only_this_site_or_the_ecosystem(): void
     {
         $sw = (string) file_get_contents(public_path('sw.js'));
 
         $this->assertStringContainsString('candidate.origin === self.location.origin', $sw);
         $this->assertStringContainsString("candidate.protocol === 'https:'", $sw);
-        $this->assertStringContainsString(".endsWith('.zonaorientetm.tech')", $sw);
-        $this->assertStringContainsString("const VERSION = 'v2';", $sw);
+        // Lista exacta de hosts y sin puerto: ningun subdominio hermano ni comodin.
+        $this->assertStringContainsString("candidate.port === ''", $sw);
+        $this->assertStringContainsString('ECOSYSTEM_HOSTS.includes(candidate.hostname)', $sw);
+        $this->assertStringNotContainsString('endsWith', $sw);
+        $this->assertStringContainsString("const ECOSYSTEM_HOSTS = ['tickets.zonaorientetm.tech', 'dashboard.zonaorientetm.tech'];", $sw);
+        $this->assertStringContainsString("const VERSION = 'v3';", $sw);
     }
 }

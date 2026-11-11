@@ -7,11 +7,15 @@ namespace Tests\Feature\Ecosystem;
 use App\Enums\AssignmentRole;
 use App\Enums\Priority;
 use App\Enums\TicketStatus;
+use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Activity;
+use App\Models\Coordination;
 use App\Models\Team;
 use App\Models\User;
 use App\Notifications\WorkItemAssigned;
+use App\Services\UserService;
 use App\Support\LocalTime;
 use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
@@ -122,7 +126,7 @@ class EcosystemActivityTest extends DatabaseTestCase
 
         $response = $this->send($this->payload())->assertCreated();
 
-        $activity = Activity::query()->where('external_ref', 'dashboard:solicitud:12:observada:1790000000')->firstOrFail();
+        $activity = Activity::query()->where('external_ref', 'insumos_observada:dashboard:solicitud:12:observada:1790000000')->firstOrFail();
         $this->assertSame(['folio' => $activity->folio, 'url' => '/activities/'.$activity->id, 'creada' => true], $response->json());
         $this->assertMatchesRegularExpression('/^ACT-\d{4}-\d{4}$/', $activity->folio);
 
@@ -190,13 +194,109 @@ class EcosystemActivityTest extends DatabaseTestCase
         $this->assertCount(1, $this->coordA->fresh()->notifications);
     }
 
-    public function test_a_trashed_activity_with_that_ref_is_not_recreated(): void
+    public function test_a_trashed_activity_with_that_ref_is_not_recreated_and_its_folio_is_not_returned(): void
     {
         $this->send($this->payload())->assertCreated();
         Activity::query()->firstOrFail()->delete();
 
-        $this->send($this->payload())->assertOk()->assertJson(['creada' => false]);
+        $response = $this->send($this->payload())->assertOk()->assertExactJson(['creada' => false, 'eliminada' => true]);
+
+        $this->assertArrayNotHasKey('folio', $response->json());
         $this->assertSame(0, Activity::query()->count());
+    }
+
+    public function test_the_same_ref_for_another_event_is_another_fact_not_the_other_activity(): void
+    {
+        $this->send($this->payload(['evento' => 'insumos_observada', 'ref' => 'x:1']))->assertCreated();
+        $this->send($this->payload(['evento' => 'factura_cancelada', 'estacion' => null, 'ref' => 'x:1']))->assertCreated();
+
+        $this->assertSame(2, Activity::query()->count());
+        $this->assertEqualsCanonicalizing(['insumos_observada:x:1', 'factura_cancelada:x:1'], Activity::query()->pluck('external_ref')->all());
+    }
+
+    public function test_new_activities_per_event_and_hour_are_capped_but_known_refs_still_answer(): void
+    {
+        config(['ecosistema.actividades.limite_por_hora' => 2]);
+
+        $this->send($this->payload(['ref' => 'l:1']))->assertCreated();
+        $this->send($this->payload(['ref' => 'l:2']))->assertCreated();
+        $this->send($this->payload(['ref' => 'l:3']))->assertStatus(429)->assertExactJson(['error' => 'demasiadas']);
+        $this->send($this->payload(['ref' => 'l:1']))->assertOk()->assertJson(['creada' => false]);
+        // Otro evento tiene su propio tope.
+        $this->send($this->payload(['evento' => 'factura_cancelada', 'estacion' => null, 'ref' => 'l:9']))->assertCreated();
+
+        $this->assertSame(3, Activity::query()->count());
+
+        $this->travel(61)->minutes();
+        $this->send($this->payload(['ref' => 'l:3']))->assertCreated();
+    }
+
+    public function test_a_pre_registered_account_with_the_system_email_is_never_used(): void
+    {
+        $email = (string) config('ecosistema.actividades.usuario_sistema.correo');
+        $impostor = User::factory()->pending()->create(['email' => $email, 'name' => 'Dashboard (automático)']);
+
+        $this->send($this->payload())->assertStatus(422)->assertExactJson(['error' => 'usuario_sistema_invalido']);
+        $this->assertSame(0, Activity::query()->count());
+
+        // Tampoco si alguien la dejo activa o con rol.
+        $impostor->forceFill(['status' => UserStatus::Inactive])->save();
+        $impostor->assignRole('empleado');
+        $this->send($this->payload(['ref' => 'z:2']))->assertStatus(422)->assertExactJson(['error' => 'usuario_sistema_invalido']);
+    }
+
+    public function test_the_public_registration_cannot_claim_the_system_email_or_any_invalid_domain(): void
+    {
+        $coordination = Coordination::factory()->create();
+
+        foreach ([config('ecosistema.actividades.usuario_sistema.correo'), 'cualquiera@algo.invalid', 'Persona@Reservado.INVALID'] as $email) {
+            $this->post(route('register'), [
+                'name' => 'Persona Prueba', 'email' => $email, 'password' => 'Contrasena-Segura-123', 'password_confirmation' => 'Contrasena-Segura-123',
+                'coordination_id' => $coordination->id,
+            ])->assertSessionHasErrors('email');
+        }
+
+        $this->assertDatabaseMissing('users', ['email' => 'cualquiera@algo.invalid']);
+    }
+
+    public function test_the_system_account_is_hidden_and_cannot_be_managed_from_the_interface(): void
+    {
+        $this->send($this->payload())->assertCreated();
+        $system = User::query()->where('email', config('ecosistema.actividades.usuario_sistema.correo'))->firstOrFail();
+        $admin = User::factory()->administrador()->create();
+
+        $this->signIn($admin)->get(route('users.index'))->assertOk()->assertDontSee('dashboard-automatico@sistema.invalid')->assertDontSee('Dashboard (automático)');
+        $this->get(route('users.show', $system))->assertNotFound();
+        $this->post(route('users.approve', $system), ['role' => 'administrador'])->assertNotFound();
+        $this->post(route('users.activate', $system))->assertNotFound();
+
+        // Defensa en profundidad: ni siquiera llamando a los servicios.
+        $service = app(UserService::class);
+        foreach ([
+            fn () => $service->activate($admin, $system),
+            fn () => $service->approve($admin, $system, UserRole::Administrador, []),
+            fn () => $service->updateRoleAndTeams($admin, $system, UserRole::Administrador, []),
+        ] as $attempt) {
+            try {
+                $attempt();
+                $this->fail('Debio rechazarse.');
+            } catch (BusinessRuleException) {
+                // esperado
+            }
+        }
+
+        $this->assertSame(UserStatus::Inactive, $system->fresh()->status);
+        $this->assertNull($system->fresh()->roleEnum());
+    }
+
+    public function test_invisible_and_direction_characters_are_rejected_in_titles_and_descriptions(): void
+    {
+        foreach (["\u{202E}evil", "a\u{200B}b", "a\u{2028}b"] as $text) {
+            $this->send($this->payload(['titulo' => $text]))->assertStatus(422);
+            $this->send($this->payload(['descripcion' => $text]))->assertStatus(422);
+        }
+
+        $this->send($this->payload(['titulo' => 'Solicitud · Estación', 'descripcion' => "Línea uno\n\tLínea dos con acentos ñ 📌"]))->assertCreated();
     }
 
     // --- Equipo destino -----------------------------------------------------------------------------------------------------------
@@ -278,6 +378,7 @@ class EcosystemActivityTest extends DatabaseTestCase
         $this->send($this->payload(['descripcion' => "bell\x07"]))->assertStatus(422);
         $this->send($this->payload(['url' => 'https://malo.test/robar']))->assertStatus(422);
         $this->send($this->payload(['url' => 'javascript:alert(1)']))->assertStatus(422);
+        $this->send($this->payload(['url' => 'https://dashboard.ejemplo.test/ecosistema/salir?codigo=x']))->assertStatus(422);
 
         $this->assertSame(0, Activity::query()->count());
         $this->assertSame(['error' => 'invalid'], $this->send($this->payload(['evento' => 'otro_evento']))->json());

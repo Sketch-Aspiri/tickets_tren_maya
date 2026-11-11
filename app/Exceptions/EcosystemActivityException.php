@@ -27,4 +27,16 @@ final class EcosystemActivityException extends RuntimeException
     {
         return new self('sin_responsable');
     }
+
+    /** Ya existe una cuenta con el correo de sistema que no es la cuenta de sistema (inactiva y sin rol ni equipos). */
+    public static function invalidSystemUser(): self
+    {
+        return new self('usuario_sistema_invalido');
+    }
+
+    /** Tope de actividades nuevas por evento y hora (con el secreto del puente robado, evita el spam). */
+    public static function tooMany(): self
+    {
+        return new self('demasiadas');
+    }
 }

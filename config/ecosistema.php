@@ -48,6 +48,9 @@ return [
         ],
         // Codigo de estacion del Dashboard => equipo de Tickets (id o nombre exacto), para los eventos de alcance
         // `estacion`. JSON en el .env, p. ej. {"23":5,"24":"Estacion Tulum"}.
+        // Tope de actividades NUEVAS por evento y hora (con el secreto del puente robado evita el spam). Lo ya creado
+        // (mismo `ref`) no cuenta: se devuelve igual.
+        'limite_por_hora' => (int) env('ECOSISTEMA_ACT_LIMITE_HORA', 60),
         'estaciones' => (array) (json_decode((string) env('ECOSISTEMA_ACT_ESTACIONES', '{}'), true) ?: []),
     ],
 

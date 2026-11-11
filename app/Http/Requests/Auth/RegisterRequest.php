@@ -38,7 +38,9 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:255', "regex:/^[\p{L}\p{M}0-9 .,'’-]+$/u"],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')],
+            // `.invalid` es un dominio reservado (RFC 2606): ninguna persona real lo usa; la cuenta de sistema del
+            // ecosistema (decision 93) vive ahi y nadie debe poder registrarla antes.
+            'email' => ['required', 'string', 'email', 'max:255', 'not_regex:/\.invalid$/i', Rule::unique(User::class, 'email')],
             'password' => ['required', 'string', 'max:255', 'confirmed', Password::defaults()],
             // La solicitud llega al jefe de esa coordinacion: solo coordinaciones activas de estaciones activas.
             'coordination_id' => ['required', 'integer', Rule::exists('coordinations', 'id')

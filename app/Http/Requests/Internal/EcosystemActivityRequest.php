@@ -19,7 +19,8 @@ use Illuminate\Validation\Rule;
  */
 class EcosystemActivityRequest extends FormRequest
 {
-    private const PLAIN = '/^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+$/u';
+    // Saltos de linea y tabuladores si; ningun otro control ni caracter de formato Unicode (bidi, ancho cero, U+2028/9).
+    private const PLAIN = '/^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\p{Cf}\p{Zl}\p{Zp}]+$/u';
 
     public function authorize(): bool
     {
@@ -35,7 +36,7 @@ class EcosystemActivityRequest extends FormRequest
             'evento' => ['required', 'string', Rule::in(array_keys((array) config('ecosistema.actividades.eventos')))],
             'estacion' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'ref' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9:._-]+$/D'],
-            'titulo' => ['required', 'string', 'max:120', 'regex:/^[^\x00-\x1F\x7F]+$/u'],
+            'titulo' => ['required', 'string', 'max:120', 'regex:/^[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+$/u'],
             'descripcion' => ['required', 'string', 'max:1000', 'regex:'.self::PLAIN],
             'url' => ['nullable', 'string', 'max:300', function (string $attribute, mixed $value, Closure $fail): void {
                 if (! is_string($value) || EcosystemUrl::normalize($value) === null) {

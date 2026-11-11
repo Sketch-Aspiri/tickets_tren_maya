@@ -56,6 +56,7 @@ return [
         'cannot_edit_self_hint' => 'Es tu propia cuenta: no puedes inactivarla ni quitarte tu rol.',
     ],
     'errors' => [
+        'system_account' => 'Esta es una cuenta de sistema del ecosistema y no se gestiona desde aquí.',
         'already_active' => 'La cuenta ya está activa.',
         'not_pending' => 'Solo se pueden rechazar cuentas pendientes.',
         'not_inactive' => 'Solo se pueden activar cuentas inactivas.',

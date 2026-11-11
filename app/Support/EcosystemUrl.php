@@ -17,6 +17,15 @@ final class EcosystemUrl
     private const QUERY = '#^[A-Za-z0-9=&_.%-]{0,200}$#D';
 
     /**
+     * Rutas a las que puede llevar un aviso: pantallas de consulta de Tickets y del Dashboard. Nada de sesion
+     * (`/ecosistema/...`, `/logout`), puente (`/interno`), archivos (`/storage`) ni descargas.
+     */
+    private const ALLOWED = '#^/(?:|(?:tickets|activities|notifications|chat|tracking|dashboard|profile|insumos|asistencia|secciones|agenda)(?:/.*)?)$#D';
+
+    /** Segmentos que descargan archivos o cambian la sesion con un simple GET. */
+    private const DENIED = '#/(?:export|exportar|descargar|download|reporte|reportes|salir|logout|preview)(?:/|$)#i';
+
+    /**
      * La URL normalizada (ruta relativa de este sitio o URL absoluta de un sistema del ecosistema) o null.
      */
     public static function normalize(string $url): ?string
@@ -33,7 +42,8 @@ final class EcosystemUrl
 
         $path = $parts['path'] ?? '';
 
-        if (preg_match(self::PATH, $path) !== 1 || str_contains($path, '//')) {
+        if (preg_match(self::PATH, $path) !== 1 || str_contains($path, '//') || str_contains($path, '..')
+            || preg_match(self::ALLOWED, $path) !== 1 || preg_match(self::DENIED, $path) === 1) {
             return null;
         }
 

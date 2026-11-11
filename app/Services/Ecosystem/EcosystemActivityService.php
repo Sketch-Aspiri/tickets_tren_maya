@@ -19,6 +19,8 @@ use App\Support\LocalTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
@@ -41,25 +43,30 @@ final class EcosystemActivityService
     ) {}
 
     /**
-     * @return array{activity: Activity, created: bool}
+     * `deleted`: el `ref` ya tuvo una actividad que se elimino; no se vuelve a crear y no se devuelve su folio.
+     *
+     * @return array{activity: Activity, created: bool, deleted: bool}
      *
      * @throws EcosystemActivityException
      */
     public function create(string $event, ?string $stationCode, string $ref, string $title, string $description, ?string $url): array
     {
-        $existing = $this->find($ref);
+        // El `ref` se guarda con el evento por delante: el mismo `ref` con otro evento es otro hecho.
+        $externalRef = $event.':'.$ref;
+        $existing = $this->find($externalRef);
 
         if ($existing !== null) {
-            return ['activity' => $existing, 'created' => false];
+            return ['activity' => $existing, 'created' => false, 'deleted' => $existing->trashed()];
         }
 
+        $this->assertUnderLimit($event);
         $team = $this->teamFor($event, $stationCode);
         $responsible = $this->responsibleOf($team);
         $system = $this->systemUser();
         $rules = (array) config('ecosistema.actividades.eventos.'.$event);
 
         try {
-            $activity = DB::transaction(function () use ($event, $ref, $title, $description, $url, $team, $responsible, $system, $rules): Activity {
+            $activity = DB::transaction(function () use ($event, $externalRef, $title, $description, $url, $team, $responsible, $system, $rules): Activity {
                 $activity = new Activity([
                     'title' => $title,
                     'description' => Str::limit($description.($url !== null ? "\n\n".__('activities.ecosystem.origin', ['url' => $url]) : ''), 5000, ''),
@@ -73,7 +80,7 @@ final class EcosystemActivityService
                     'created_by' => $system->getKey(),
                     'recurrence_rule' => null,
                     'completed_at' => null,
-                    'external_ref' => $ref,
+                    'external_ref' => $externalRef,
                 ])->save();
 
                 $activity->statusHistories()->create([
@@ -91,7 +98,7 @@ final class EcosystemActivityService
 
                 $this->audit->record('ecosystem', 'activity_created', $activity, null, extra: [
                     'event' => $event,
-                    'ref' => $ref,
+                    'ref' => $externalRef,
                     'folio' => $activity->folio,
                     'team_id' => $team->getKey(),
                     'responsible_id' => $responsible->getKey(),
@@ -101,18 +108,32 @@ final class EcosystemActivityService
             });
         } catch (UniqueConstraintViolationException $e) {
             // Otra peticion con el mismo `ref` llego primero: es la misma actividad.
-            $existing = $this->find($ref);
+            $existing = $this->find($externalRef);
 
             if ($existing === null) {
                 throw $e;
             }
 
-            return ['activity' => $existing, 'created' => false];
+            return ['activity' => $existing, 'created' => false, 'deleted' => $existing->trashed()];
         }
+
+        RateLimiter::hit($this->limitKey($event), 3600);
 
         $responsible->notify(new WorkItemAssigned('activity', (int) $activity->getKey(), (string) $activity->folio, (string) $activity->title, AssignmentRole::Responsable->value, $system->name));
 
-        return ['activity' => $activity, 'created' => true];
+        return ['activity' => $activity, 'created' => true, 'deleted' => false];
+    }
+
+    private function limitKey(string $event): string
+    {
+        return 'ecosystem-activities:'.$event;
+    }
+
+    private function assertUnderLimit(string $event): void
+    {
+        if (RateLimiter::tooManyAttempts($this->limitKey($event), (int) config('ecosistema.actividades.limite_por_hora', 60))) {
+            throw EcosystemActivityException::tooMany();
+        }
     }
 
     private function find(string $ref): ?Activity
@@ -171,6 +192,14 @@ final class EcosystemActivityService
         $existing = User::query()->where('email', $email)->first();
 
         if ($existing !== null) {
+            // Debe ser LA cuenta de sistema: inactiva, sin rol ni equipos. Si no (alguien la registro antes, o un
+            // administrador la modifico) no se usa: seria una cuenta con nombre y contrasena que controla otra persona.
+            if ($existing->status !== UserStatus::Inactive || $existing->roleEnum() !== null || $existing->teams()->exists()) {
+                Log::alert('La cuenta de sistema del ecosistema no es valida; no se crean actividades del Dashboard.', ['user_id' => $existing->getKey()]);
+
+                throw EcosystemActivityException::invalidSystemUser();
+            }
+
             return $existing;
         }
 
