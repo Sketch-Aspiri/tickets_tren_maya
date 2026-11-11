@@ -125,12 +125,25 @@ final class SingleSignOnService
 
     public function completeLink(Request $request, User $user): void
     {
-        $pending = $request->session()->pull(self::SESSION_LINK);
+        $pending = $request->session()->get(self::SESSION_LINK);
 
         if (! is_array($pending)
             || ($pending['exp'] ?? 0) < now()->getTimestamp()
-            || ($pending['email'] ?? null) !== mb_strtolower((string) $user->email)
-            || $this->isLinked($user)) {
+            || ($pending['email'] ?? null) !== mb_strtolower((string) $user->email)) {
+            $request->session()->forget(self::SESSION_LINK);
+
+            return;
+        }
+
+        // La contrasena sola no prueba que sea la duena de la cuenta: si tiene 2FA (o su rol lo exige), el
+        // vinculo se completa al pasar el reto (se vuelve a intentar desde el reto y la configuracion del 2FA).
+        if (($user->hasTwoFactorEnabled() || $user->requiresTwoFactor()) && ! $this->twoFactor->isVerifiedInSession($user)) {
+            return;
+        }
+
+        $request->session()->forget(self::SESSION_LINK);
+
+        if ($this->isLinked($user)) {
             return;
         }
 

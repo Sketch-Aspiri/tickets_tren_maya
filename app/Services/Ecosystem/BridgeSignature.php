@@ -77,8 +77,8 @@ final class BridgeSignature
 
         if ($system === config('ecosistema.sistema')
             || ! array_key_exists($system, (array) config('ecosistema.urls'))
-            || preg_match('/^\d{1,12}$/', $date) !== 1
-            || preg_match('/^[A-Za-z0-9]{20,64}$/', $nonce) !== 1
+            || preg_match('/^\d{1,12}$/D', $date) !== 1
+            || preg_match('/^[A-Za-z0-9]{20,64}$/D', $nonce) !== 1
             || abs(now()->getTimestamp() - (int) $date) > (int) config('ecosistema.puente.ventana', 300)) {
             return null;
         }

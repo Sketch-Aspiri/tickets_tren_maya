@@ -35,7 +35,8 @@ class EcosystemSessionController extends Controller
             return redirect()->away($this->sso->url($target, '/ecosistema/entrar?sin_sesion=1'));
         }
 
-        $code = $this->signature->sign($target, EcosystemSignature::ENTER, (string) $user->email, $mfa, $request->validated('estado'));
+        // `linked`: el destino solo abre sesion sin contrasena si esta cuenta tambien esta vinculada.
+        $code = $this->signature->sign($target, EcosystemSignature::ENTER, (string) $user->email, $mfa, $request->validated('estado'), $this->sso->isLinked($user));
 
         return redirect()->away($this->sso->url($target, '/ecosistema/entrar?codigo='.urlencode($code)));
     }
@@ -64,7 +65,9 @@ class EcosystemSessionController extends Controller
             return redirect()->route('login')->with('status', __('auth.ecosystem.no_account', ['email' => $data['email']]));
         }
 
-        if (! $this->sso->isLinked($user)) {
+        // Sin contrasena solo si las DOS cuentas estan vinculadas: el correo del origen puede haberse
+        // editado sin verificar y el de aqui puede ser de otra persona.
+        if (! $this->sso->isLinked($user) || ! $data['lnk']) {
             $this->sso->requestLink($request, $data['email'], $data['iss']);
 
             return redirect()->route('login')->with('status', __('auth.ecosystem.link_first'));

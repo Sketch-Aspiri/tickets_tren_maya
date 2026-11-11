@@ -39,6 +39,6 @@ class CreateTicketRequest extends FormRequest
     {
         $id = $this->query('prefill');
 
-        return is_string($id) && preg_match('/^[A-Za-z0-9]{40}$/', $id) === 1 ? $id : null;
+        return is_string($id) && preg_match('/^[A-Za-z0-9]{40}$/D', $id) === 1 ? $id : null;
     }
 }

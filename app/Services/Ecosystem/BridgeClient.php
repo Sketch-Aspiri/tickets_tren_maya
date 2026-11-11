@@ -39,6 +39,7 @@ final class BridgeClient
             $response = Http::acceptJson()
                 ->timeout((int) config('ecosistema.puente.timeout', 3))
                 ->connectTimeout((int) config('ecosistema.puente.timeout', 3))
+                ->withoutRedirecting()
                 ->retry(2, 200, throw: false)
                 ->withHeaders($this->signature->headers('GET', $path, $query))
                 ->get($url);

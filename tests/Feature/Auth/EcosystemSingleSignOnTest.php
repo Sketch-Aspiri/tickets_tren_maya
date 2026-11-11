@@ -40,10 +40,10 @@ class EcosystemSingleSignOnTest extends DatabaseTestCase
     /**
      * Codigo como lo firmaria el Dashboard (mismo formato y secreto).
      */
-    private function dashboardCode(string $email, bool $mfa = true, string $action = EcosystemSignature::ENTER, string $aud = 'tickets', int $exp = 60, ?string $state = self::STATE): string
+    private function dashboardCode(string $email, bool $mfa = true, string $action = EcosystemSignature::ENTER, string $aud = 'tickets', int $exp = 60, ?string $state = self::STATE, bool $linked = true): string
     {
         $b64 = fn (string $bytes): string => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
-        $payload = $b64((string) json_encode(['v' => 1, 'iss' => 'dashboard', 'aud' => $aud, 'act' => $action, 'email' => $email, 'mfa' => $mfa, 'state' => $state, 'nonce' => bin2hex(random_bytes(16)), 'exp' => now()->addSeconds($exp)->getTimestamp()]));
+        $payload = $b64((string) json_encode(['v' => 1, 'iss' => 'dashboard', 'aud' => $aud, 'act' => $action, 'email' => $email, 'mfa' => $mfa, 'state' => $state, 'lnk' => $linked, 'nonce' => bin2hex(random_bytes(16)), 'exp' => now()->addSeconds($exp)->getTimestamp()]));
 
         return $payload.'.'.$b64(hash_hmac('sha256', $payload, self::SECRET, true));
     }
@@ -151,6 +151,65 @@ class EcosystemSingleSignOnTest extends DatabaseTestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_with_two_factor_the_link_waits_for_the_challenge(): void
+    {
+        $jefe = User::factory()->jefe()->withTwoFactor()->create(['email' => 'jefe@ejemplo.test']);
+
+        $this->enterWith($this->dashboardCode($jefe->email))->assertRedirect(route('login'));
+
+        // La contrasena sola NO vincula: quien la robo no tiene el 2FA de la persona (decision 90).
+        $this->post(route('login'), ['email' => $jefe->email, 'password' => UserFactory::DEFAULT_PASSWORD]);
+        $this->assertAuthenticatedAs($jefe);
+        $this->assertNull($jefe->fresh()->sso_linked_at);
+
+        $this->post(route('two-factor.verify'), ['code' => '000000']);
+        $this->assertNull($jefe->fresh()->sso_linked_at);
+
+        $this->post(route('two-factor.verify'), ['code' => $this->validOtp($jefe)])->assertSessionHasNoErrors();
+        $this->assertNotNull($jefe->fresh()->sso_linked_at);
+        $this->assertDatabaseHas('activity_log', ['log_name' => 'auth', 'event' => 'sso_linked', 'causer_id' => $jefe->id]);
+
+        auth()->logout();
+        $this->enterWith($this->dashboardCode($jefe->email));
+        $this->assertAuthenticatedAs($jefe);
+    }
+
+    public function test_an_origin_without_a_link_does_not_sign_in_without_the_password_even_if_this_account_is_linked(): void
+    {
+        $user = User::factory()->empleado()->create(['sso_linked_at' => now()]);
+
+        // En el Dashboard el correo se pudo editar sin verificar: ese codigo no basta.
+        $this->enterWith($this->dashboardCode($user->email, linked: false))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status', __('auth.ecosystem.link_first'));
+        $this->assertGuest();
+    }
+
+    public function test_a_code_without_the_link_claim_is_treated_as_unlinked(): void
+    {
+        $user = User::factory()->empleado()->create(['sso_linked_at' => now()]);
+        $b64 = fn (string $bytes): string => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+        $payload = $b64((string) json_encode(['v' => 1, 'iss' => 'dashboard', 'aud' => 'tickets', 'act' => 'entrar', 'email' => $user->email, 'mfa' => true, 'state' => self::STATE, 'nonce' => bin2hex(random_bytes(16)), 'exp' => now()->addSeconds(60)->getTimestamp()]));
+
+        $this->enterWith($payload.'.'.$b64(hash_hmac('sha256', $payload, self::SECRET, true)))->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_this_system_signs_with_the_link_state_of_the_account(): void
+    {
+        $sign = function (User $user): array {
+            $this->signIn($user);
+            $location = (string) $this->get(route('ecosistema.sso', ['para' => 'dashboard', 'estado' => self::STATE]))->assertRedirect()->headers->get('Location');
+            parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+            [$payload] = explode('.', (string) $query['codigo']);
+
+            return json_decode((string) base64_decode(strtr($payload, '-_', '+/')), true);
+        };
+
+        $this->assertFalse($sign(User::factory()->empleado()->create())['lnk']);
+        $this->assertTrue($sign(User::factory()->empleado()->create(['sso_linked_at' => now()]))['lnk']);
+    }
+
     public function test_signing_in_with_another_account_does_not_link_the_signed_one(): void
     {
         $victim = User::factory()->empleado()->create();
@@ -205,7 +264,7 @@ class EcosystemSingleSignOnTest extends DatabaseTestCase
         parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
         [$payload] = explode('.', (string) $query['codigo']);
         $data = json_decode((string) base64_decode(strtr($payload, '-_', '+/')), true);
-        $this->assertSame(['dashboard', 'entrar', 'jefe@ejemplo.test', true, self::STATE], [$data['aud'], $data['act'], $data['email'], $data['mfa'], $data['state']]);
+        $this->assertSame(['dashboard', 'entrar', 'jefe@ejemplo.test', true, self::STATE, false], [$data['aud'], $data['act'], $data['email'], $data['mfa'], $data['state'], $data['lnk']]);
     }
 
     public function test_only_known_systems_are_answered(): void

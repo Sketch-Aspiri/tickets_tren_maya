@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
+use App\Services\Ecosystem\SingleSignOnService;
 use App\Services\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,10 @@ use Illuminate\View\View;
 
 class TwoFactorChallengeController extends Controller
 {
-    public function __construct(private readonly TwoFactorService $twoFactor) {}
+    public function __construct(
+        private readonly TwoFactorService $twoFactor,
+        private readonly SingleSignOnService $sso,
+    ) {}
 
     public function show(Request $request): View|RedirectResponse
     {
@@ -45,6 +49,9 @@ class TwoFactorChallengeController extends Controller
         }
 
         $this->twoFactor->markVerifiedInSession($user);
+
+        // Si llego del Dashboard, ahora si se completa el vinculo de cuentas (decision 90).
+        $this->sso->completeLink($request, $user);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

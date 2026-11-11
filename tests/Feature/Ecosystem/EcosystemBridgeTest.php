@@ -241,6 +241,18 @@ class EcosystemBridgeTest extends DatabaseTestCase
         Http::assertNothingSent();
     }
 
+    public function test_the_bridge_client_does_not_follow_redirects(): void
+    {
+        Http::fake([
+            'https://dashboard.ejemplo.test/interno/contextos/*' => Http::response('', 302, ['Location' => 'https://malo.test/robar']),
+            'https://malo.test/*' => Http::response(['titulo' => 'Robado', 'descripcion' => 'x']),
+        ]);
+
+        $this->signIn($this->empA1)->get('/tickets/create?prefill='.Str::random(40))->assertOk()->assertDontSee('Robado');
+
+        Http::assertNotSent(fn ($request): bool => str_starts_with($request->url(), 'https://malo.test'));
+    }
+
     public function test_html_in_the_context_is_escaped(): void
     {
         $this->fakeContext(body: ['titulo' => '<script>alert(1)</script>', 'descripcion' => '<img src=x onerror=alert(1)>']);

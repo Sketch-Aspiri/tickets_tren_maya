@@ -15,6 +15,8 @@ use Illuminate\Support\Str;
  *   base64url(json{v, iss, aud, act, email, mfa, state, nonce, exp}) . "." . base64url(hmac_sha256)
  *
  * `state` ata el codigo de entrada al navegador que lo pidio (un codigo ajeno enviado como enlace no sirve).
+ * `lnk` dice si la cuenta de ORIGEN esta vinculada (el correo del otro sistema se puede editar sin verificar):
+ * el destino solo abre sesion sin contrasena si ambas cuentas lo estan. Sin `lnk`, vale false.
  *
  * El secreto (ECOSISTEMA_SSO_SECRET) es el mismo en ambos .env y nunca sale
  * del servidor. Un código vale para un solo destino, una sola acción, 60 s y
@@ -31,7 +33,7 @@ final class EcosystemSignature
         return strlen((string) config('ecosistema.sso.secreto')) >= 32;
     }
 
-    public function sign(string $destino, string $accion, string $email, bool $mfa, ?string $estado = null): string
+    public function sign(string $destino, string $accion, string $email, bool $mfa, ?string $estado = null, bool $linked = false): string
     {
         $carga = $this->b64(json_encode([
             'v' => 1,
@@ -41,6 +43,7 @@ final class EcosystemSignature
             'email' => mb_strtolower($email),
             'mfa' => $mfa,
             'state' => $estado,
+            'lnk' => $linked,
             'nonce' => Str::random(32),
             'exp' => now()->addSeconds((int) config('ecosistema.sso.vigencia', 60))->getTimestamp(),
         ], JSON_THROW_ON_ERROR));
@@ -52,7 +55,7 @@ final class EcosystemSignature
      * Devuelve la carga si el código es auténtico, va dirigido a este sistema,
      * es de la acción esperada, no venció y no se usó antes; si no, null.
      *
-     * @return array{iss: string, email: string, mfa: bool, state: ?string}|null
+     * @return array{iss: string, email: string, mfa: bool, state: ?string, lnk: bool}|null
      */
     public function verify(?string $codigo, string $accion): ?array
     {
@@ -92,6 +95,7 @@ final class EcosystemSignature
             'email' => $datos['email'],
             'mfa' => (bool) ($datos['mfa'] ?? false),
             'state' => is_string($datos['state'] ?? null) ? $datos['state'] : null,
+            'lnk' => ($datos['lnk'] ?? false) === true,
         ];
     }
 
