@@ -29,6 +29,28 @@ return [
         'reintento_minutos' => 5,
     ],
 
+    // Actividades que el Dashboard pide por el puente cuando ocurre algo alla (decision 92). La actividad la crea
+    // el usuario de sistema «Dashboard (automatico)» y se asigna al COORDINADOR del equipo destino. El equipo lo
+    // decide Tickets, nunca el Dashboard: sin equipo configurado para un evento NO se crea nada.
+    //   equipo:  id o nombre EXACTO del equipo (`php artisan ecosystem:teams` los lista).
+    //   alcance: `estacion` (puede tener equipo propio en `estaciones`, si no usa el general) o `zona`.
+    //   dias:    plazo de la actividad desde hoy. prioridad: low|medium|high|urgent.
+    'actividades' => [
+        'usuario_sistema' => [
+            'nombre' => 'Dashboard (automático)',
+            'correo' => 'dashboard-automatico@sistema.invalid',
+        ],
+        'eventos' => [
+            'insumos_observada' => ['alcance' => 'estacion', 'prioridad' => 'high', 'dias' => 3, 'equipo' => env('ECOSISTEMA_ACT_EQUIPO_INSUMOS_OBSERVADA')],
+            'insumos_devuelta' => ['alcance' => 'estacion', 'prioridad' => 'high', 'dias' => 3, 'equipo' => env('ECOSISTEMA_ACT_EQUIPO_INSUMOS_DEVUELTA')],
+            'factura_cancelada' => ['alcance' => 'zona', 'prioridad' => 'urgent', 'dias' => 2, 'equipo' => env('ECOSISTEMA_ACT_EQUIPO_FACTURA_CANCELADA')],
+            'asistencia_pendiente' => ['alcance' => 'estacion', 'prioridad' => 'medium', 'dias' => 1, 'equipo' => env('ECOSISTEMA_ACT_EQUIPO_ASISTENCIA')],
+        ],
+        // Codigo de estacion del Dashboard => equipo de Tickets (id o nombre exacto), para los eventos de alcance
+        // `estacion`. JSON en el .env, p. ej. {"23":5,"24":"Estacion Tulum"}.
+        'estaciones' => (array) (json_decode((string) env('ECOSISTEMA_ACT_ESTACIONES', '{}'), true) ?: []),
+    ],
+
     // Puente interno entre los dos servidores (decision 89): llamadas firmadas con HMAC, nunca desde el navegador.
     // Un secreto por direccion, el MISMO valor en los dos .env (32+ caracteres aleatorios cada uno):
     //   ECOSISTEMA_PUENTE_SECRETO_DASHBOARD firma lo que el Dashboard le pide a Tickets;

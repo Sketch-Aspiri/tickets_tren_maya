@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Internal\EcosystemActivityController;
 use App\Http\Controllers\Internal\EcosystemNoticeController;
 use App\Http\Controllers\Internal\PendingSummaryController;
 use Illuminate\Support\Facades\Route;
@@ -13,3 +14,6 @@ Route::get('pendientes', PendingSummaryController::class)->name('pendientes');
 
 // Avisos del Dashboard (campana + Web Push), decision 91.
 Route::post('avisos', EcosystemNoticeController::class)->name('avisos');
+
+// Actividades que pide el Dashboard cuando ocurre algo alla (decision 92).
+Route::post('actividades', EcosystemActivityController::class)->name('actividades');

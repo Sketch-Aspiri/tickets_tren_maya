@@ -235,6 +235,9 @@ return [
         'invalid_recurrence' => 'La regla de repetición no es válida.',
         'restore_not_template' => 'Solo se pueden restaurar plantillas de recurrencia eliminadas.',
     ],
+    'ecosystem' => [
+        'origin' => 'Origen (Dashboard): :url',
+    ],
     'command' => [
         'done' => 'Instancias generadas: :created (plantillas revisadas: :templates).',
         'failed' => 'No se pudieron procesar :failed plantilla(s); revisa el registro de errores.',
