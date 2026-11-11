@@ -68,7 +68,7 @@ class AuthenticatedSessionController extends Controller
         // regresa al login de aqui (sin volver a preguntar). Se navega con una pagina intermedia porque
         // la CSP `form-action 'self'` bloquea redirigir este POST a otro dominio.
         if ($email !== null && $this->sso->enabled()) {
-            $this->sso->markAttempt($request);
+            $this->sso->skipNext($request);
             $sibling = (string) $this->sso->sibling();
             $code = $this->signature->sign($sibling, EcosystemSignature::LEAVE, (string) $email, false);
 

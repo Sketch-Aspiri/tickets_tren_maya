@@ -46,7 +46,7 @@ class EcosystemSessionController extends Controller
      */
     public function enter(EcosystemSessionRequest $request): RedirectResponse
     {
-        $this->sso->markAttempt($request);
+        $this->sso->tripCompleted($request);
 
         if ($request->user() !== null) {
             return redirect()->intended(route('dashboard', absolute: false));
@@ -92,8 +92,8 @@ class EcosystemSessionController extends Controller
             $request->session()->regenerateToken();
         }
 
-        $this->sso->markAttempt($request);
-
+        // Aqui NO se marca nada: este sistema quedo sin sesion y preguntar despues no causa bucles. Si se marcara,
+        // quien entra de inmediato por el otro sistema no entraria solo aqui durante varios minutos.
         $origin = $data['iss'] ?? $this->sso->sibling();
 
         return $origin !== null ? redirect()->away($this->sso->url($origin, '/login')) : redirect()->route('login');

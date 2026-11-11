@@ -36,6 +36,8 @@ final class SingleSignOnService
 {
     public const SESSION_ATTEMPT = 'ecosistema.sso_intentado';
 
+    public const SESSION_SKIP = 'ecosistema.sso_omitir';
+
     public const SESSION_STATE = 'ecosistema.sso_estado';
 
     public const SESSION_LINK = 'ecosistema.sso_vinculo';
@@ -69,10 +71,16 @@ final class SingleSignOnService
      */
     public function shouldAsk(Request $request): bool
     {
-        if (! $this->enabled() || $request->boolean('local')) {
+        // Solo la visita al login que sigue INMEDIATAMENTE a un cierre de sesion o a una respuesta del otro sistema se
+        // salta la pregunta (evita ir y venir); la siguiente vuelve a preguntar.
+        $skip = (bool) $request->session()->pull(self::SESSION_SKIP, false);
+
+        if (! $this->enabled() || $request->boolean('local') || $skip) {
             return false;
         }
 
+        // Si la pregunta anterior NO se completo (el otro sistema fallo), no se insiste en los proximos minutos: el
+        // login normal siempre queda disponible.
         $last = (int) $request->session()->get(self::SESSION_ATTEMPT, 0);
 
         if ($last > now()->subMinutes((int) config('ecosistema.sso.reintento_minutos', 5))->getTimestamp()) {
@@ -85,6 +93,25 @@ final class SingleSignOnService
     public function markAttempt(Request $request): void
     {
         $request->session()->put(self::SESSION_ATTEMPT, now()->getTimestamp());
+    }
+
+    /**
+     * El otro sistema contesto (con un codigo o con «sin sesion»): el viaje de ida y vuelta termino. Se borra la
+     * marca de intento (la proxima visita al login vuelve a preguntar) y solo la visita inmediata siguiente se
+     * salta la pregunta, para no ir y venir.
+     */
+    public function tripCompleted(Request $request): void
+    {
+        $request->session()->forget(self::SESSION_ATTEMPT);
+        $this->skipNext($request);
+    }
+
+    /**
+     * La proxima visita al login no pregunta (p. ej. justo despues de cerrar sesion aqui).
+     */
+    public function skipNext(Request $request): void
+    {
+        $request->session()->put(self::SESSION_SKIP, true);
     }
 
     /**

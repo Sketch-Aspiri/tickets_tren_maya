@@ -151,6 +151,49 @@ class EcosystemSingleSignOnTest extends DatabaseTestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_after_a_completed_round_trip_the_next_login_asks_again_without_waiting_minutes(): void
+    {
+        $this->get(route('login'))->assertRedirect();
+
+        // The other system answers (here «no session»): the immediate visit does not ask again...
+        $this->get(route('ecosistema.entrar', ['sin_sesion' => 1]))->assertRedirect(route('login'));
+        $this->get(route('login'))->assertOk()->assertSee('name="password"', false);
+
+        // ...but the next one DOES (before it stayed blocked for 5 minutes and someone already signed in at the
+        // Dashboard typed their password here).
+        $this->get(route('login'))->assertRedirect();
+    }
+
+    public function test_if_the_other_system_never_answers_the_plain_login_stays_available(): void
+    {
+        $this->get(route('login'))->assertRedirect();
+
+        $this->get(route('login'))->assertOk()->assertSee('name="password"', false);
+        $this->get(route('login'))->assertOk();
+    }
+
+    public function test_after_logging_out_here_only_the_immediate_login_visit_skips_the_question(): void
+    {
+        $this->signIn(User::factory()->empleado()->create());
+
+        $this->post(route('logout'))->assertOk();
+
+        $this->get(route('login'))->assertOk();       // the one right after the logout
+        $this->get(route('login'))->assertRedirect(); // afterwards it asks the Dashboard again
+    }
+
+    public function test_a_logout_coming_from_the_dashboard_does_not_stop_asking_afterwards(): void
+    {
+        $user = User::factory()->empleado()->create();
+        $this->signIn($user);
+
+        $this->get(route('ecosistema.salir', ['codigo' => $this->dashboardCode($user->email, action: EcosystemSignature::LEAVE, state: null)]))->assertRedirect();
+        $this->assertGuest();
+
+        // Before, this logout left the login without asking for 5 minutes even if the Dashboard had a session.
+        $this->get(route('login'))->assertRedirect();
+    }
+
     public function test_with_two_factor_the_link_waits_for_the_challenge(): void
     {
         $jefe = User::factory()->jefe()->withTwoFactor()->create(['email' => 'jefe@ejemplo.test']);
