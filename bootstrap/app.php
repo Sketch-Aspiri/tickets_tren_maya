@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureTwoFactorVerified;
 use App\Http\Middleware\NoStore;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyBridge;
+use App\Http\Middleware\VerifyPortalBridge;
 use App\Support\TrustedHosts;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->prefix('interno')
                 ->name('interno.')
                 ->group(base_path('routes/internal.php'));
+
+            // Puente con el portal (decision 99): cuentas aprobadas alla y catalogo de equipos. Secreto propio.
+            Route::middleware(['throttle:ecosystem-bridge', VerifyPortalBridge::class])
+                ->prefix('interno/portal')
+                ->name('interno.portal.')
+                ->group(base_path('routes/internal_portal.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

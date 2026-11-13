@@ -72,6 +72,11 @@ return [
         // Diferencia maxima de reloj aceptada, en segundos.
         'ventana' => 300,
         'timeout' => 3,
+        // Puente con el PORTAL (cuentas aprobadas alla, catalogo de equipos): un secreto propio, distinto del que
+        // se usa con el Dashboard. Sin el, /interno/portal/* responde 404.
+        'portal' => [
+            'secreto' => env('ECOSISTEMA_PUENTE_SECRETO_PORTAL'),
+        ],
     ],
 
     // Herramientas del Dashboard que el MCP publica (decision 97): cuanto se guarda su lista y cuanto se espera una
