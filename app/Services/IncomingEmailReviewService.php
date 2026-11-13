@@ -9,6 +9,7 @@ use App\Exceptions\BusinessRuleException;
 use App\Models\Activity;
 use App\Models\IncomingEmail;
 use App\Models\User;
+use App\Services\Mcp\EmailProposalResolver;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,6 +26,7 @@ final class IncomingEmailReviewService
         private readonly ActivityService $activities,
         private readonly AttachmentService $attachments,
         private readonly AuditLogger $audit,
+        private readonly EmailProposalResolver $proposals,
     ) {}
 
     public function discard(User $actor, IncomingEmail $email, string $reason): IncomingEmail
@@ -38,6 +40,8 @@ final class IncomingEmailReviewService
                 'reviewed_by' => $actor->getKey(),
                 'reviewed_at' => now(),
             ])->save();
+
+            $this->proposals->onDiscarded($locked, $actor);
 
             $this->audit->record('emails', 'discarded', $locked, $actor, [], [], ['reason' => $reason]);
 
@@ -87,6 +91,8 @@ final class IncomingEmailReviewService
                 'reviewed_by' => $actor->getKey(),
                 'reviewed_at' => now(),
             ])->save();
+
+            $this->proposals->onConverted($locked, $activity, $actor);
 
             $this->audit->record('emails', 'converted', $locked, $actor, [], [], [
                 'activity_id' => $activity->getKey(),

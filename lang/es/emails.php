@@ -55,6 +55,20 @@ return [
         'discard_confirm' => 'Vas a descartar este correo. El motivo queda registrado y ya no podrás convertirlo.',
         'discard_reason_label' => 'Motivo',
     ],
+    'proposal' => [
+        'title' => 'Propuesta de la IA',
+        'summary' => ':client propone asignarla a :responsible (equipo :team) con fecha límite :date, con :confidence % de confianza.',
+        'unknown_client' => 'La IA',
+        'rationale' => 'Razonamiento',
+        'review_hint' => 'Los campos ya vienen precargados con la propuesta. Revísalos y corrígelos si hace falta; nada se crea hasta que confirmes.',
+        'status' => [
+            'pending' => 'Pendiente',
+            'accepted' => 'Confirmada por una persona',
+            'auto_created' => 'Creada automáticamente',
+            'rejected' => 'Rechazada (correo descartado)',
+            'superseded' => 'Reemplazada por otra propuesta',
+        ],
+    ],
     'convert' => [
         'title' => 'Convertir correo en actividad',
         'source_summary' => 'Correo de origen',

@@ -17,6 +17,24 @@
         </dl>
     </x-card>
 
+    @isset($proposal)
+        <x-card class="max-w-3xl" :title="__('emails.proposal.title')">
+            <div class="space-y-2 text-sm" role="note">
+                <p>{{ __('emails.proposal.summary', [
+                    'client' => $proposal->client?->name ?? __('emails.proposal.unknown_client'),
+                    'responsible' => $proposal->responsible?->name,
+                    'team' => $proposal->team?->name,
+                    'date' => $proposal->due_date->format('d/m/Y'),
+                    'confidence' => $proposal->confidence,
+                ]) }}</p>
+                @if ($proposal->rationale)
+                    <p class="text-gray-700"><span class="font-medium">{{ __('emails.proposal.rationale') }}:</span> {{ $proposal->rationale }}</p>
+                @endif
+                <p class="text-gray-600">{{ __('emails.proposal.review_hint') }}</p>
+            </div>
+        </x-card>
+    @endisset
+
     <x-card class="max-w-3xl">
         <form method="POST" action="{{ route('incoming-emails.convert.store', $email) }}">
             @include('activities._form', [

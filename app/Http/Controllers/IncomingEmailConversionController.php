@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\EmailProposalStatus;
 use App\Enums\Priority;
 use App\Enums\RecurrenceFrequency;
 use App\Http\Requests\Emails\ConvertIncomingEmailRequest;
 use App\Models\Activity;
+use App\Models\EmailActivityProposal;
 use App\Models\IncomingEmail;
 use App\Models\Team;
 use App\Models\User;
@@ -44,7 +46,25 @@ class IncomingEmailConversionController extends Controller
             'description' => mb_substr($incomingEmail->body, 0, 5000),
         ]);
 
+        // Propuesta pendiente de la IA (decision 94): precarga responsable, equipo y fecha para que la persona
+        // solo confirme o corrija. No pisa lo que ya devolvio una validacion fallida.
+        $proposal = EmailActivityProposal::query()
+            ->with(['responsible:id,name', 'team:id,name', 'client:id,name'])
+            ->where('incoming_email_id', $incomingEmail->getKey())
+            ->where('status', EmailProposalStatus::Pending->value)
+            ->latest('id')
+            ->first();
+
+        if ($proposal !== null && ! $request->session()->hasOldInput()) {
+            $activity->due_date = $proposal->due_date;
+            $request->session()->now('_old_input', [
+                'team_id' => $proposal->team_id,
+                'responsible_id' => $proposal->responsible_id,
+            ]);
+        }
+
         return view('incoming-emails.convert', [
+            'proposal' => $proposal,
             'email' => $incomingEmail,
             'activity' => $activity,
             'priorities' => Priority::cases(),

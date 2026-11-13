@@ -66,6 +66,9 @@ return [
         'ecosystem_sso_per_minute' => 30,
         // Puente interno con el Dashboard (decision 89), por IP del servidor que llama.
         'ecosystem_bridge_per_minute' => 240,
+        // Servidor MCP (decision 94), por cliente.
+        'mcp_per_minute' => 120,
+        'mcp_ip_per_minute' => 300,
         'overdue_purge_per_hour' => 10,
     ],
 
