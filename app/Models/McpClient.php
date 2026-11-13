@@ -20,6 +20,7 @@ class McpClient extends Model
         'name',
         'user_id',
         'can_write',
+        'dashboard_access',
         'allowed_ips',
     ];
 
@@ -40,6 +41,23 @@ class McpClient extends Model
             'last_used_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
+    }
+
+    public const DASHBOARD_NONE = 'none';
+
+    public const DASHBOARD_READ = 'read';
+
+    public const DASHBOARD_WRITE = 'write';
+
+    /**
+     * Si este cliente puede usar una herramienta del Dashboard (decision 97): las de lectura con `read` o `write`; las
+     * que escriben solo con `write` Y con permiso de escritura general.
+     */
+    public function dashboardAllows(bool $writes): bool
+    {
+        return $writes
+            ? $this->dashboard_access === self::DASHBOARD_WRITE && $this->can_write
+            : in_array($this->dashboard_access, [self::DASHBOARD_READ, self::DASHBOARD_WRITE], true);
     }
 
     /**

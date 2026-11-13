@@ -71,4 +71,11 @@ return [
         'timeout' => 3,
     ],
 
+    // Herramientas del Dashboard que el MCP publica (decision 97): cuanto se guarda su lista y cuanto se espera una
+    // consulta (las consultas a secciones grandes tardan mas que un aviso).
+    'ia' => [
+        'cache_minutos' => 10,
+        'timeout' => 30,
+    ],
+
 ];

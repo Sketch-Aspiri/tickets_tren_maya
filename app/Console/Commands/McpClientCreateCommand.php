@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
  */
 class McpClientCreateCommand extends Command
 {
-    protected $signature = 'mcp:cliente-crear {nombre : Nombre del cliente (p. ej. grokbot)} {correo : Correo de la cuenta con la que actuara} {--forzar : Permite una cuenta de administrador (alcance global)} {--escritura : Permite herramientas de escritura (por defecto solo lectura)} {--ip=* : IPs permitidas (opcional, repetible)}';
+    protected $signature = 'mcp:cliente-crear {nombre : Nombre del cliente (p. ej. grokbot)} {correo : Correo de la cuenta con la que actuara} {--forzar : Permite una cuenta de administrador (alcance global)} {--escritura : Permite herramientas de escritura (por defecto solo lectura)} {--dashboard=none : Acceso a las herramientas del Dashboard: none, read o write} {--ip=* : IPs permitidas (opcional, repetible)}';
 
     protected $description = 'Crea un cliente MCP y muestra su token una sola vez';
 
@@ -24,8 +24,9 @@ class McpClientCreateCommand extends Command
         $name = trim((string) $this->argument('nombre'));
         $user = User::query()->where('email', (string) $this->argument('correo'))->first();
 
-        if ($name === '' || mb_strlen($name) > 80) {
-            $this->error('El nombre debe tener de 1 a 80 caracteres.');
+        // El mismo conjunto de caracteres que acepta el Dashboard para el nombre del cliente en su bitacora.
+        if (preg_match('/^[A-Za-z0-9 ._-]{1,80}$/', $name) !== 1) {
+            $this->error('El nombre debe tener de 1 a 80 caracteres: letras, numeros, espacio, punto, guion y guion bajo.');
 
             return self::FAILURE;
         }
@@ -50,6 +51,20 @@ class McpClientCreateCommand extends Command
             return self::FAILURE;
         }
 
+        $dashboard = (string) $this->option('dashboard');
+
+        if (! in_array($dashboard, [McpClient::DASHBOARD_NONE, McpClient::DASHBOARD_READ, McpClient::DASHBOARD_WRITE], true)) {
+            $this->error('--dashboard debe ser none, read o write.');
+
+            return self::FAILURE;
+        }
+
+        if ($dashboard === McpClient::DASHBOARD_WRITE && ! $this->option('escritura')) {
+            $this->error('El acceso de escritura al Dashboard exige que el cliente tenga --escritura.');
+
+            return self::FAILURE;
+        }
+
         $ips = array_values(array_filter((array) $this->option('ip')));
 
         foreach ($ips as $ip) {
@@ -62,13 +77,14 @@ class McpClientCreateCommand extends Command
 
         [$plain, $hash] = McpClient::newToken();
 
-        $client = new McpClient(['name' => $name, 'user_id' => $user->getKey(), 'can_write' => (bool) $this->option('escritura'), 'allowed_ips' => $ips === [] ? null : $ips]);
+        $client = new McpClient(['name' => $name, 'user_id' => $user->getKey(), 'can_write' => (bool) $this->option('escritura'), 'dashboard_access' => $dashboard, 'allowed_ips' => $ips === [] ? null : $ips]);
         $client->forceFill(['token_hash' => $hash])->save();
 
         $audit->record('mcp', 'client_created', null, null, [], [
             'client' => $name,
             'user_id' => $user->getKey(),
             'can_write' => $client->can_write,
+            'dashboard' => $dashboard,
             'ips' => count($ips),
         ]);
 
