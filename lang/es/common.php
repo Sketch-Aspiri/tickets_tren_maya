@@ -26,7 +26,7 @@ return [
     'skip_to_content' => 'Saltar al contenido',
     'ecosystem' => [
         'label' => 'Sistemas de la Zona Oriente',
-        'footer' => 'Ecosistema Zona Oriente · Tren Maya',
+        'footer' => 'Sistema de Gestión Territorial Zona Oriente Tren Maya',
         'dashboard' => 'Dashboard',
         'tickets' => 'Tickets',
     ],
