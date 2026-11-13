@@ -36,13 +36,8 @@ final class WorkItemNotifier
 
         $recipients = $team->coordination?->approvers() ?? new Collection;
 
-        if ($team->coordinator_id !== null) {
-            $coordinator = User::query()->find($team->coordinator_id);
-
-            if ($coordinator !== null) {
-                $recipients->push($coordinator);
-            }
-        }
+        // Todos los coordinadores del equipo (principal y adicionales, decision 96).
+        $recipients = $recipients->merge($team->coordinators());
 
         $recipients
             ->unique('id')

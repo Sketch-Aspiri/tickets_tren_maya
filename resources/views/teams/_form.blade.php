@@ -43,7 +43,28 @@
                 <option value="{{ $coordinator->id }}" @selected((int) old('coordinator_id', $team->coordinator_id) === $coordinator->id)>{{ $coordinator->name }}</option>
             @endforeach
         </x-select-input>
+        <p class="mt-1 text-xs text-gray-600">{{ __('teams.form.coordinator_hint') }}</p>
         <x-input-error :messages="$coordinatorErrors" class="mt-2" />
+
+        @if ($coordinators->isNotEmpty())
+            @php
+                $selectedAdditional = array_map('intval', (array) old('additional_coordinator_ids', $team->additionalCoordinators->pluck('id')->all()));
+                $additionalErrors = array_merge($errors->get('additional_coordinator_ids'), $errors->get('additional_coordinator_ids.*'));
+            @endphp
+            <fieldset class="mt-4">
+                <legend class="text-sm font-medium text-gray-700">{{ __('teams.form.additional') }}</legend>
+                <p class="mt-1 text-xs text-gray-600">{{ __('teams.form.additional_hint') }}</p>
+                <div class="mt-2 grid gap-1 sm:grid-cols-2">
+                    @foreach ($coordinators as $coordinator)
+                        <label class="flex min-h-[44px] items-center gap-2 rounded-lg border border-gray-300 px-3 text-sm">
+                            <input type="checkbox" name="additional_coordinator_ids[]" value="{{ $coordinator->id }}" class="rounded border-gray-500 text-brand-green focus:ring-brand-teal" @checked(in_array($coordinator->id, $selectedAdditional, true))>
+                            <span>{{ $coordinator->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-input-error :messages="$additionalErrors" class="mt-2" />
+            </fieldset>
+        @endif
 
         @if ($coordinators->isEmpty())
             <div id="coordinator_id_help" class="mt-2 rounded-md border-l-4 border-brand-teal bg-brand-mint/15 p-3 text-sm text-gray-800">

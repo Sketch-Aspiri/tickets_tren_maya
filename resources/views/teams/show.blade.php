@@ -7,7 +7,7 @@
         </div>
     </x-slot>
 
-    <p class="text-sm text-gray-700">{{ __('teams.columns.coordinator') }}: {{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }}</p>
+    <p class="text-sm text-gray-700">{{ __('teams.columns.coordinator') }}: {{ $team->coordinatorNames() ?: __('teams.form.no_coordinator') }}</p>
 
     <h2 class="mt-4 text-base font-semibold text-brand-green">{{ __('teams.columns.members') }}</h2>
     @include('org.partials.users-table', ['users' => $users])

@@ -42,7 +42,7 @@ class CoordinationController extends Controller
             ->paginate((int) config('tickets.users_per_page'));
 
         return view('org.coordinations.show', [
-            'coordination' => $coordination->load(['station', 'teams' => fn ($q) => $q->withCount('members')->with('coordinator:id,name')->orderBy('name')]),
+            'coordination' => $coordination->load(['station', 'teams' => fn ($q) => $q->withCount('members')->with(['coordinator:id,name', 'additionalCoordinators:id,name'])->orderBy('name')]),
             'users' => $users,
         ]);
     }

@@ -140,6 +140,8 @@ return [
         'activity' => 'ACT',
     ],
     'max_collaborators' => 10,
+    // Coordinadores adicionales por equipo (decision 96), ademas del principal.
+    'max_additional_coordinators' => 5,
     'comment_max_length' => 2000,
 
     /*

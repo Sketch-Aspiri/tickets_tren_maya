@@ -38,7 +38,7 @@ class TeamController extends Controller
             ->paginate((int) config('tickets.users_per_page'));
 
         return view('teams.show', [
-            'team' => $team->load(['coordination.station', 'coordinator:id,name']),
+            'team' => $team->load(['coordination.station', 'coordinator:id,name', 'additionalCoordinators:id,name']),
             'users' => $users,
         ]);
     }
@@ -70,7 +70,7 @@ class TeamController extends Controller
         $this->authorize('update', $team);
 
         return view('teams.edit', [
-            'team' => $team,
+            'team' => $team->load('additionalCoordinators:id,name'),
             'coordinators' => $this->coordinatorOptions($team),
             'coordinations' => $this->coordinationOptions($team->coordination_id),
         ]);

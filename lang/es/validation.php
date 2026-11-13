@@ -130,6 +130,8 @@ return [
         'team_ids' => 'equipos',
         'team_ids.*' => 'equipo',
         'coordinator_id' => 'coordinador',
+        'additional_coordinator_ids' => 'coordinadores adicionales',
+        'additional_coordinator_ids.*' => 'coordinador adicional',
         'status' => 'estado',
         'reason' => 'motivo',
         'code' => 'código',

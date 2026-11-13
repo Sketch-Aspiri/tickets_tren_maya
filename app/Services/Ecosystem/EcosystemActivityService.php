@@ -62,11 +62,13 @@ final class EcosystemActivityService
         $this->assertUnderLimit($event);
         $team = $this->teamFor($event, $stationCode);
         $responsible = $this->responsibleOf($team);
+        // Los demas coordinadores del equipo (decision 96) colaboran y reciben el aviso; el principal es el responsable.
+        $collaborators = $team->coordinators()->reject(fn (User $user): bool => $user->is($responsible))->values();
         $system = $this->systemUser();
         $rules = (array) config('ecosistema.actividades.eventos.'.$event);
 
         try {
-            $activity = DB::transaction(function () use ($event, $externalRef, $title, $description, $url, $team, $responsible, $system, $rules): Activity {
+            $activity = DB::transaction(function () use ($event, $externalRef, $title, $description, $url, $team, $responsible, $collaborators, $system, $rules): Activity {
                 $activity = new Activity([
                     'title' => $title,
                     'description' => Str::limit($description.($url !== null ? "\n\n".__('activities.ecosystem.origin', ['url' => $url]) : ''), 5000, ''),
@@ -96,12 +98,21 @@ final class EcosystemActivityService
                     'assigned_by' => $system->getKey(),
                 ]);
 
+                foreach ($collaborators as $collaborator) {
+                    $activity->assignments()->create([
+                        'user_id' => $collaborator->getKey(),
+                        'role' => AssignmentRole::Colaborador,
+                        'assigned_by' => $system->getKey(),
+                    ]);
+                }
+
                 $this->audit->record('ecosystem', 'activity_created', $activity, null, extra: [
                     'event' => $event,
                     'ref' => $externalRef,
                     'folio' => $activity->folio,
                     'team_id' => $team->getKey(),
                     'responsible_id' => $responsible->getKey(),
+                    'collaborator_ids' => $collaborators->pluck('id')->all(),
                 ]);
 
                 return $activity;
@@ -120,6 +131,10 @@ final class EcosystemActivityService
         RateLimiter::hit($this->limitKey($event), 3600);
 
         $responsible->notify(new WorkItemAssigned('activity', (int) $activity->getKey(), (string) $activity->folio, (string) $activity->title, AssignmentRole::Responsable->value, $system->name));
+
+        foreach ($collaborators as $collaborator) {
+            $collaborator->notify(new WorkItemAssigned('activity', (int) $activity->getKey(), (string) $activity->folio, (string) $activity->title, AssignmentRole::Colaborador->value, $system->name));
+        }
 
         return ['activity' => $activity, 'created' => true, 'deleted' => false];
     }

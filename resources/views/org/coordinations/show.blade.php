@@ -13,7 +13,7 @@
             @forelse ($coordination->teams as $team)
                 <li class="flex justify-between py-2">
                     <a href="{{ route('teams.show', $team) }}" class="font-medium text-brand-green hover:underline">{{ $team->name }}</a>
-                    <span class="text-sm text-gray-600">{{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }} · {{ $team->members_count }}</span>
+                    <span class="text-sm text-gray-600">{{ $team->coordinatorNames() ?: __('teams.form.no_coordinator') }} · {{ $team->members_count }}</span>
                 </li>
             @empty
                 <li class="py-2 text-gray-600">{{ __('common.empty') }}</li>

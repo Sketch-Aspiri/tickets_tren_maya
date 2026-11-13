@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -90,6 +91,48 @@ class Team extends Model
     public function coordinator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'coordinator_id');
+    }
+
+    /**
+     * Coordinadores ADICIONALES (decision 96): comparten la gestion del equipo con el principal (`coordinator`).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function additionalCoordinators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'team_coordinator')->withTimestamps()->orderBy('team_coordinator.id');
+    }
+
+    /**
+     * Todos los coordinadores del equipo, el principal primero y sin repetir (decision 96). Incluye solo cuentas que
+     * aun cumplen `canBeCoordinatedBy`, asi que quien se inactivo o cambio de equipo no recibe avisos ni trabajo.
+     *
+     * @return Collection<int, User>
+     */
+    public function coordinators(): Collection
+    {
+        $this->loadMissing(['coordinator', 'additionalCoordinators']);
+
+        return collect([$this->coordinator])
+            ->merge($this->additionalCoordinators)
+            ->filter()
+            ->unique('id')
+            ->filter(fn (User $user): bool => $this->canBeCoordinatedBy($user))
+            ->values();
+    }
+
+    /**
+     * Nombres de los coordinadores para mostrar en pantalla (principal primero). Usa las relaciones YA cargadas: el
+     * llamador debe cargar `coordinator` y `additionalCoordinators` (evita una consulta por fila).
+     */
+    public function coordinatorNames(): string
+    {
+        return collect([$this->coordinator])
+            ->merge($this->additionalCoordinators)
+            ->filter()
+            ->unique('id')
+            ->pluck('name')
+            ->implode(', ');
     }
 
     /**

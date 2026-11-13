@@ -20,7 +20,7 @@ class EcosystemTeamsCommand extends Command
     public function handle(): int
     {
         $rows = Team::query()
-            ->with(['coordination:id,name,station_id', 'coordination.station:id,name', 'coordinator:id,name,status'])
+            ->with(['coordination:id,name,station_id', 'coordination.station:id,name', 'coordinator:id,name,status', 'additionalCoordinators:id,name,status'])
             ->orderBy('coordination_id')
             ->orderBy('name')
             ->get()
@@ -28,7 +28,9 @@ class EcosystemTeamsCommand extends Command
                 $team->getKey(),
                 $team->name,
                 $team->coordination?->station?->name.' › '.$team->coordination?->name,
-                $team->coordinator?->name ?? '(sin coordinador: no recibiría actividades)',
+                $team->coordinator === null
+                    ? '(sin coordinador: no recibiría actividades)'
+                    : $team->coordinator->name.($team->additionalCoordinators->isEmpty() ? '' : ' (+ '.$team->additionalCoordinators->pluck('name')->implode(', ').')'),
             ]);
 
         $this->table(['id', 'Equipo', 'Edificio › Coordinación', 'Coordinador'], $rows->all());

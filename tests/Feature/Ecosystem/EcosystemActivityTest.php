@@ -151,6 +151,33 @@ class EcosystemActivityTest extends DatabaseTestCase
         $this->assertDatabaseHas('activity_log', ['log_name' => 'ecosystem', 'event' => 'activity_created']);
     }
 
+    public function test_additional_coordinators_collaborate_and_are_notified_while_the_principal_is_responsible(): void
+    {
+        $second = User::factory()->coordinador()->create(['name' => 'Segundo Coordinador', 'team_id' => $this->teamA->id]);
+        $this->teamA->additionalCoordinators()->attach($second->id);
+
+        $this->send($this->payload())->assertCreated();
+        $activity = Activity::query()->firstOrFail();
+
+        $roles = $activity->assignments()->pluck('role', 'user_id')->all();
+        $this->assertSame(AssignmentRole::Responsable, $roles[$this->coordA->id]);
+        $this->assertSame(AssignmentRole::Colaborador, $roles[$second->id]);
+        $this->assertCount(2, $roles);
+
+        $this->assertSame($activity->folio, $second->fresh()->notifications->first()->data['folio']);
+        $this->assertSame($activity->folio, $this->coordA->fresh()->notifications->first()->data['folio']);
+    }
+
+    public function test_an_inactive_additional_coordinator_is_not_assigned(): void
+    {
+        $second = User::factory()->coordinador()->inactive()->create(['team_id' => $this->teamA->id]);
+        $this->teamA->additionalCoordinators()->attach($second->id);
+
+        $this->send($this->payload())->assertCreated();
+
+        $this->assertSame([$this->coordA->id], Activity::query()->firstOrFail()->assignments()->pluck('user_id')->all());
+    }
+
     public function test_the_coordinator_sees_it_and_other_teams_and_employees_do_not(): void
     {
         $this->send($this->payload())->assertCreated();

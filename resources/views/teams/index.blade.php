@@ -34,10 +34,10 @@
                 <tr>
                     <td class="px-4 py-3 font-medium text-gray-900">
                         <a href="{{ route('teams.show', $team) }}" class="text-brand-green hover:underline">{{ $team->name }}</a>
-                        <p class="text-xs font-normal sm:hidden {{ $team->coordinator ? 'text-gray-600' : 'italic text-gray-700' }}">{{ __('teams.columns.coordinator') }}: {{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }}</p>
+                        <p class="text-xs font-normal sm:hidden {{ $team->coordinator ? 'text-gray-600' : 'italic text-gray-700' }}">{{ __('teams.columns.coordinator') }}: {{ $team->coordinatorNames() ?: __('teams.form.no_coordinator') }}</p>
                     </td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $team->coordination->station->name }} › {{ $team->coordination->name }}</td>
-                    <td class="hidden px-4 py-3 sm:table-cell {{ $team->coordinator ? '' : 'italic text-gray-700' }}">{{ $team->coordinator?->name ?? __('teams.form.no_coordinator') }}</td>
+                    <td class="hidden px-4 py-3 sm:table-cell {{ $team->coordinator ? '' : 'italic text-gray-700' }}">{{ $team->coordinatorNames() ?: __('teams.form.no_coordinator') }}</td>
                     <td class="px-4 py-3">{{ $team->members_count }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-right">
                         @can('update', $team)
