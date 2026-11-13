@@ -55,9 +55,11 @@ final class SingleSignOnService
 
     public function sibling(): ?string
     {
-        return collect(array_keys((array) config('ecosistema.urls')))
-            ->reject(fn (string $key): bool => $key === config('ecosistema.sistema'))
-            ->first();
+        $others = collect(array_keys((array) config('ecosistema.urls')))
+            ->reject(fn (string $key): bool => $key === config('ecosistema.sistema'));
+
+        // Con el portal configurado, él es el origen de la sesión única (le preguntan todos los subsistemas).
+        return $others->contains('portal') ? 'portal' : $others->first();
     }
 
     public function url(string $system, string $path): string
