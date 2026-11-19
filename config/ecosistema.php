@@ -72,6 +72,8 @@ return [
         ],
         // Coordinacion (id) donde se crean los equipos centrales nuevos que llegan del Dashboard; vacio = la del primer equipo central.
         'coordinacion_nuevos' => env('ECOSISTEMA_COORD_EQUIPOS_NUEVOS'),
+        // Estaciones que ya tenian coordinacion en Tickets: codigo de estacion => codigo de la coordinacion existente.
+        'coordinaciones_existentes' => ['26' => 'COORD-TAE', '28' => 'CGGIF'],
         // Codigo de estacion del Dashboard => nombre.
         'estaciones' => [
             '23' => 'Puerto Morelos', '24' => 'Playa del Carmen', '25' => 'Tulum', '26' => 'Tulum Aeropuerto',

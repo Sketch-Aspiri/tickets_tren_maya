@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Team;
+use App\Services\Ecosystem\StationPlacementService;
 use Illuminate\Console\Command;
 
 /**
@@ -17,7 +18,7 @@ class EcosystemSyncStationTeamsCommand extends Command
 
     protected $description = 'Crea los subequipos de estacion bajo los equipos centrales configurados (ECOSISTEMA_SUBEQ_*)';
 
-    public function handle(): int
+    public function handle(StationPlacementService $placement): int
     {
         $stations = (array) config('ecosistema.subequipos.estaciones');
         $created = 0;
@@ -47,7 +48,7 @@ class EcosystemSyncStationTeamsCommand extends Command
                 if ($this->option('apply')) {
                     // parent_team_id/area/station_code no son asignables en masa (los formularios no deben poder fijarlos).
                     Team::query()->forceCreate([
-                        'coordination_id' => $central->coordination_id,
+                        'coordination_id' => $placement->coordinationFor($code, (string) $stationName)->getKey(),
                         'parent_team_id' => $central->getKey(),
                         'name' => $name,
                         'area' => (string) $area,

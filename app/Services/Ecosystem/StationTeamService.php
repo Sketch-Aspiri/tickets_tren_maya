@@ -14,6 +14,8 @@ use RuntimeException;
  */
 final class StationTeamService
 {
+    public function __construct(private readonly StationPlacementService $placement) {}
+
     /**
      * @param  list<array{codigo: string, nombre: string}>  $stations
      * @return array{equipo_central_id: int, creados: int}
@@ -36,7 +38,7 @@ final class StationTeamService
                 }
 
                 Team::query()->forceCreate([
-                    'coordination_id' => $central->coordination_id,
+                    'coordination_id' => $this->placement->coordinationFor($station['codigo'], $station['nombre'])->getKey(),
                     'parent_team_id' => $central->getKey(),
                     'name' => $prefix.' '.$station['nombre'],
                     'area' => $area,
