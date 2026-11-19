@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Internal\EcosystemActivityController;
 use App\Http\Controllers\Internal\EcosystemNoticeController;
+use App\Http\Controllers\Internal\EcosystemTeamController;
 use App\Http\Controllers\Internal\PendingSummaryController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,6 @@ Route::post('avisos', EcosystemNoticeController::class)->name('avisos');
 
 // Actividades que pide el Dashboard cuando ocurre algo alla (decision 92).
 Route::post('actividades', EcosystemActivityController::class)->name('actividades');
+
+// Equipos creados en el Dashboard: equipo central + subequipo por estacion (idempotente, solo agrega).
+Route::post('equipos', EcosystemTeamController::class)->name('equipos');

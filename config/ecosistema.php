@@ -70,6 +70,8 @@ return [
             'administracion' => ['prefijo' => 'Administración', 'equipo' => env('ECOSISTEMA_SUBEQ_ADMINISTRACION')],
             'soporte' => ['prefijo' => 'Soporte', 'equipo' => env('ECOSISTEMA_SUBEQ_SOPORTE')],
         ],
+        // Coordinacion (id) donde se crean los equipos centrales nuevos que llegan del Dashboard; vacio = la del primer equipo central.
+        'coordinacion_nuevos' => env('ECOSISTEMA_COORD_EQUIPOS_NUEVOS'),
         // Codigo de estacion del Dashboard => nombre.
         'estaciones' => [
             '23' => 'Puerto Morelos', '24' => 'Playa del Carmen', '25' => 'Tulum', '26' => 'Tulum Aeropuerto',
