@@ -276,6 +276,10 @@ class User extends Authenticatable
         return match ($this->roleEnum()) {
             UserRole::Administrador => null,
             UserRole::JefeZona => DB::table('teams')->select('id')->whereIn('coordination_id', $this->coordinationIdsQuery()),
+            // Un coordinador de un equipo central tambien responde por sus subequipos de estacion; un empleado, no.
+            UserRole::Coordinador => DB::table('teams')->select('id')
+                ->whereIn('id', $this->teamIdsQuery())
+                ->orWhereIn('parent_team_id', $this->teamIdsQuery()),
             default => $this->teamIdsQuery(),
         };
     }

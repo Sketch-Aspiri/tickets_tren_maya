@@ -57,6 +57,26 @@ return [
         'estaciones' => (array) (json_decode((string) env('ECOSISTEMA_ACT_ESTACIONES', '{}'), true) ?: []),
     ],
 
+    // Subequipos por estacion («RH Tulum» bajo el equipo central de RRHH): las areas y estaciones comunes a Portal,
+    // Dashboard y Tickets. `equipo` es el id o nombre EXACTO del equipo central de cada area (vacio = esa area no
+    // genera subequipos). `php artisan ecosystem:sync-station-teams` los crea.
+    'subequipos' => [
+        'areas' => [
+            'rh' => ['prefijo' => 'RH', 'equipo' => env('ECOSISTEMA_SUBEQ_RH')],
+            'rm' => ['prefijo' => 'RM', 'equipo' => env('ECOSISTEMA_SUBEQ_RM')],
+            'mantenimiento' => ['prefijo' => 'Mantenimiento', 'equipo' => env('ECOSISTEMA_SUBEQ_MANTENIMIENTO')],
+            'seguridad' => ['prefijo' => 'Seguridad', 'equipo' => env('ECOSISTEMA_SUBEQ_SEGURIDAD')],
+            'finanzas' => ['prefijo' => 'Finanzas', 'equipo' => env('ECOSISTEMA_SUBEQ_FINANZAS')],
+            'administracion' => ['prefijo' => 'Administración', 'equipo' => env('ECOSISTEMA_SUBEQ_ADMINISTRACION')],
+            'soporte' => ['prefijo' => 'Soporte', 'equipo' => env('ECOSISTEMA_SUBEQ_SOPORTE')],
+        ],
+        // Codigo de estacion del Dashboard => nombre.
+        'estaciones' => [
+            '23' => 'Puerto Morelos', '24' => 'Playa del Carmen', '25' => 'Tulum', '26' => 'Tulum Aeropuerto',
+            '27' => 'Felipe Carrillo Puerto', '28' => 'Limones', '29' => 'Bacalar', '30' => 'Chetumal', '31' => 'Kohunlich',
+        ],
+    ],
+
     // Puente interno entre los dos servidores (decision 89): llamadas firmadas con HMAC, nunca desde el navegador.
     // Un secreto por direccion, el MISMO valor en los dos .env (32+ caracteres aleatorios cada uno):
     //   ECOSISTEMA_PUENTE_SECRETO_DASHBOARD firma lo que el Dashboard le pide a Tickets;

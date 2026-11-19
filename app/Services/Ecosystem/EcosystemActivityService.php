@@ -183,7 +183,28 @@ final class EcosystemActivityService
             $team = $matches->count() === 1 ? $matches->first() : null;
         }
 
-        return $team ?? throw EcosystemActivityException::noTeam();
+        $team ??= throw EcosystemActivityException::noTeam();
+
+        return $this->stationSubteam($team, $rules, $stationCode) ?? $team;
+    }
+
+    /**
+     * Para un evento de estacion sin equipo propio configurado, el subequipo de esa estacion del equipo general del
+     * evento (p. ej. «RH Tulum» bajo RRHH), pero solo si ya tiene un coordinador valido: si no, el evento sigue yendo
+     * al equipo central en vez de perderse.
+     *
+     * @param  array<string, mixed>  $rules
+     */
+    private function stationSubteam(Team $general, array $rules, ?string $stationCode): ?Team
+    {
+        if (($rules['alcance'] ?? 'zona') !== 'estacion' || $stationCode === null
+            || isset(((array) config('ecosistema.actividades.estaciones'))[$stationCode])) {
+            return null;
+        }
+
+        $child = Team::query()->where('parent_team_id', $general->getKey())->where('station_code', $stationCode)->first();
+
+        return $child !== null && $child->coordinators()->isNotEmpty() ? $child : null;
     }
 
     private function responsibleOf(Team $team): User

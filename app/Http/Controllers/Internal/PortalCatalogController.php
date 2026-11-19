@@ -23,7 +23,7 @@ class PortalCatalogController extends Controller
 
         $teams = Team::query()->with('coordination.station:id,name')
             ->whereHas('coordination', fn ($q) => $q->where('active', true))
-            ->orderBy('name')->get(['id', 'coordination_id', 'name']);
+            ->orderBy('name')->get(['id', 'coordination_id', 'parent_team_id', 'name', 'area', 'station_code']);
 
         return response()->json([
             'sistema' => 'tickets',
@@ -36,6 +36,9 @@ class PortalCatalogController extends Controller
             'equipos' => $teams->map(fn (Team $team): array => [
                 'id' => $team->id,
                 'nombre' => $team->name,
+                'equipo_central_id' => $team->parent_team_id,
+                'area' => $team->area,
+                'codigo_estacion' => $team->station_code,
                 'coordinacion_id' => $team->coordination_id,
                 'coordinacion' => $team->coordination?->name,
                 'estacion' => $team->coordination?->station?->name,

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -23,7 +24,10 @@ class Team extends Model
      */
     protected $fillable = [
         'coordination_id',
+        'parent_team_id',
         'name',
+        'area',
+        'station_code',
         'coordinator_id',
     ];
 
@@ -34,6 +38,7 @@ class Team extends Model
     {
         return [
             'coordination_id' => 'integer',
+            'parent_team_id' => 'integer',
             'coordinator_id' => 'integer',
         ];
     }
@@ -41,7 +46,7 @@ class Team extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['coordination_id', 'name', 'coordinator_id'])
+            ->logOnly(['coordination_id', 'parent_team_id', 'name', 'area', 'station_code', 'coordinator_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('teams');
@@ -83,6 +88,26 @@ class Team extends Model
     public function coordination(): BelongsTo
     {
         return $this->belongsTo(Coordination::class);
+    }
+
+    /**
+     * Equipo central del que cuelga este subequipo de estacion (RRHH para «RH Tulum»).
+     *
+     * @return BelongsTo<Team, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'parent_team_id');
+    }
+
+    /**
+     * Subequipos de estacion de este equipo central.
+     *
+     * @return HasMany<Team, $this>
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Team::class, 'parent_team_id');
     }
 
     /**
