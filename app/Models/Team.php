@@ -24,10 +24,7 @@ class Team extends Model
      */
     protected $fillable = [
         'coordination_id',
-        'parent_team_id',
         'name',
-        'area',
-        'station_code',
         'coordinator_id',
     ];
 

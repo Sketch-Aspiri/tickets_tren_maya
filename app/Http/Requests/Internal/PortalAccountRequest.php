@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Internal;
 
 use App\Enums\UserRole;
+use App\Models\Team;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -32,6 +33,9 @@ class PortalAccountRequest extends FormRequest
             'role' => ['required', 'string', Rule::in(array_map(fn (UserRole $r): string => $r->value, UserRole::cases()))],
             'team_ids' => ['nullable', 'array', 'max:20'],
             'team_ids.*' => ['integer', 'distinct', 'exists:teams,id'],
+            // Alternativa a team_ids: el subequipo de esa estacion y area (codigo del Dashboard + clave comun).
+            'estacion' => ['nullable', 'string', 'max:8', 'required_with:area'],
+            'area' => ['nullable', 'string', 'max:32', 'required_with:estacion'],
             'coordination_ids' => ['nullable', 'array', 'max:20'],
             'coordination_ids.*' => ['integer', 'distinct', 'exists:coordinations,id'],
         ];
@@ -43,7 +47,12 @@ class PortalAccountRequest extends FormRequest
         return [function (Validator $validator): void {
             $role = UserRole::tryFrom((string) $this->input('role'));
 
-            if ($role?->requiresTeam() && (array) $this->input('team_ids', []) === []) {
+            if ($this->filled('estacion') && $this->filled('area')) {
+                $exists = Team::query()->where('station_code', (string) $this->input('estacion'))->where('area', (string) $this->input('area'))->exists();
+                if (! $exists) {
+                    $validator->errors()->add('estacion', 'subequipo_inexistente');
+                }
+            } elseif ($role?->requiresTeam() && (array) $this->input('team_ids', []) === []) {
                 $validator->errors()->add('team_ids', 'required');
             }
 

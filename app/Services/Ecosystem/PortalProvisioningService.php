@@ -6,6 +6,7 @@ namespace App\Services\Ecosystem;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Team;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ final class PortalProvisioningService
     public function __construct(private readonly AuditLogger $audit) {}
 
     /**
-     * @param  array{portal_user_id: string, name: string, email: string, password_hash: string, role: string, team_ids?: list<int>|null, coordination_ids?: list<int>|null}  $data
+     * @param  array{portal_user_id: string, name: string, email: string, password_hash: string, role: string, estacion?: string|null, area?: string|null, team_ids?: list<int>|null, coordination_ids?: list<int>|null}  $data
      * @return array{estado: string, user_id?: int}
      */
     public function provision(array $data): array
@@ -63,7 +64,17 @@ final class PortalProvisioningService
             DB::table('users')->where('id', $user->id)->update(['password' => $data['password_hash']]);
 
             $user->syncRoles([$role->value]);
-            $user->teams()->sync($role->requiresTeam() ? array_map('intval', $data['team_ids'] ?? []) : []);
+            $teamIds = array_map('intval', $data['team_ids'] ?? []);
+            $subteam = $this->subteam($data);
+            if ($subteam !== null) {
+                $teamIds = array_values(array_unique([...$teamIds, $subteam->getKey()]));
+            }
+            $user->teams()->sync($role->requiresTeam() ? $teamIds : []);
+
+            // La primera cuenta coordinadora de un subequipo sin coordinador pasa a coordinarlo.
+            if ($subteam !== null && $role === UserRole::Coordinador && $subteam->coordinator_id === null) {
+                $subteam->update(['coordinator_id' => $user->getKey()]);
+            }
 
             if ($role === UserRole::JefeZona) {
                 $user->coordinations()->sync(array_map('intval', $data['coordination_ids'] ?? []));
@@ -71,11 +82,25 @@ final class PortalProvisioningService
 
             $this->audit->record('users', 'provisioned_by_portal', $user, null, extra: [
                 'role' => $role->value,
-                'teams' => $data['team_ids'] ?? [],
+                'teams' => $teamIds,
                 'coordinations' => $data['coordination_ids'] ?? [],
             ]);
 
             return ['estado' => self::CREATED, 'user_id' => $user->id];
         });
+    }
+
+    /**
+     * Subequipo de la estacion y area que pidio el portal (el Form Request ya comprobo que existe).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function subteam(array $data): ?Team
+    {
+        if (empty($data['estacion']) || empty($data['area'])) {
+            return null;
+        }
+
+        return Team::query()->where('station_code', (string) $data['estacion'])->where('area', (string) $data['area'])->first();
     }
 }

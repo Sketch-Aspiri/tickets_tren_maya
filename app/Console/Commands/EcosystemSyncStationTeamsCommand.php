@@ -45,7 +45,8 @@ class EcosystemSyncStationTeamsCommand extends Command
                 $this->line(($this->option('apply') ? 'Creando' : 'Falta').": {$name} (bajo {$central->name})");
 
                 if ($this->option('apply')) {
-                    Team::query()->create([
+                    // parent_team_id/area/station_code no son asignables en masa (los formularios no deben poder fijarlos).
+                    Team::query()->forceCreate([
                         'coordination_id' => $central->coordination_id,
                         'parent_team_id' => $central->getKey(),
                         'name' => $name,

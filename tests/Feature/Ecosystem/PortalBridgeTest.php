@@ -80,6 +80,23 @@ class PortalBridgeTest extends DatabaseTestCase
         ];
     }
 
+    public function test_an_account_requested_by_station_and_area_joins_that_subteam_and_coordinates_it_when_empty(): void
+    {
+        $sub = Team::factory()->create(['name' => 'RH Tulum']);
+        $sub->forceFill(['area' => 'rh', 'station_code' => '25'])->save();
+
+        $this->postAccount($this->payload(['email' => 'rh@ejemplo.test', 'role' => 'coordinador', 'team_ids' => [], 'estacion' => '25', 'area' => 'rh']))->assertOk();
+
+        $user = User::query()->where('email', 'rh@ejemplo.test')->firstOrFail();
+        $this->assertSame([$sub->id], $user->teams()->pluck('teams.id')->all());
+        $this->assertSame($user->id, $sub->fresh()->coordinator_id);
+    }
+
+    public function test_a_station_and_area_without_a_subteam_is_rejected(): void
+    {
+        $this->postAccount($this->payload(['team_ids' => [], 'estacion' => '25', 'area' => 'rh']))->assertUnprocessable()->assertJsonValidationErrors('estacion');
+    }
+
     public function test_requests_without_a_valid_portal_signature_are_rejected(): void
     {
         $this->getJson('/interno/portal/catalogo')->assertUnauthorized();

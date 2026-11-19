@@ -27,13 +27,8 @@ class StationSubteamTest extends DatabaseTestCase
         parent::setUp();
         $this->buildScenario();
 
-        $this->sub = Team::factory()->create([
-            'coordination_id' => $this->teamA->coordination_id,
-            'parent_team_id' => $this->teamA->id,
-            'name' => 'RH Puerto Morelos',
-            'area' => 'rh',
-            'station_code' => '23',
-        ]);
+        $this->sub = Team::factory()->create(['coordination_id' => $this->teamA->coordination_id, 'name' => 'RH Puerto Morelos']);
+        $this->sub->forceFill(['parent_team_id' => $this->teamA->id, 'area' => 'rh', 'station_code' => '23'])->save();
         $this->subCoord = User::factory()->coordinador()->create(['team_id' => $this->sub->id]);
         $this->sub->update(['coordinator_id' => $this->subCoord->id]);
 
