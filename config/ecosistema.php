@@ -21,6 +21,9 @@ return [
         'portal' => env('ECOSISTEMA_PORTAL_URL') ? rtrim((string) env('ECOSISTEMA_PORTAL_URL'), '/') : null,
     ]),
 
+    // Destino del logo: el portal central. Independiente del inicio unico (ECOSISTEMA_PORTAL_URL).
+    'portal_inicio' => rtrim((string) env('ECOSISTEMA_PORTAL_INICIO_URL', 'https://zonaorientetm.tech'), '/'),
+
     // Inicio de sesion unico entre los dos sistemas (App\Services\Ecosystem\SingleSignOnService, decision 88).
     // ECOSISTEMA_SSO_SECRET: el MISMO valor en los .env de ambos sistemas (32+ caracteres aleatorios).
     // Sin el, cada sistema pide su propio login.
