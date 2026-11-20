@@ -9,7 +9,7 @@ use App\Services\AuditLogger;
 use Illuminate\Console\Command;
 
 /**
- * Revoca un cliente del servidor MCP (decision 94): su token deja de funcionar de inmediato. No se borra la fila
+ * Revoca un cliente del servidor MCP (decision 98): su token deja de funcionar de inmediato. No se borra la fila
  * para conservar el rastro de quien fue y cuando se uso por ultima vez.
  */
 class McpClientRevokeCommand extends Command

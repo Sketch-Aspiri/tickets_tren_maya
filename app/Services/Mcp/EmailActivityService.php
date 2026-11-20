@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Correo entrante -> actividad por la IA (decision 94). La IA (cliente MCP) solo aporta responsable, equipo, fecha
+ * Correo entrante -> actividad por la IA (decision 98). La IA (cliente MCP) solo aporta responsable, equipo, fecha
  * limite, confianza y su razonamiento; este servicio NO confia en nada de eso:
  * - el correo debe estar en el alcance de la cuenta con la que actua el cliente y seguir pendiente;
  * - el equipo debe ser de la coordinacion del correo y del alcance de trabajo de la cuenta;

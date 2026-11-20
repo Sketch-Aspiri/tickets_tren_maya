@@ -104,6 +104,27 @@ final class BridgeSignature
         return Cache::add('ecosistema:puente:nonce:'.hash('sha256', $system.'|'.$nonce), true, $window * 2 + 60) ? $system : null;
     }
 
+    /**
+     * Encabezados para una llamada saliente AL PORTAL: mismo formato, firmada con el secreto propio del portal y
+     * con `tickets` como sistema (el portal la distingue de las suyas por ese campo).
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, string>
+     */
+    public function portalHeaders(string $method, string $path, array $query = [], string $body = ''): array
+    {
+        $system = (string) config('ecosistema.sistema');
+        $date = (string) now()->getTimestamp();
+        $nonce = Str::random(40);
+
+        return [
+            self::SYSTEM => $system,
+            self::DATE => $date,
+            self::NONCE => $nonce,
+            self::SIGNATURE => $this->compute((string) config('ecosistema.puente.portal.secreto'), $method, $path, $query, $system, $date, $nonce, $body),
+        ];
+    }
+
     public function portalConfigured(): bool
     {
         return strlen((string) config('ecosistema.puente.portal.secreto')) >= 32;

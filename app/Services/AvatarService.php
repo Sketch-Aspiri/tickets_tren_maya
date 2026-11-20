@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exceptions\BusinessRuleException;
+use App\Jobs\PushAvatarToPortal;
 use App\Models\User;
 use GdImage;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -25,7 +26,16 @@ final class AvatarService
 
     public function update(User $user, UploadedFile $file): User
     {
-        $jpeg = $this->normalize($file);
+        return $this->setFromBytes($user, (string) file_get_contents($file->getRealPath()));
+    }
+
+    /**
+     * Guarda la foto desde bytes JPG/PNG. `$propagate` es false cuando el cambio vino del portal (evita el eco).
+     * Con `$actor` null la auditoria queda sin autor (cambio recibido por el puente).
+     */
+    public function setFromBytes(User $user, string $bytes, bool $propagate = true): User
+    {
+        $jpeg = $this->normalize($bytes);
         $disk = $this->disk();
         $path = (string) config('tickets.avatars.directory').'/'.Str::random(40).'.jpg';
         $previous = $user->avatar_path;
@@ -35,9 +45,9 @@ final class AvatarService
         }
 
         try {
-            DB::transaction(function () use ($user, $path): void {
+            DB::transaction(function () use ($user, $path, $propagate): void {
                 $user->forceFill(['avatar_path' => $path])->save();
-                $this->audit->record('users', 'avatar_updated', $user, $user);
+                $this->audit->record('users', 'avatar_updated', $user, $propagate ? $user : null);
             });
         } catch (Throwable $exception) {
             $disk->delete($path);
@@ -49,10 +59,24 @@ final class AvatarService
             $disk->delete($previous);
         }
 
+        if ($propagate) {
+            PushAvatarToPortal::dispatch($user->id);
+        }
+
         return $user;
     }
 
-    public function remove(User $user): User
+    /** Bytes del JPEG actual o null. */
+    public function bytes(User $user): ?string
+    {
+        if ($user->avatar_path === null || ! $this->disk()->exists($user->avatar_path)) {
+            return null;
+        }
+
+        return (string) $this->disk()->get($user->avatar_path);
+    }
+
+    public function remove(User $user, bool $propagate = true): User
     {
         $previous = $user->avatar_path;
 
@@ -60,12 +84,16 @@ final class AvatarService
             return $user;
         }
 
-        DB::transaction(function () use ($user): void {
+        DB::transaction(function () use ($user, $propagate): void {
             $user->forceFill(['avatar_path' => null])->save();
-            $this->audit->record('users', 'avatar_removed', $user, $user);
+            $this->audit->record('users', 'avatar_removed', $user, $propagate ? $user : null);
         });
 
         $this->disk()->delete($previous);
+
+        if ($propagate) {
+            PushAvatarToPortal::dispatch($user->id);
+        }
 
         return $user;
     }
@@ -74,9 +102,9 @@ final class AvatarService
      * Devuelve los bytes del JPEG cuadrado ya reprocesado. Revisa las dimensiones ANTES de decodificar (una
      * imagen pequena en bytes puede ocupar gigas en memoria al descomprimirse).
      */
-    private function normalize(UploadedFile $file): string
+    private function normalize(string $bytes): string
     {
-        $info = @getimagesize($file->getRealPath());
+        $info = @getimagesizefromstring($bytes);
         $maxDimension = (int) config('tickets.avatars.max_source_dimension');
 
         if ($info === false || ! in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG], true)) {
@@ -87,7 +115,7 @@ final class AvatarService
             throw BusinessRuleException::because('profile.avatar.errors.dimensions', ['max' => $maxDimension]);
         }
 
-        $source = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
+        $source = @imagecreatefromstring($bytes);
 
         if (! $source instanceof GdImage) {
             throw BusinessRuleException::because('profile.avatar.errors.type');

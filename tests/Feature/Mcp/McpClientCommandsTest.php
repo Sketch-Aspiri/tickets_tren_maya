@@ -10,7 +10,7 @@ use Spatie\Activitylog\Models\Activity as ActivityLogEntry;
 use Tests\DatabaseTestCase;
 
 /**
- * Comandos `mcp:cliente-crear` y `mcp:cliente-revocar` (decision 94) y la herramienta `whoami` por HTTP.
+ * Comandos `mcp:cliente-crear` y `mcp:cliente-revocar` (decision 98) y la herramienta `whoami` por HTTP.
  */
 class McpClientCommandsTest extends DatabaseTestCase
 {

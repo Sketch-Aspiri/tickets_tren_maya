@@ -100,6 +100,8 @@ return [
         // se usa con el Dashboard. Sin el, /interno/portal/* responde 404.
         'portal' => [
             'secreto' => env('ECOSISTEMA_PUENTE_SECRETO_PORTAL'),
+            // Direccion con la que este servidor llama al portal (foto de perfil unica).
+            'url' => rtrim((string) env('ECOSISTEMA_PORTAL_PUENTE_URL', 'https://zonaorientetm.tech'), '/'),
         ],
     ],
 

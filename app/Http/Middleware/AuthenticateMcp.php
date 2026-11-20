@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Autentica al cliente del servidor MCP (decision 94) con un token Bearer. Sin ningun cliente creado el
+ * Autentica al cliente del servidor MCP (decision 98) con un token Bearer. Sin ningun cliente creado el
  * endpoint no existe (404). La busqueda es por hash SHA-256 del token (indice unico) y las respuestas de error
  * no dicen si el token no existe, esta revocado, la cuenta esta inactiva o la IP no esta permitida.
  *

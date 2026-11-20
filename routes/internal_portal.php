@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Internal\PortalAccountController;
+use App\Http\Controllers\Internal\PortalAvatarController;
 use App\Http\Controllers\Internal\PortalCatalogController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,3 +12,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('catalogo', PortalCatalogController::class)->name('catalogo');
 Route::get('cuentas', [PortalAccountController::class, 'index'])->name('cuentas.index');
 Route::post('cuentas', [PortalAccountController::class, 'store'])->name('cuentas.store');
+
+// Foto de perfil unica: el portal la lee (herencia inicial) y la reparte.
+Route::get('avatar', [PortalAvatarController::class, 'show'])->name('avatar.show');
+Route::put('avatar', [PortalAvatarController::class, 'update'])->name('avatar.update');
+Route::delete('avatar', [PortalAvatarController::class, 'destroy'])->name('avatar.destroy');

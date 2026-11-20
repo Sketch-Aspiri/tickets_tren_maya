@@ -46,7 +46,7 @@ class IncomingEmailConversionController extends Controller
             'description' => mb_substr($incomingEmail->body, 0, 5000),
         ]);
 
-        // Propuesta pendiente de la IA (decision 94): precarga responsable, equipo y fecha para que la persona
+        // Propuesta pendiente de la IA (decision 98): precarga responsable, equipo y fecha para que la persona
         // solo confirme o corrija. No pisa lo que ya devolvio una validacion fallida.
         $proposal = EmailActivityProposal::query()
             ->with(['responsible:id,name', 'team:id,name', 'client:id,name'])

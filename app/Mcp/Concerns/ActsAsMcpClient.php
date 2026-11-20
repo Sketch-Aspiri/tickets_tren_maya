@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Response;
 
 /**
- * Comun a las herramientas MCP (decision 94): el cliente autenticado que dejo `AuthenticateMcp`, la regla de que
+ * Comun a las herramientas MCP (decision 98): el cliente autenticado que dejo `AuthenticateMcp`, la regla de que
  * las herramientas de escritura no existen para clientes de solo lectura, y la traduccion de errores de negocio
  * a mensajes de la herramienta (nunca trazas ni SQL).
  */

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Estado de una propuesta de actividad hecha por la IA sobre un correo entrante (decision 94).
+ * Estado de una propuesta de actividad hecha por la IA sobre un correo entrante (decision 98).
  */
 enum EmailProposalStatus: string
 {

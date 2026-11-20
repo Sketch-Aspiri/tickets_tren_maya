@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 /**
- * Cliente del servidor MCP (decision 94). El token nunca se guarda en claro: solo su hash SHA-256.
+ * Cliente del servidor MCP (decision 98). El token nunca se guarda en claro: solo su hash SHA-256.
  */
 class McpClient extends Model
 {

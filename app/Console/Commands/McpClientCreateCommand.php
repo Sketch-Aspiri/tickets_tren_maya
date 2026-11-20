@@ -10,7 +10,7 @@ use App\Services\AuditLogger;
 use Illuminate\Console\Command;
 
 /**
- * Registra un cliente del servidor MCP (decision 94). Actua COMO la cuenta indicada, asi que sus permisos y su
+ * Registra un cliente del servidor MCP (decision 98). Actua COMO la cuenta indicada, asi que sus permisos y su
  * alcance son los de esa cuenta. El token se muestra UNA sola vez; en la BD solo queda su hash.
  */
 class McpClientCreateCommand extends Command

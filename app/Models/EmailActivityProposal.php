@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Propuesta de actividad de la IA sobre un correo entrante (decision 94). Se escribe SIEMPRE desde
+ * Propuesta de actividad de la IA sobre un correo entrante (decision 98). Se escribe SIEMPRE desde
  * `EmailActivityService` (forceFill), nunca por mass-assignment: por eso no tiene `$fillable`.
  */
 final class EmailActivityProposal extends Model

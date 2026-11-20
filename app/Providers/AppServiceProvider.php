@@ -172,7 +172,7 @@ class AppServiceProvider extends ServiceProvider
                 ->by($name.'|'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
         }
 
-        // Servidor MCP (decision 94): el limite corre ANTES de autenticar, asi que se acota por huella del token
+        // Servidor MCP (decision 98): el limite corre ANTES de autenticar, asi que se acota por huella del token
         // (nunca el token) o, sin token, por IP; un cliente no agota el cupo de otro.
         RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute((int) config('tickets.rate_limits.mcp_per_minute'))
             ->by('mcp|'.(($token = (string) $request->bearerToken()) !== '' ? hash('sha256', $token) : $request->ip())));

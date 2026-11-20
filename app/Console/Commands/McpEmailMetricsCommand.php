@@ -9,7 +9,7 @@ use App\Models\EmailActivityProposal;
 use Illuminate\Console\Command;
 
 /**
- * Tasa de aciertos de la IA en las propuestas de actividad desde correo (decision 94): cuantas confirmo una
+ * Tasa de aciertos de la IA en las propuestas de actividad desde correo (decision 98): cuantas confirmo una
  * persona SIN cambiar nada. Es el dato para decidir cuando pasar de `propuesta` a `automatico_confiable`.
  * Solo lectura.
  */

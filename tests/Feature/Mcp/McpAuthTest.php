@@ -10,7 +10,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\DatabaseTestCase;
 
 /**
- * Autenticacion del servidor MCP (decision 94): sin clientes el endpoint no existe, token Bearer por hash,
+ * Autenticacion del servidor MCP (decision 98): sin clientes el endpoint no existe, token Bearer por hash,
  * revocacion inmediata, cuenta inactiva, IPs permitidas y el cliente actua como su cuenta.
  */
 class McpAuthTest extends DatabaseTestCase

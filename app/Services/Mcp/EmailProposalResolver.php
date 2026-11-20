@@ -12,7 +12,7 @@ use App\Models\IncomingEmail;
 use App\Models\User;
 
 /**
- * Cierra la propuesta de la IA cuando una persona decide sobre el correo (decision 94). Lo llama
+ * Cierra la propuesta de la IA cuando una persona decide sobre el correo (decision 98). Lo llama
  * `IncomingEmailReviewService` dentro de su transaccion: convertir confirma la propuesta (y registra si se acepto
  * SIN cambios, que es la metrica para pasar al modo automatico); descartar la rechaza.
  */

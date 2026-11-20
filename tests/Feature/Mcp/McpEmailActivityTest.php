@@ -18,7 +18,7 @@ use Tests\Concerns\BuildsActivityScenario;
 use Tests\DatabaseTestCase;
 
 /**
- * Correo entrante -> actividad por la IA (decision 94): herramientas MCP por HTTP, validacion del servidor
+ * Correo entrante -> actividad por la IA (decision 98): herramientas MCP por HTTP, validacion del servidor
  * (la IA no manda), modo propuesta por defecto, modo automatico solo bajo todas las condiciones, y la
  * confirmacion humana que cierra la propuesta.
  */
