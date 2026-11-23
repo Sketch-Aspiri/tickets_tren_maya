@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Internal;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Internal\PortalAccountRequest;
+use App\Http\Requests\Internal\PortalAccountUpdateRequest;
 use App\Models\User;
 use App\Services\Ecosystem\PortalProvisioningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Cuentas para el portal (puente interno, decision 99): alta de la cuenta aprobada y, para la simulacion de
@@ -23,6 +25,16 @@ class PortalAccountController extends Controller
 
         // 409: ya hay una cuenta con ese correo que no es de este alta; el portal lo muestra como conflicto.
         return response()->json($result, $result['estado'] === PortalProvisioningService::EMAIL_TAKEN ? 409 : 200);
+    }
+
+    /** Estado y/o rol/contexto de una cuenta ya emparejada. 404 si ese portal_user_id no existe aqui. */
+    public function update(PortalAccountUpdateRequest $request, string $portalUserId, PortalProvisioningService $provisioning): JsonResponse
+    {
+        abort_unless(Str::isUuid($portalUserId), 404);
+
+        $result = $provisioning->sync($portalUserId, $request->validated());
+
+        return response()->json($result, $result['estado'] === PortalProvisioningService::NOT_FOUND ? 404 : 200);
     }
 
     public function index(Request $request): JsonResponse

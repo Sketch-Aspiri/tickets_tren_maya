@@ -9,6 +9,8 @@ use App\Enums\UserStatus;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\SessionInvalidator;
+use App\Services\TeamService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -31,7 +33,15 @@ final class PortalProvisioningService
 
     public const EMAIL_TAKEN = 'correo_existente';
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public const UPDATED = 'actualizada';
+
+    public const NOT_FOUND = 'no_encontrada';
+
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly TeamService $teams,
+        private readonly SessionInvalidator $sessions,
+    ) {}
 
     /**
      * @param  array{portal_user_id: string, name: string, email: string, password_hash: string, role: string, estacion?: string|null, area?: string|null, team_ids?: list<int>|null, coordination_ids?: list<int>|null}  $data
@@ -63,22 +73,7 @@ final class PortalProvisioningService
             // El cast `hashed` volveria a cifrar un hash con otro costo: se escribe tal cual llego.
             DB::table('users')->where('id', $user->id)->update(['password' => $data['password_hash']]);
 
-            $user->syncRoles([$role->value]);
-            $teamIds = array_map('intval', $data['team_ids'] ?? []);
-            $subteam = $this->subteam($data);
-            if ($subteam !== null) {
-                $teamIds = array_values(array_unique([...$teamIds, $subteam->getKey()]));
-            }
-            $user->teams()->sync($role->requiresTeam() ? $teamIds : []);
-
-            // La primera cuenta coordinadora de un subequipo sin coordinador pasa a coordinarlo.
-            if ($subteam !== null && $role === UserRole::Coordinador && $subteam->coordinator_id === null) {
-                $subteam->update(['coordinator_id' => $user->getKey()]);
-            }
-
-            if ($role === UserRole::JefeZona) {
-                $user->coordinations()->sync(array_map('intval', $data['coordination_ids'] ?? []));
-            }
+            $teamIds = $this->assign($user, $role, $data);
 
             $this->audit->record('users', 'provisioned_by_portal', $user, null, extra: [
                 'role' => $role->value,
@@ -87,6 +82,77 @@ final class PortalProvisioningService
             ]);
 
             return ['estado' => self::CREATED, 'user_id' => $user->id];
+        });
+    }
+
+    /**
+     * Rol, equipos y coordinaciones de la cuenta segun lo que pidio el portal. Devuelve los equipos finales.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<int>
+     */
+    private function assign(User $user, UserRole $role, array $data): array
+    {
+        $user->syncRoles([$role->value]);
+        $teamIds = array_map('intval', $data['team_ids'] ?? []);
+        $subteam = $this->subteam($data);
+        if ($subteam !== null) {
+            $teamIds = array_values(array_unique([...$teamIds, $subteam->getKey()]));
+        }
+        $user->teams()->sync($role->requiresTeam() ? $teamIds : []);
+
+        // La primera cuenta coordinadora de un subequipo sin coordinador pasa a coordinarlo.
+        if ($subteam !== null && $role === UserRole::Coordinador && $subteam->coordinator_id === null) {
+            $subteam->update(['coordinator_id' => $user->getKey()]);
+        }
+
+        $user->coordinations()->sync($role === UserRole::JefeZona ? array_map('intval', $data['coordination_ids'] ?? []) : []);
+
+        return $teamIds;
+    }
+
+    /**
+     * Cambios que el portal hace despues del alta (misma autoridad: la firma del puente, sin actor humano):
+     * estado (`activo`/`inactivo`; inactivo cierra sesiones) y/o rol y contexto. Solo cuentas ya emparejadas con
+     * ese `portal_user_id`; nunca se busca por correo.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{estado: string, user_id?: int}
+     */
+    public function sync(string $portalUserId, array $data): array
+    {
+        return DB::transaction(function () use ($portalUserId, $data): array {
+            $user = User::query()->where('portal_user_id', $portalUserId)->lockForUpdate()->first();
+
+            if ($user === null) {
+                return ['estado' => self::NOT_FOUND];
+            }
+
+            $changes = [];
+
+            if (! empty($data['role'])) {
+                $role = UserRole::from($data['role']);
+                $changes['role'] = [$user->roleEnum()?->value, $role->value];
+                $this->assign($user, $role, $data);
+            }
+
+            if (isset($data['estado'])) {
+                $status = $data['estado'] === 'inactivo' ? UserStatus::Inactive : UserStatus::Active;
+                if ($user->status !== $status) {
+                    $user->forceFill(['status' => $status])->saveQuietly();
+                    $changes['status'] = $status->value;
+                }
+                if ($status === UserStatus::Inactive) {
+                    $this->sessions->revokeAll($user);
+                }
+            }
+
+            // Una cuenta que ya no es coordinadora (rol, equipos o baja) deja de coordinar lo que tenia.
+            $this->teams->releaseInvalidCoordination($user->refresh());
+
+            $this->audit->record('users', 'synced_by_portal', $user, null, extra: ['changes' => $changes]);
+
+            return ['estado' => self::UPDATED, 'user_id' => $user->id];
         });
     }
 

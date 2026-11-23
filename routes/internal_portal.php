@@ -13,6 +13,9 @@ Route::get('catalogo', PortalCatalogController::class)->name('catalogo');
 Route::get('cuentas', [PortalAccountController::class, 'index'])->name('cuentas.index');
 Route::post('cuentas', [PortalAccountController::class, 'store'])->name('cuentas.store');
 
+// Estado (activo/inactivo) y rol/contexto de una cuenta ya emparejada; "quitar acceso" = inactivo.
+Route::put('cuentas/{portalUserId}', [PortalAccountController::class, 'update'])->name('cuentas.update');
+
 // Foto de perfil unica: el portal la lee (herencia inicial) y la reparte.
 Route::get('avatar', [PortalAvatarController::class, 'show'])->name('avatar.show');
 Route::put('avatar', [PortalAvatarController::class, 'update'])->name('avatar.update');

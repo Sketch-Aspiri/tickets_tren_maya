@@ -238,4 +238,73 @@ class PortalBridgeTest extends DatabaseTestCase
         $this->assertSame(['dos@ejemplo.test'], array_column($next->json('cuentas'), 'email'));
         $this->assertNull($next->json('siguiente'));
     }
+
+    private function putAccount(string $portalUserId, array $payload, array $headerOverrides = []): TestResponse
+    {
+        $path = '/interno/portal/cuentas/'.$portalUserId;
+        $body = (string) json_encode($payload);
+
+        return $this->call('PUT', $path, [], [], [], $this->transformHeadersToServerVars(
+            ($headerOverrides ?: $this->signed('PUT', $path, $body)) + ['CONTENT_TYPE' => 'application/json', 'Accept' => 'application/json'],
+        ), $body);
+    }
+
+    private function provisioned(array $overrides = []): User
+    {
+        $payload = $this->payload($overrides);
+        $this->postAccount($payload)->assertOk();
+
+        return User::query()->where('portal_user_id', $payload['portal_user_id'])->firstOrFail();
+    }
+
+    public function test_the_portal_can_deactivate_and_reactivate_a_linked_account(): void
+    {
+        $user = $this->provisioned(['email' => 'baja@ejemplo.test']);
+
+        $this->putAccount($user->portal_user_id, ['estado' => 'inactivo'])->assertOk()->assertJsonPath('estado', 'actualizada');
+        $this->assertSame(UserStatus::Inactive, $user->fresh()->status);
+        $this->assertDatabaseHas('activity_log', ['event' => 'synced_by_portal', 'subject_id' => $user->id]);
+
+        $this->putAccount($user->portal_user_id, ['estado' => 'activo'])->assertOk();
+        $this->assertSame(UserStatus::Active, $user->fresh()->status);
+    }
+
+    public function test_the_portal_can_change_role_and_teams(): void
+    {
+        $user = $this->provisioned(['email' => 'rol@ejemplo.test', 'role' => 'empleado']);
+        $other = Team::factory()->create();
+
+        $this->putAccount($user->portal_user_id, ['role' => 'coordinador', 'team_ids' => [$other->id]])->assertOk();
+
+        $user->refresh();
+        $this->assertSame(UserRole::Coordinador, $user->roleEnum());
+        $this->assertSame([$other->id], $user->teams()->pluck('teams.id')->all());
+    }
+
+    public function test_a_role_that_needs_a_team_without_one_is_rejected(): void
+    {
+        $user = $this->provisioned(['email' => 'sin@ejemplo.test']);
+
+        $this->putAccount($user->portal_user_id, ['role' => 'coordinador'])->assertUnprocessable()->assertJsonValidationErrors('team_ids');
+        $this->putAccount($user->portal_user_id, [])->assertUnprocessable();
+    }
+
+    public function test_an_unknown_portal_user_is_404_and_an_account_is_never_found_by_email(): void
+    {
+        $existing = User::factory()->create(['email' => 'local@ejemplo.test', 'status' => UserStatus::Active]);
+
+        $this->putAccount((string) Str::uuid(), ['estado' => 'inactivo'])->assertNotFound();
+        $this->putAccount('no-es-uuid', ['estado' => 'inactivo'])->assertNotFound();
+        $this->assertSame(UserStatus::Active, $existing->fresh()->status);
+    }
+
+    public function test_updates_require_a_valid_portal_signature(): void
+    {
+        $user = $this->provisioned(['email' => 'firma@ejemplo.test']);
+        $path = '/interno/portal/cuentas/'.$user->portal_user_id;
+        $body = (string) json_encode(['estado' => 'inactivo']);
+
+        $this->putAccount($user->portal_user_id, ['estado' => 'inactivo'], $this->signed('PUT', $path, $body, secret: 'otro-secreto-de-al-menos-treinta-y-dos-caracteres'))->assertUnauthorized();
+        $this->assertSame(UserStatus::Active, $user->fresh()->status);
+    }
 }
