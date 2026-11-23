@@ -12,7 +12,7 @@
             <div class="flex min-w-0 flex-1 flex-col">
                 {{-- Barra superior (solo movil) --}}
                 <div class="sticky top-0 z-20 flex items-center justify-between border-b border-brand-green/10 bg-white px-4 py-2 shadow-sm lg:hidden">
-                    <a href="{{ config('ecosistema.portal_inicio') ?: route('dashboard') }}" class="inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
+                    <a href="{{ config('ecosistema.portal_panel') ?: route('dashboard') }}" class="inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
                         <x-application-logo class="h-11" />
                     </a>
                     <button type="button" x-on:click="openMenu" class="inline-flex h-11 w-11 items-center justify-center rounded-md text-brand-green hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal" aria-label="{{ __('common.nav.open_menu') }}">
