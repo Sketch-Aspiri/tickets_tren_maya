@@ -16,6 +16,8 @@ return [
         'body_team' => ':by escribió en el canal :team.',
     ],
     'ui' => [
+        'moved_to_portal' => 'Las notificaciones de todos los sistemas ahora llegan por la app del portal. Instálala y actívalas ahí; aquí seguirás viendo tu lista de avisos.',
+        'open_portal' => 'Abrir notificaciones del portal',
         'title' => 'Notificaciones en este dispositivo',
         'intro' => 'Recibe avisos en tu celular o computadora aunque el sistema esté cerrado.',
         'enable' => 'Activar notificaciones',

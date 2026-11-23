@@ -4,6 +4,18 @@
         ->mapWithKeys(fn (string $key): array => [$key => __('push.ui.'.$key)])
         ->all();
 @endphp
+@if (config('ecosistema.push.destino') === 'portal')
+    {{-- El push general de todos los sistemas llega por la PWA del portal (decisión 94): aquí ya no se activa. --}}
+    <x-card :title="__('push.ui.title')">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="min-w-0 text-sm text-gray-700">{{ __('push.ui.moved_to_portal') }}</p>
+            <a href="{{ rtrim((string) config('ecosistema.portal_inicio'), '/') }}/notificaciones"
+               class="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg bg-brand-green px-4 py-2 text-sm font-semibold text-white hover:bg-brand-green/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
+                {{ __('push.ui.open_portal') }}
+            </a>
+        </div>
+    </x-card>
+@else
 <x-card :title="__('push.ui.title')">
     <div x-data="pushToggle"
          data-subscribe-url="{{ route('push.subscribe') }}"
@@ -27,3 +39,4 @@
         </div>
     </div>
 </x-card>
+@endif

@@ -8,7 +8,6 @@ use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
 /**
@@ -35,7 +34,7 @@ final class WorkItemStatusChanged extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return [WebPushChannel::class];
+        return [$this->pushChannel()];
     }
 
     public function toWebPush(object $notifiable, Notification $notification): WebPushMessage

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Notifications\Concerns;
 
+use App\Notifications\Channels\PortalChannel;
+use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
 /**
@@ -12,6 +14,17 @@ use NotificationChannels\WebPush\WebPushMessage;
  */
 trait BuildsWebPush
 {
+    /**
+     * Canal del push: el de este sitio, o el PORTAL cuando ECOSISTEMA_PUSH_DESTINO=portal (el portal entrega el mismo
+     * mensaje en su PWA). La campana (`database`) no cambia.
+     *
+     * @return class-string
+     */
+    protected function pushChannel(): string
+    {
+        return config('ecosistema.push.destino') === 'portal' ? PortalChannel::class : WebPushChannel::class;
+    }
+
     protected function webPush(string $title, string $body, string $url, string $tag): WebPushMessage
     {
         return (new WebPushMessage)

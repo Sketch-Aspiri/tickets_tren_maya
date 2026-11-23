@@ -3,12 +3,12 @@
 // Seguridad: NO se cachea ninguna respuesta autenticada ni dinamica (paginas, JSON, adjuntos, avatares).
 // Solo se guardan la pagina de "sin conexion", los iconos y los assets versionados de /build/ (nombres con
 // hash, sin datos de usuario). Subir la version invalida la cache anterior.
-const VERSION = 'v3';
+const VERSION = 'v4';
 
 // Sistemas del ecosistema a los que puede llevar una notificacion (ademas de este sitio). Lista exacta, sin
 // comodines: un subdominio de terceros no debe abrirse desde un aviso del sistema. Mantenerla igual a
 // config('ecosistema.urls') y cambiarla junto con VERSION si cambian los dominios.
-const ECOSYSTEM_HOSTS = ['tickets.zonaorientetm.tech', 'dashboard.zonaorientetm.tech'];
+const ECOSYSTEM_HOSTS = ['zonaorientetm.tech', 'tickets.zonaorientetm.tech', 'dashboard.zonaorientetm.tech'];
 const CACHE = `tickets-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/icons/icon-512.png'];

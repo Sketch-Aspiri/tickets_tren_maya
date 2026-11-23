@@ -108,6 +108,13 @@ return [
         ],
     ],
 
+    // Por donde sale el push de Tickets: `local` (la PWA de Tickets, como hasta ahora) o `portal` (se manda el aviso al
+    // portal por el puente firmado y es el PWA del portal quien lo entrega; la campana de Tickets no cambia). Se cambia a
+    // `portal` cuando las personas ya tienen cuenta y dispositivo en el portal; volver a `local` es la reversa.
+    'push' => [
+        'destino' => env('ECOSISTEMA_PUSH_DESTINO', 'local'),
+    ],
+
     // Herramientas del Dashboard que el MCP publica (decision 97): cuanto se guarda su lista y cuanto se espera una
     // consulta (las consultas a secciones grandes tardan mas que un aviso).
     'ia' => [

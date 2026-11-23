@@ -342,7 +342,8 @@ class EcosystemNoticeTest extends DatabaseTestCase
         $this->assertStringContainsString("candidate.port === ''", $sw);
         $this->assertStringContainsString('ECOSYSTEM_HOSTS.includes(candidate.hostname)', $sw);
         $this->assertStringNotContainsString('endsWith', $sw);
-        $this->assertStringContainsString("const ECOSYSTEM_HOSTS = ['tickets.zonaorientetm.tech', 'dashboard.zonaorientetm.tech'];", $sw);
-        $this->assertStringContainsString("const VERSION = 'v3';", $sw);
+        // Desde el push general por el portal (decisión 94) el portal también es un destino válido.
+        $this->assertStringContainsString("const ECOSYSTEM_HOSTS = ['zonaorientetm.tech', 'tickets.zonaorientetm.tech', 'dashboard.zonaorientetm.tech'];", $sw);
+        $this->assertStringContainsString("const VERSION = 'v4';", $sw);
     }
 }
