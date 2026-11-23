@@ -7,7 +7,7 @@
     aria-label="{{ config('app.name') }}"
 >
     <div class="flex items-center justify-between border-b border-brand-green/10 px-4 py-3">
-        <a href="{{ config('ecosistema.portal_inicio') ?: route('dashboard') }}" class="inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
+        <a href="{{ config('ecosistema.portal_panel') ?: route('dashboard') }}" class="inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
             <x-application-logo class="h-16" />
         </a>
         <button type="button" x-on:click="closeMenu" class="inline-flex h-11 w-11 items-center justify-center rounded-md text-brand-green hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal lg:hidden" aria-label="{{ __('common.nav.close_menu') }}">
