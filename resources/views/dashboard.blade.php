@@ -1,9 +1,24 @@
+@php
+    $ahora = now(config('app.display_timezone', 'America/Cancun'))->locale('es');
+    $saludoClave = $ahora->hour < 12 ? 'greeting_morning' : ($ahora->hour < 19 ? 'greeting_afternoon' : 'greeting_evening');
+    $nombreCorto = \Illuminate\Support\Str::of($user->name)->explode(' ')->first();
+@endphp
+
 <x-app-layout>
     <x-slot name="title">{{ __('common.dashboard.title') }}</x-slot>
     <x-slot name="header">
-        <p class="text-sm font-medium text-brand-teal">{{ __('common.dashboard.role', ['role' => $user->roleEnum()?->label() ?? '—']) }}</p>
-        <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('common.dashboard.welcome', ['name' => $user->name]) }}</h1>
+        <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('common.dashboard.title') }}</h1>
     </x-slot>
+
+    <section class="relative overflow-hidden rounded-2xl bg-brand-green px-5 py-6 text-white shadow-sm sm:px-8 sm:py-7" aria-label="{{ __('common.dashboard.welcome', ['name' => $user->name]) }}">
+        <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-brand-mint/20 blur-2xl" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-brand-teal/40 blur-2xl" aria-hidden="true"></div>
+        <div class="relative">
+            <p class="text-sm font-medium text-white/75 first-letter:uppercase">{{ $ahora->isoFormat('dddd D [de] MMMM [de] YYYY') }}</p>
+            <p class="mt-1 font-heading text-2xl font-bold sm:text-3xl">{{ __('common.dashboard.'.$saludoClave, ['name' => $nombreCorto]) }}</p>
+            <p class="mt-1 text-sm text-white/80">{{ __('common.dashboard.banner_subtitle') }} · {{ __('common.dashboard.role', ['role' => $user->roleEnum()?->label() ?? '—']) }}</p>
+        </div>
+    </section>
 
     @if ($pendingCount !== null)
         <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-300 border-l-4 border-l-amber-600 bg-amber-50 p-4 shadow-sm" aria-labelledby="pending-registrations">
