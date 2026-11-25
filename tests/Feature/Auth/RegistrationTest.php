@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\NewUserPendingApproval;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 use Spatie\Activitylog\Models\Activity;
 use Tests\DatabaseTestCase;
 
@@ -86,7 +87,7 @@ class RegistrationTest extends DatabaseTestCase
         $this->post('/register', $this->validPayload())->assertRedirect(route('login'));
 
         Notification::assertSentTo($jefe, NewUserPendingApproval::class, function (NewUserPendingApproval $notification) use ($jefe): bool {
-            return $notification->via($jefe) === ['database', 'mail']
+            return $notification->via($jefe) === ['database', 'mail', WebPushChannel::class]
                 && $notification->pendingUserEmail === 'ana@example.com';
         });
         Notification::assertNotSentTo($inactiveJefe, NewUserPendingApproval::class);

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Aviso a jefe de zona y administrador: hay correos nuevos en la bandeja "Correos entrantes" en espera
@@ -18,16 +20,17 @@ use Illuminate\Notifications\Notification;
  */
 final class NewIncomingEmailToReview extends Notification implements ShouldQueue
 {
+    use BuildsWebPush;
     use Queueable;
 
     public function __construct(public readonly int $pendingCount) {}
 
     /**
-     * @return list<string>
+     * @return list<string|class-string>
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', $this->pushChannel()];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -37,6 +40,16 @@ final class NewIncomingEmailToReview extends Notification implements ShouldQueue
             ->greeting(__('notifications.greeting', ['name' => $notifiable->name]))
             ->line(__('notifications.new_incoming_email.line', ['count' => $this->pendingCount]))
             ->action(__('notifications.new_incoming_email.action'), route('incoming-emails.index'));
+    }
+
+    public function toWebPush(object $notifiable, Notification $notification): WebPushMessage
+    {
+        return $this->webPush(
+            __('push.incoming_email.title'),
+            __('push.incoming_email.body', ['count' => $this->pendingCount]),
+            route('incoming-emails.index', [], false),
+            'incoming-emails',
+        );
     }
 
     /**

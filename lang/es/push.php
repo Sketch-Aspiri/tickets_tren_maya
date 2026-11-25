@@ -10,6 +10,8 @@ return [
     'commented' => ['title' => 'Nuevo comentario', 'body' => ':by comentó en :folio.'],
     'rejected' => ['title' => 'Regresado a trabajo', 'body' => ':by rechazó la revisión de :folio.'],
     'status' => ['title' => 'Cambio de estado', 'body' => ':by cambió :folio a «:status».'],
+    'incoming_email' => ['title' => 'Correos nuevos por revisar', 'body' => 'Hay :count correo(s) nuevo(s) en la bandeja.'],
+    'user_pending' => ['title' => 'Cuenta por aprobar', 'body' => 'Hay una cuenta nueva que espera aprobación.'],
     'chat' => [
         'title' => 'Nuevo mensaje',
         'body_direct' => ':by te escribió en el chat.',
