@@ -1,8 +1,6 @@
-{{-- Interfaz propia de la aplicación (resources/js/ui.js): barra de carga superior y diálogo de confirmación que
-     reemplaza window.confirm. Va al final del <body> de los layouts app y guest. --}}
-<div id="app-page-loader" class="hidden fixed inset-x-0 top-0 z-[60] h-1 overflow-hidden bg-brand-green/10" role="progressbar" aria-label="{{ __('common.loading') }}" aria-hidden="true" data-state="idle">
-    <div class="app-loader-bar h-full bg-brand-teal"></div>
-</div>
+{{-- Interfaz propia de la aplicación: pantalla de carga (resources/js/pantalla-carga.js) y diálogo de confirmación que
+     reemplaza window.confirm (resources/js/ui.js). Va al final del <body> de los layouts app y guest. --}}
+<x-pantalla-carga />
 
 <template id="app-validation-messages" data-messages="{{ json_encode(__('common.validation_ui'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}"></template>
 

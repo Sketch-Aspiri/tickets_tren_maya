@@ -1,82 +1,12 @@
 // Interfaz propia de la aplicación en lugar de la del navegador:
 // - diálogo de confirmación (reemplaza window.confirm);
-// - barra de carga al navegar o enviar formularios, y botones "enviando…" que evitan el doble envío;
+// - botones "enviando…" que evitan el doble envío (la pantalla de carga vive en pantalla-carga.js);
 // - mensajes de validación en línea (reemplazan los globos nativos de "Completa este campo").
 // Compatible con el build CSP de Alpine: la lógica vive aquí y las vistas solo usan nombres y data-*.
 
-const LOADER_DELAY_MS = 150;
-const LOADER_FAILSAFE_MS = 15000;
-// Descargas: la página no se descarga, así que no deben mostrar la barra.
-const DOWNLOAD_PATH = /\/(export(\/|$|\?)|attachments\/\d+(\/preview)?$|incoming-email-attachments\/|avatars\/)/;
+import { envioCambiaDePantalla } from './pantalla-carga.js';
 
 let pendingConfirm = null;
-
-function isPlainClick(event) {
-    return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
-}
-
-function navigatesAway(link) {
-    if (!link || link.hasAttribute('download') || link.dataset.noLoader !== undefined || (link.target && link.target !== '_self')) {
-        return false;
-    }
-
-    let url;
-
-    try {
-        url = new URL(link.href, window.location.href);
-    } catch {
-        return false;
-    }
-
-    if (url.origin !== window.location.origin || DOWNLOAD_PATH.test(url.pathname)) {
-        return false;
-    }
-
-    // Solo cambia el ancla dentro de la misma página.
-    return !(url.pathname === window.location.pathname && url.search === window.location.search && url.hash !== '');
-}
-
-// ---------- Barra de carga ----------
-function loaderElement() {
-    return document.getElementById('app-page-loader');
-}
-
-let loaderTimer = null;
-let failsafeTimer = null;
-
-export function startLoading() {
-    const loader = loaderElement();
-
-    if (!loader || loaderTimer !== null) {
-        return;
-    }
-
-    loaderTimer = window.setTimeout(() => {
-        loader.classList.remove('hidden');
-        loader.setAttribute('aria-hidden', 'false');
-        // Siguiente cuadro: arranca la animación de avance.
-        window.requestAnimationFrame(() => loader.dataset.state = 'running');
-    }, LOADER_DELAY_MS);
-
-    failsafeTimer = window.setTimeout(stopLoading, LOADER_FAILSAFE_MS);
-}
-
-export function stopLoading() {
-    const loader = loaderElement();
-
-    window.clearTimeout(loaderTimer);
-    window.clearTimeout(failsafeTimer);
-    loaderTimer = null;
-    failsafeTimer = null;
-
-    if (loader) {
-        loader.dataset.state = 'idle';
-        loader.classList.add('hidden');
-        loader.setAttribute('aria-hidden', 'true');
-    }
-
-    document.querySelectorAll('form[data-submitting]').forEach((form) => releaseForm(form));
-}
 
 // ---------- Botones "enviando…" ----------
 // No se usa `disabled` en el botón: el navegador quitaría su name/value del envío. Se marca como ocupado y el
@@ -106,6 +36,10 @@ function releaseForm(form) {
         button.removeAttribute('aria-disabled');
         button.querySelector('[data-spinner]')?.remove();
     });
+}
+
+function releaseAllForms() {
+    document.querySelectorAll('form[data-submitting]').forEach((form) => releaseForm(form));
 }
 
 // ---------- Validación en línea ----------
@@ -183,8 +117,8 @@ function validationText(field) {
 }
 
 export function installGlobalUi() {
-    // Envío de formularios: confirmar (si aplica), marcar ocupado y mostrar la barra. Se revisa al final de la
-    // cola para respetar a otros manejadores que cancelen el envío (p. ej. el diálogo de confirmación).
+    // Envío de formularios: marcar ocupado. Se revisa al final de la cola para respetar a otros manejadores que
+    // cancelen el envío (p. ej. el diálogo de confirmación).
     document.addEventListener('submit', (event) => {
         const form = event.target;
 
@@ -199,37 +133,23 @@ export function installGlobalUi() {
         }
 
         window.setTimeout(() => {
-            if (event.defaultPrevented || form.dataset.noLoader !== undefined || (form.target && form.target !== '_self')) {
+            if (event.defaultPrevented || (form.target && form.target !== '_self')) {
                 return;
             }
 
             busyForm(form, event.submitter);
 
-            if (!DOWNLOAD_PATH.test(new URL(form.action, window.location.href).pathname)) {
-                startLoading();
-            } else {
+            if (!envioCambiaDePantalla(form, event.submitter)) {
                 // Descarga por formulario: la página no cambia; se libera el botón en un momento.
                 window.setTimeout(() => releaseForm(form), 3000);
             }
         }, 0);
     });
 
-    document.addEventListener('click', (event) => {
-        const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
-
-        if (!link || !isPlainClick(event)) {
-            return;
-        }
-
-        window.setTimeout(() => {
-            if (!event.defaultPrevented && navigatesAway(link)) {
-                startLoading();
-            }
-        }, 0);
-    });
-
-    // Volver con el botón "atrás" (bfcache): la página reaparece sin recargar; se limpia el estado de carga.
-    window.addEventListener('pageshow', () => stopLoading());
+    // Al quitarse la pantalla de carga (volver con "atrás", "Cerrar" o el tiempo límite) o si la página reaparece
+    // desde la memoria del navegador, los formularios vuelven a aceptar envíos.
+    document.addEventListener('pantalla-carga:oculta', releaseAllForms);
+    window.addEventListener('pageshow', releaseAllForms);
 
     // Validación: mensaje propio bajo el campo en vez del globo del navegador.
     document.addEventListener('invalid', (event) => {

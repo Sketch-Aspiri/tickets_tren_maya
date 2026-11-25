@@ -14,6 +14,7 @@ import { registerChat } from './chat.js';
 import { registerTemayin } from './temayin.js';
 import { registerPush, registerServiceWorker } from './push.js';
 import { installGlobalUi, registerUi } from './ui.js';
+import { registrar as registrarPantalla } from './pantalla-carga.js';
 import { registerTheme } from './theme.js';
 import { currentCoordination, currentTeam, filterOptions, fitsCoordination, registerOrgPicker, sameForm } from './org.js';
 
@@ -294,6 +295,7 @@ registerChat(Alpine);
 registerPush(Alpine);
 registerUi(Alpine);
 installGlobalUi();
+registrarPantalla(document, window);
 registerOrgPicker(Alpine);
 registerServiceWorker();
 registerTemayin(Alpine);

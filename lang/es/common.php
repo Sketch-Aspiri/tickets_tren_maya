@@ -2,6 +2,7 @@
 
 return [
     'loading' => 'Cargando…',
+    'close_loading' => 'Cerrar',
     'validation_ui' => [
         'required' => 'Este campo es obligatorio.',
         'choose' => 'Elige una opción.',
