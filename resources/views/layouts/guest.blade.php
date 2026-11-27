@@ -4,12 +4,15 @@
         @include('layouts.head')
     </head>
     <body class="bg-brand-mist font-sans text-gray-900 antialiased">
+        <x-saltar-contenido />
         <div class="flex min-h-screen flex-col items-center px-4 py-8 sm:justify-center sm:py-12">
+            <x-panel-accesibilidad class="mb-4 self-end" />
+
             <a href="/" class="mb-6 inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2 focus-visible:ring-offset-brand-mist">
                 <x-application-logo class="h-24 sm:h-28" />
             </a>
 
-            <main class="w-full sm:max-w-md">
+            <main id="contenido" tabindex="-1" class="w-full sm:max-w-md">
                 <div class="overflow-hidden rounded-2xl border border-brand-green/10 bg-white shadow-lg shadow-brand-green/5">
                     <div class="h-1.5 bg-brand-green" aria-hidden="true"></div>
                     <div class="px-6 py-6 sm:px-8 sm:py-8">
@@ -22,5 +25,6 @@
         </div>
 
         <x-app-ui />
+        <x-accesibilidad-base />
     </body>
 </html>

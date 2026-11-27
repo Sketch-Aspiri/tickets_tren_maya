@@ -72,7 +72,7 @@
             <x-card :title="__('users.show.reject_title')">
                 <x-danger-button type="button" x-data="modalTrigger" data-modal="reject-user" x-on:click.prevent="open">{{ __('users.show.reject_submit') }}</x-danger-button>
 
-                <x-modal name="reject-user" maxWidth="md" focusable>
+                <x-modal name="reject-user" :label="__('users.show.reject_submit')" maxWidth="md" focusable>
                     <form method="POST" action="{{ route('users.reject', $managedUser) }}" class="p-6">
                         @csrf
                         <p class="text-sm text-gray-700">{{ __('users.show.reject_confirm') }}</p>
@@ -143,7 +143,7 @@
             @can('deactivate', $managedUser)
                 <x-danger-button type="button" x-data="modalTrigger" data-modal="deactivate-user" x-on:click.prevent="open">{{ __('users.show.deactivate') }}</x-danger-button>
 
-                <x-modal name="deactivate-user" maxWidth="md" focusable>
+                <x-modal name="deactivate-user" :label="__('users.show.deactivate')" maxWidth="md" focusable>
                     <form method="POST" action="{{ route('users.deactivate', $managedUser) }}" class="p-6">
                         @csrf
                         <p class="text-sm text-gray-700">{{ __('users.show.deactivate_confirm') }}</p>

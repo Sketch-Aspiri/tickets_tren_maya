@@ -48,6 +48,7 @@ export function registerTheme(Alpine) {
         theme: readTheme(),
 
         init() {
+            window.addEventListener('theme-changed', () => (this.theme = readTheme()));
             prefersDark.addEventListener('change', () => {
                 if (this.theme === 'sistema') {
                     applyTheme('sistema');

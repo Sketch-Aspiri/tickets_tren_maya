@@ -54,6 +54,9 @@ Route::get('account/status', [AccountStatusController::class, 'show'])
     ->name('account.status');
 
 // Toda la aplicacion: sesion + cuenta activa con rol + 2FA (configurado y superado en la sesion).
+// Aviso de sesion por vencer (accesibilidad): cualquier peticion la renueva; esta no hace nada mas.
+Route::get('/sesion/viva', fn () => response()->noContent())->middleware('auth')->name('sesion.viva');
+
 Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 

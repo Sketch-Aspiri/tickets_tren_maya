@@ -81,7 +81,7 @@
                 @can('discard', $email)
                     <x-danger-button type="button" x-data="modalTrigger" data-modal="discard-email" x-on:click.prevent="open">{{ __('emails.show.discard_button') }}</x-danger-button>
 
-                    <x-modal name="discard-email" maxWidth="md" focusable>
+                    <x-modal name="discard-email" :label="__('emails.show.discard_button')" maxWidth="md" focusable>
                         <form method="POST" action="{{ route('incoming-emails.discard', $email) }}" class="p-6">
                             @csrf
                             <p class="text-sm text-gray-700">{{ __('emails.show.discard_confirm') }}</p>

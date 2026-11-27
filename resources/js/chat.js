@@ -16,6 +16,21 @@ async function readJson(response) {
     }
 }
 
+// HTML ya escapado por el servidor. Solo se repinta si cambio y se conserva el enlace enfocado.
+function replaceKeepingFocus(list, html) {
+    if (list.dataset.html === html) {
+        return;
+    }
+
+    const href = list.contains(document.activeElement) ? document.activeElement.getAttribute('href') : null;
+    list.innerHTML = html;
+    list.dataset.html = html;
+
+    if (href !== null) {
+        [...list.querySelectorAll('a')].find((link) => link.getAttribute('href') === href)?.focus();
+    }
+}
+
 export function registerChat(Alpine) {
     // IMPORTANTE (Alpine): toda propiedad se declara aqui. Una propiedad nueva asignada desde un componente
     // anidado se escribe en el componente RAIZ (p. ej. el menu lateral) y la comparten todos los hermanos.
@@ -248,7 +263,7 @@ export function registerChat(Alpine) {
                         this.delay = LIST_MS;
 
                         if (body !== null && body.success) {
-                            this.$refs.list.innerHTML = body.data.html;
+                            replaceKeepingFocus(this.$refs.list, body.data.html);
                         }
                     }
                 } catch {

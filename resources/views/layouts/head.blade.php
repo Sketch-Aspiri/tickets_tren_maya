@@ -4,7 +4,14 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="theme-color" content="#06534D">
 
-<title>{{ isset($title) ? $title.' · ' : '' }}{{ config('app.name') }}</title>
+@php
+    // Título propio de cada pantalla: la ranura "title" o el primer <h1> de la cabecera o del contenido.
+    $tituloPagina = trim((string) ($title ?? ''));
+    if ($tituloPagina === '' && preg_match('~<h1\b[^>]*>(.*?)</h1>~s', (string) ($header ?? '').(string) ($slot ?? ''), $coincidencia)) {
+        $tituloPagina = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($coincidencia[1]), ENT_QUOTES | ENT_HTML5)));
+    }
+@endphp
+<title>{{ $tituloPagina !== '' ? $tituloPagina.' · ' : '' }}{{ config('app.name') }}</title>
 
 <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
 <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}" sizes="256x256">
@@ -21,5 +28,6 @@
 
 {{-- Tema claro/oscuro antes de pintar (archivo propio, sincrono; sin scripts en linea por la CSP). --}}
 <script src="{{ asset('js/tema.js') }}"></script>
+<script src="{{ asset('js/accesibilidad-inicial.js') }}?v=1"></script>
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])

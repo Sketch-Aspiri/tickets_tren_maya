@@ -53,12 +53,12 @@
                         {{ $index + 1 }}
                     @endif
                 </span>
-                <span class="mt-1.5 text-[11px] leading-tight sm:text-xs {{ $labelClasses }}">
+                <span class="mt-1.5 text-[0.6875rem] leading-tight sm:text-xs {{ $labelClasses }}">
                     {{ $step->label() }}
                     <span class="sr-only">({{ $stateText }})</span>
                 </span>
                 @if ($isRejectedStep)
-                    <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900 ring-1 ring-inset ring-amber-300">
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold leading-tight text-amber-900 ring-1 ring-inset ring-amber-300">
                         <x-icon name="arrow-uturn-left" class="h-3 w-3" />
                         {{ __('workflow.rejected.badge') }}
                     </span>

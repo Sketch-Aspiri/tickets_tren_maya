@@ -47,6 +47,7 @@ return [
         'mailboxes' => 'Buzones',
         'coordination_count' => '{1} 1 coordinación|[2,*] :count coordinaciones',
         'profile' => 'Mi perfil',
+        'unread' => 'sin leer',
         'open_menu' => 'Abrir menú',
         'close_menu' => 'Cerrar menú',
         'management' => 'Administración',

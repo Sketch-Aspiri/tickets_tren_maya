@@ -185,7 +185,7 @@
                                 <span>· {{ __('activities.subtasks.assigned_to', ['name' => $subtask->assignee->name]) }}</span>
                             @endif
                             @if ($isMine)
-                                <span class="rounded-full bg-brand-green px-2 py-0.5 text-[11px] font-semibold text-white">{{ __('activities.subtasks.mine') }}</span>
+                                <span class="rounded-full bg-brand-green px-2 py-0.5 text-[0.6875rem] font-semibold text-white">{{ __('activities.subtasks.mine') }}</span>
                             @endif
                         </p>
                     </div>

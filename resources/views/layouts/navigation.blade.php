@@ -1,7 +1,7 @@
 {{-- Fondo oscurecido del menu movil --}}
 <div x-cloak x-show="menuOpen" x-on:click="closeMenu" class="fixed inset-0 z-30 bg-brand-green-dark/60 lg:hidden" aria-hidden="true"></div>
 
-<aside x-cloak
+<aside x-cloak id="menu-principal" x-ref="menu" x-on:keydown.escape="closeMenu"
     class="fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col border-r border-brand-green/10 bg-white text-gray-800 shadow-xl transition-transform duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none"
     x-bind:class="panelClass"
     aria-label="{{ config('app.name') }}"
@@ -10,7 +10,7 @@
         <a href="{{ config('ecosistema.portal_panel') ?: route('dashboard') }}" class="inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
             <x-application-logo class="h-16" />
         </a>
-        <button type="button" x-on:click="closeMenu" class="inline-flex h-11 w-11 items-center justify-center rounded-md text-brand-green hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal lg:hidden" aria-label="{{ __('common.nav.close_menu') }}">
+        <button type="button" x-on:click="closeMenu" x-ref="cerrarMenu" class="inline-flex h-11 w-11 items-center justify-center rounded-md text-brand-green hover:bg-brand-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal lg:hidden" aria-label="{{ __('common.nav.close_menu') }}">
             <x-icon name="close" />
         </button>
     </div>
@@ -28,6 +28,7 @@
             <span class="flex w-full items-center justify-between gap-2" x-data="chatUnread" data-url="{{ route('notifications.summary') }}">
                 {{ __('common.nav.notifications') }}
                 <span x-show="hasUnread" x-cloak x-text="count" class="inline-flex min-w-[1.5rem] justify-center rounded-full bg-red-700 px-2 py-0.5 text-xs font-bold text-white"></span>
+                <span x-show="hasUnread" x-cloak class="sr-only">{{ __('common.nav.unread') }}</span>
             </span>
         </x-sidebar-link>
 
@@ -78,6 +79,7 @@
                 <span class="flex w-full items-center justify-between gap-2" x-data="chatUnread" data-url="{{ route('chat.unread') }}">
                     {{ __('common.nav.chat') }}
                     <span x-show="hasUnread" x-cloak x-text="count" class="inline-flex min-w-[1.5rem] justify-center rounded-full bg-red-700 px-2 py-0.5 text-xs font-bold text-white"></span>
+                    <span x-show="hasUnread" x-cloak class="sr-only">{{ __('common.nav.unread') }}</span>
                 </span>
             </x-sidebar-link>
         @endcan
@@ -132,6 +134,7 @@
             </div>
         </div>
         <x-theme-toggle class="pb-2" />
+        <x-panel-accesibilidad variante="texto" class="px-3 pb-2"><x-theme-toggle class="!px-0" /></x-panel-accesibilidad>
         <x-sidebar-link icon="user" :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
             {{ __('common.nav.profile') }}
         </x-sidebar-link>

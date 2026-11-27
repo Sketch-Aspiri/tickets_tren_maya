@@ -31,7 +31,7 @@
                 <p class="rounded-lg bg-brand-mist px-3 py-2 text-gray-800">{{ __('assistant.greeting') }}</p>
 
                 <div x-show="hasNoActive">
-                    <h2 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ __('assistant.choose') }}</h2>
+                    <h2 class="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wide text-gray-500">{{ __('assistant.choose') }}</h2>
                     <ul class="space-y-2">
                         @foreach ($faqs as $id => $faq)
                             <li>

@@ -16,6 +16,9 @@ import { registerPush, registerServiceWorker } from './push.js';
 import { installGlobalUi, registerUi } from './ui.js';
 import { registrar as registrarPantalla } from './pantalla-carga.js';
 import { registerTheme } from './theme.js';
+import { registrarAccesibilidad } from './accesibilidad.js';
+import { iniciarAccesibilidad } from './accesibilidad-base.js';
+import '../css/accesibilidad.css';
 import { currentCoordination, currentTeam, filterOptions, fitsCoordination, registerOrgPicker, sameForm } from './org.js';
 
 window.Alpine = Alpine;
@@ -25,13 +28,47 @@ const FOCUSABLE_SELECTOR = "a, button, input:not([type='hidden']), textarea, sel
 // Barra lateral responsiva (menu movil).
 Alpine.data('sidebar', () => ({
     menuOpen: false,
+    escritorio: null,
+
+    init() {
+        this.escritorio = window.matchMedia('(min-width: 1024px)');
+        this.escritorio.addEventListener('change', () => {
+            this.menuOpen = false;
+            this.aplicarInert();
+        });
+        this.aplicarInert();
+    },
 
     openMenu() {
         this.menuOpen = true;
+        this.aplicarInert();
+        setTimeout(() => this.$refs.cerrarMenu?.focus(), 50);
     },
 
     closeMenu() {
+        if (!this.menuOpen) {
+            return;
+        }
+
         this.menuOpen = false;
+        this.aplicarInert();
+        this.$refs.abrirMenu?.focus();
+    },
+
+    // En celular, el menu cerrado no recibe el foco; abierto, no lo recibe el resto de la pagina.
+    aplicarInert() {
+        const movil = !this.escritorio?.matches;
+
+        if (this.$refs.menu) {
+            this.$refs.menu.inert = movil && !this.menuOpen;
+        }
+        if (this.$refs.resto) {
+            this.$refs.resto.inert = movil && this.menuOpen;
+        }
+    },
+
+    menuExpanded() {
+        return this.menuOpen ? 'true' : 'false';
     },
 
     panelClass() {
@@ -300,8 +337,10 @@ registerOrgPicker(Alpine);
 registerServiceWorker();
 registerTemayin(Alpine);
 registerTheme(Alpine);
+registrarAccesibilidad(Alpine);
 
 Alpine.start();
+iniciarAccesibilidad(document, window);
 
 // Graficas del panel de seguimiento: Chart.js se carga bajo demanda (chunk propio, mismo origen) solo si la
 // pagina trae algun <canvas data-chart>; el resto de las paginas no descarga nada extra.

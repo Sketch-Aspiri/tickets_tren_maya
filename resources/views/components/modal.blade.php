@@ -1,7 +1,8 @@
 @props([
     'name',
     'show' => false,
-    'maxWidth' => '2xl'
+    'maxWidth' => '2xl',
+    'label' => null
 ])
 
 @php
@@ -27,6 +28,9 @@ $maxWidth = [
     x-on:keydown.tab="onTab"
     x-show="show"
     x-cloak
+    role="dialog"
+    aria-modal="true"
+    aria-label="{{ $label ?? config('app.name') }}"
     class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
 >
     <div
