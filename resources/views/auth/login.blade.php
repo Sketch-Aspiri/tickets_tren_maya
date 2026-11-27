@@ -6,14 +6,16 @@
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
+        <x-required-note />
+
         <div>
-            <x-input-label for="email" :value="__('auth.login.email')" />
+            <x-input-label for="email" :value="__('auth.login.email')" required />
             <x-text-input id="email" class="mt-1 block w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
         <div class="mt-4">
-            <x-input-label for="password" :value="__('auth.login.password')" />
+            <x-input-label for="password" :value="__('auth.login.password')" required />
             <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required autocomplete="current-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>

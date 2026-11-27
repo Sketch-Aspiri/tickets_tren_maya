@@ -79,6 +79,8 @@ return [
         'back' => 'Volver',
     ],
     'empty' => 'Sin resultados.',
+    'remove_filter' => 'quitar filtro',
+    'required_note' => 'Los campos marcados con asterisco (*) son obligatorios.',
     'none' => '—',
     'all' => 'Todos',
     'yes' => 'Sí',

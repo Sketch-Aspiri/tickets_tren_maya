@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ __('activities.edit') }}</x-slot>
+    <x-slot name="title">{{ __('activities.edit') }} · {{ $activity->folio }}</x-slot>
     <x-slot name="header">
         <div class="min-w-0">
             <p class="font-mono text-xs text-gray-700">{{ $activity->folio }}</p>

@@ -1,20 +1,20 @@
-@props(['tickets', 'showTeam' => false, 'emptyMessage' => null])
+@props(['tickets', 'showTeam' => false, 'emptyMessage' => null, 'caption' => null])
 
 {{-- Tabla de tickets compartida por el listado y "Mis pendientes". Los tickets ya vienen filtrados por alcance
      y con sus relaciones cargadas (category, team, assignments.user): sin consultas por fila. --}}
-<x-table>
+<x-table :caption="$caption ?? __('tickets.title')">
     <thead>
         <tr>
-            <th class="px-4 py-3">{{ __('tickets.columns.folio') }}</th>
-            <th class="px-4 py-3">{{ __('tickets.columns.title') }}</th>
-            <th class="px-4 py-3">{{ __('tickets.columns.status') }}</th>
-            <th class="hidden px-4 py-3 md:table-cell">{{ __('tickets.columns.priority') }}</th>
-            <th class="hidden px-4 py-3 lg:table-cell">{{ __('tickets.columns.responsible') }}</th>
+            <th scope="col" class="px-4 py-3">{{ __('tickets.columns.folio') }}</th>
+            <th scope="col" class="px-4 py-3">{{ __('tickets.columns.title') }}</th>
+            <th scope="col" class="px-4 py-3">{{ __('tickets.columns.status') }}</th>
+            <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('tickets.columns.priority') }}</th>
+            <th scope="col" class="hidden px-4 py-3 lg:table-cell">{{ __('tickets.columns.responsible') }}</th>
             @if ($showTeam)
-                <th class="hidden px-4 py-3 xl:table-cell">{{ __('tickets.columns.team') }}</th>
+                <th scope="col" class="hidden px-4 py-3 xl:table-cell">{{ __('tickets.columns.team') }}</th>
             @endif
-            <th class="hidden px-4 py-3 md:table-cell">{{ __('tickets.columns.due_date') }}</th>
-            <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
+            <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('tickets.columns.due_date') }}</th>
+            <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
         </tr>
     </thead>
     <tbody class="divide-y divide-brand-green/10">
@@ -33,6 +33,15 @@
                         @if (! $responsible && ! $ticket->status->isFinal())
                             <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">{{ __('tickets.show.bag') }}</span>
                         @endif
+                    </div>
+                    <div class="space-y-0.5 text-xs text-gray-700">
+                        @if ($responsible || $ticket->status->isFinal())
+                            <span class="block lg:hidden"><span class="font-medium">{{ __('tickets.columns.responsible') }}:</span> {{ $responsible?->user->name ?? __('tickets.show.bag') }}</span>
+                        @endif
+                        @if ($showTeam)
+                            <span class="block xl:hidden"><span class="font-medium">{{ __('tickets.columns.team') }}:</span> {{ $ticket->team->name }}</span>
+                        @endif
+                        <span class="block md:hidden"><span class="font-medium">{{ __('tickets.columns.due_date') }}:</span> {{ $ticket->due_date?->format('d/m/Y') ?? __('common.none') }}</span>
                     </div>
                     <div class="mt-1 flex flex-wrap items-center gap-1.5 md:hidden">
                         <x-priority-badge :priority="$ticket->priority" />
@@ -54,7 +63,7 @@
                     @endif
                 </td>
                 <td class="px-2 py-3 text-right sm:px-4">
-                    <a href="{{ route('tickets.show', $ticket) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}</a>
+                    <a href="{{ route('tickets.show', $ticket) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}<span class="sr-only">: {{ $ticket->folio }}</span></a>
                 </td>
             </tr>
         @empty

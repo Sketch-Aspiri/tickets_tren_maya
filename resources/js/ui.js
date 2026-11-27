@@ -44,7 +44,7 @@ function releaseAllForms() {
 
 // ---------- Validación en línea ----------
 function messageFor(field) {
-    const id = `${field.id || field.name || 'campo'}-app-error`.replace(/[^\w-]/g, '_');
+    const id = errorId(field);
     let message = document.getElementById(id);
 
     if (!message) {
@@ -54,20 +54,30 @@ function messageFor(field) {
         message.className = 'mt-1 text-sm font-medium text-red-700';
         const anchor = field.closest('label') ?? field;
         anchor.insertAdjacentElement('afterend', message);
-        const describedBy = (field.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean);
+        const describedBy = (field.getAttribute('aria-describedby') ?? '').split(' ').filter((part) => part !== '' && part !== id);
         field.setAttribute('aria-describedby', [...describedBy, id].join(' '));
     }
 
     return message;
 }
 
-function clearFieldError(field) {
-    if (field.getAttribute('aria-invalid') === 'true') {
-        field.removeAttribute('aria-invalid');
-    }
+function errorId(field) {
+    return `${field.id || field.name || 'campo'}-app-error`.replace(/[^\w-]/g, '_');
+}
 
-    const id = `${field.id || field.name || 'campo'}-app-error`.replace(/[^\w-]/g, '_');
+function clearFieldError(field) {
+    field.removeAttribute('aria-invalid');
+
+    const id = errorId(field);
     document.getElementById(id)?.remove();
+
+    const rest = (field.getAttribute('aria-describedby') ?? '').split(' ').filter((part) => part !== '' && part !== id);
+
+    if (rest.length > 0) {
+        field.setAttribute('aria-describedby', rest.join(' '));
+    } else {
+        field.removeAttribute('aria-describedby');
+    }
 }
 
 let focusedInvalid = false;
@@ -212,7 +222,8 @@ export function registerUi(Alpine) {
         show(event) {
             this.message = event.detail?.message ?? '';
             this.open = true;
-            this.$nextTick(() => this.$refs.accept?.focus());
+            // El foco empieza en "Cancelar": un Enter repetido no debe ejecutar la accion.
+            this.$nextTick(() => this.$refs.cancel?.focus());
         },
 
         accept() {

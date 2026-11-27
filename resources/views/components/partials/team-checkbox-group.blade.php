@@ -1,7 +1,7 @@
 {{-- Un grupo «Edificio › Coordinación» de casillas de equipos (lo usa team-checkboxes). --}}
 <div>
     <p class="text-xs font-semibold uppercase tracking-wide text-brand-green">{{ $group->first()->coordination->station->name }} › {{ $group->first()->coordination->name }}</p>
-    <div class="mt-1 grid gap-1 sm:grid-cols-2">
+    <div class="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2">
         @foreach ($group as $team)
             <label for="{{ $prefix }}_{{ $team->id }}" class="flex min-h-[44px] items-center gap-2 rounded-md px-2 text-sm text-gray-800 hover:bg-brand-teal/5">
                 <input

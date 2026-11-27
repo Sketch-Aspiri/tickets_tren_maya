@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ $coordination->name }}</x-slot>
+    <x-slot name="title">{{ $coordination->name }} · {{ __('coordinations.title') }}</x-slot>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ $coordination->name }} <span class="text-sm font-normal text-gray-600">· {{ $coordination->station->name }}</span></h1>
@@ -22,5 +22,5 @@
     </x-card>
 
     <h2 class="mt-6 text-base font-semibold text-brand-green">{{ __('coordinations.users') }}</h2>
-    @include('org.partials.users-table', ['users' => $users])
+    @include('org.partials.users-table', ['users' => $users, 'caption' => __('coordinations.users')])
 </x-app-layout>

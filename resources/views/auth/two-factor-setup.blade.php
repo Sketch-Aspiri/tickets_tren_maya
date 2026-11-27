@@ -9,18 +9,18 @@
         <li>
             <p>{{ __('two_factor.setup.step_scan') }}</p>
             {{-- SVG generado en el servidor por BaconQrCode: solo trazos, sin texto interpretable del usuario. --}}
-            <div class="mt-3 flex justify-center rounded-md border border-brand-green/15 bg-white p-2">{!! $qr_svg !!}</div>
+            <div role="img" aria-label="{{ __('two_factor.setup.qr_label') }}" class="mt-3 flex justify-center rounded-md border border-brand-green/15 bg-white p-2">{!! $qr_svg !!}</div>
         </li>
         <li>
             <p>{{ __('two_factor.setup.step_manual') }}</p>
             <code class="mt-1 block break-all rounded bg-gray-100 px-2 py-1 font-mono text-sm">{{ $secret }}</code>
         </li>
         <li>
-            <p>{{ __('two_factor.setup.step_confirm') }}</p>
+            <p id="code_help">{{ __('two_factor.setup.step_confirm') }}</p>
             <form method="POST" action="{{ route('two-factor.confirm') }}" class="mt-2">
                 @csrf
-                <x-input-label for="code" :value="__('two_factor.setup.code')" />
-                <x-text-input id="code" class="mt-1 block w-full tracking-widest" type="text" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required autofocus />
+                <x-input-label for="code" :value="__('two_factor.setup.code')" required />
+                <x-text-input id="code" class="mt-1 block w-full tracking-widest" type="text" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required autofocus aria-describedby="code_help" />
                 <x-input-error :messages="$errors->get('code')" class="mt-2" />
 
                 <div class="mt-4 flex justify-end">

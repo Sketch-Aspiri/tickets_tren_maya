@@ -5,21 +5,23 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
+        <x-required-note />
+
         <div>
-            <x-input-label for="name" :value="__('auth.register.name')" />
+            <x-input-label for="name" :value="__('auth.register.name')" required />
             <x-text-input id="name" class="mt-1 block w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
         <div class="mt-4">
-            <x-input-label for="email" :value="__('auth.register.email')" />
+            <x-input-label for="email" :value="__('auth.register.email')" required />
             <x-text-input id="email" class="mt-1 block w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
         <div class="mt-4">
-            <x-input-label for="coordination_id" :value="__('auth.register.coordination')" />
-            <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" required>
+            <x-input-label for="coordination_id" :value="__('auth.register.coordination')" required />
+            <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" required aria-describedby="coordination_hint">
                 <option value="">{{ __('auth.register.choose_coordination') }}</option>
                 @foreach ($coordinations->groupBy(fn ($coordination) => $coordination->station->name) as $stationName => $group)
                     <optgroup label="{{ $stationName }}">
@@ -29,19 +31,19 @@
                     </optgroup>
                 @endforeach
             </x-select-input>
-            <p class="mt-1 text-xs text-gray-500">{{ __('auth.register.coordination_hint') }}</p>
+            <p id="coordination_hint" class="mt-1 text-xs text-gray-600">{{ __('auth.register.coordination_hint') }}</p>
             <x-input-error :messages="$errors->get('coordination_id')" class="mt-2" />
         </div>
 
         <div class="mt-4">
-            <x-input-label for="password" :value="__('auth.register.password')" />
-            <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required autocomplete="new-password" />
-            <p class="mt-1 text-xs text-gray-500">{{ __('auth.register.password_hint') }}</p>
+            <x-input-label for="password" :value="__('auth.register.password')" required />
+            <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required autocomplete="new-password" aria-describedby="password_hint" />
+            <p id="password_hint" class="mt-1 text-xs text-gray-600">{{ __('auth.register.password_hint') }}</p>
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
         <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('auth.register.password_confirmation')" />
+            <x-input-label for="password_confirmation" :value="__('auth.register.password_confirmation')" required />
             <x-text-input id="password_confirmation" class="mt-1 block w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>

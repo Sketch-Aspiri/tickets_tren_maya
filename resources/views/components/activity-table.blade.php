@@ -1,22 +1,22 @@
-@props(['activities', 'showTeam' => false, 'groupByTeam' => false, 'emptyMessage' => null])
+@props(['activities', 'showTeam' => false, 'groupByTeam' => false, 'emptyMessage' => null, 'caption' => null])
 
 {{-- Tabla de actividades compartida por el listado y "Mis pendientes". Las actividades ya vienen filtradas por
      alcance y con sus relaciones y conteos de avance cargados (category, team, parent, assignments.user,
      subtasks_count, subtasks_done_count): sin consultas por fila. --}}
-<x-table>
+<x-table :caption="$caption ?? __('activities.title')">
     <thead>
         <tr>
-            <th class="px-4 py-3">{{ __('activities.columns.folio') }}</th>
-            <th class="px-4 py-3">{{ __('activities.columns.title') }}</th>
-            <th class="px-4 py-3">{{ __('activities.columns.status') }}</th>
-            <th class="hidden px-4 py-3 md:table-cell">{{ __('activities.columns.priority') }}</th>
-            <th class="hidden px-4 py-3 lg:table-cell">{{ __('activities.columns.responsible') }}</th>
+            <th scope="col" class="px-4 py-3">{{ __('activities.columns.folio') }}</th>
+            <th scope="col" class="px-4 py-3">{{ __('activities.columns.title') }}</th>
+            <th scope="col" class="px-4 py-3">{{ __('activities.columns.status') }}</th>
+            <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('activities.columns.priority') }}</th>
+            <th scope="col" class="hidden px-4 py-3 lg:table-cell">{{ __('activities.columns.responsible') }}</th>
             @if ($showTeam)
-                <th class="hidden px-4 py-3 xl:table-cell">{{ __('activities.columns.team') }}</th>
+                <th scope="col" class="hidden px-4 py-3 xl:table-cell">{{ __('activities.columns.team') }}</th>
             @endif
-            <th class="hidden px-4 py-3 md:table-cell">{{ __('activities.columns.due_date') }}</th>
-            <th class="hidden px-4 py-3 sm:table-cell">{{ __('activities.columns.progress') }}</th>
-            <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
+            <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('activities.columns.due_date') }}</th>
+            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{{ __('activities.columns.progress') }}</th>
+            <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
         </tr>
     </thead>
     <tbody class="divide-y divide-brand-green/10">
@@ -46,8 +46,18 @@
                             <x-overdue-badge class="md:hidden" />
                         @endif
                     </div>
+                    <div class="space-y-0.5 text-xs text-gray-700">
+                        <span class="block lg:hidden"><span class="font-medium">{{ __('activities.columns.responsible') }}:</span> {{ $responsible?->user->name ?? __('activities.show.no_assignees') }}</span>
+                        @if ($showTeam)
+                            <span class="block xl:hidden"><span class="font-medium">{{ __('activities.columns.team') }}:</span> {{ $activity->team->name }}</span>
+                        @endif
+                        <span class="block md:hidden"><span class="font-medium">{{ __('activities.columns.due_date') }}:</span> {{ $activity->due_date?->format('d/m/Y') ?? __('common.none') }}</span>
+                    </div>
                     @unless ($activity->isTemplate())
-                        <x-progress-bar :percent="$activity->progressPercent()" class="mt-1 max-w-[12rem] sm:hidden" />
+                        <div class="sm:hidden">
+                            <x-progress-bar :percent="$activity->progressPercent()" class="mt-1 max-w-[12rem]" />
+                            <p class="text-xs text-gray-700">{{ __('activities.list.subtasks_short', ['done' => $activity->subtasksDoneCount(), 'total' => $activity->subtasksTotalCount()]) }}</p>
+                        </div>
                     @endunless
                 </td>
                 <td class="px-4 py-3"><x-status-badge :status="$activity->status" /></td>
@@ -71,7 +81,7 @@
                     @endif
                 </td>
                 <td class="px-2 py-3 text-right sm:px-4">
-                    <a href="{{ route('activities.show', $activity) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}</a>
+                    <a href="{{ route('activities.show', $activity) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}<span class="sr-only">: {{ $activity->folio }}</span></a>
                 </td>
             </tr>
         @empty

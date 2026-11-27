@@ -6,14 +6,14 @@
 
     <p class="text-sm text-gray-700">{{ __('mailboxes.intro') }}</p>
 
-    <x-table>
+    <x-table :caption="__('mailboxes.title')">
         <thead>
             <tr>
-                <th class="px-4 py-3">{{ __('mailboxes.columns.coordination') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('mailboxes.columns.server') }}</th>
-                <th class="px-4 py-3">{{ __('mailboxes.columns.status') }}</th>
-                <th class="hidden px-4 py-3 lg:table-cell">{{ __('mailboxes.columns.last_polled') }}</th>
-                <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
+                <th scope="col" class="px-4 py-3">{{ __('mailboxes.columns.coordination') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('mailboxes.columns.server') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('mailboxes.columns.status') }}</th>
+                <th scope="col" class="hidden px-4 py-3 lg:table-cell">{{ __('mailboxes.columns.last_polled') }}</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-brand-green/10">
@@ -23,6 +23,10 @@
                     <td class="px-4 py-3 font-medium text-gray-900">
                         {{ $coordination->name }}
                         <p class="text-xs font-normal text-gray-600">{{ $coordination->station->name }}</p>
+                        <div class="break-all text-xs font-normal text-gray-700">
+                            <span class="block md:hidden"><span class="font-medium">{{ __('mailboxes.columns.server') }}:</span> {{ $mailbox ? $mailbox->username.' · '.$mailbox->host.':'.$mailbox->port : '—' }}</span>
+                            <span class="block lg:hidden"><span class="font-medium">{{ __('mailboxes.columns.last_polled') }}:</span> @if ($mailbox?->last_polled_at)<x-local-datetime :value="$mailbox->last_polled_at" />@else — @endif</span>
+                        </div>
                     </td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $mailbox ? $mailbox->username.' · '.$mailbox->host.':'.$mailbox->port : '—' }}</td>
                     <td class="px-4 py-3">
@@ -44,17 +48,17 @@
                             —
                         @endif
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 text-right">
-                        <a href="{{ route('mailboxes.edit', $coordination) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ $mailbox ? __('common.actions.edit') : __('mailboxes.configure') }}</a>
+                    <td class="px-4 py-3 text-right sm:whitespace-nowrap">
+                        <a href="{{ route('mailboxes.edit', $coordination) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ $mailbox ? __('common.actions.edit') : __('mailboxes.configure') }}<span class="sr-only">: {{ $coordination->name }}</span></a>
                         @if ($mailbox)
                             <form method="POST" action="{{ route('mailboxes.test', $coordination) }}" class="ms-3 inline">
                                 @csrf
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('mailboxes.test') }}</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('mailboxes.test') }}<span class="sr-only">: {{ $coordination->name }}</span></button>
                             </form>
                             <form method="POST" action="{{ route('mailboxes.destroy', $coordination) }}" class="ms-3 inline" x-data="confirmSubmit" data-confirm="{{ __('mailboxes.delete_confirm') }}" x-on:submit="onSubmit">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}<span class="sr-only">: {{ $coordination->name }}</span></button>
                             </form>
                         @endif
                     </td>

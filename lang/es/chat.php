@@ -16,6 +16,8 @@ return [
     'message_label' => 'Mensaje',
     'message_placeholder' => 'Escribe un mensaje…',
     'attach_label' => 'Adjuntar archivo',
+    'log_label' => 'Mensajes de :name',
+    'preview_of' => 'Vista previa de :name',
     'send' => 'Enviar',
     'preview' => 'Vista previa de imagen',
     'close_preview' => 'Cerrar vista previa',

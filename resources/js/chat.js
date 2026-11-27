@@ -186,6 +186,8 @@ export function registerChat(Alpine) {
                 this.error = this.genericError;
             } finally {
                 this.sending = false;
+                // El boton se deshabilita mientras envia y el foco se perderia: vuelve al mensaje.
+                form.elements.body.focus();
             }
         },
 

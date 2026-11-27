@@ -13,8 +13,10 @@
     </div>
 @endif
 
+<x-required-note />
+
 <div>
-    <x-input-label for="coordination_id" :value="__('teams.form.coordination')" />
+    <x-input-label for="coordination_id" :value="__('teams.form.coordination')" required />
     <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" required>
         <option value="">{{ __('teams.form.choose_coordination') }}</option>
         @foreach ($coordinations->groupBy(fn ($coordination) => $coordination->station->name) as $stationName => $group)
@@ -29,7 +31,7 @@
 </div>
 
 <div class="mt-4">
-    <x-input-label for="name" :value="__('teams.form.name')" />
+    <x-input-label for="name" :value="__('teams.form.name')" required />
     <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $team->name)" maxlength="255" required autofocus />
     <x-input-error :messages="$errors->get('name')" class="mt-2" />
 </div>
@@ -37,13 +39,13 @@
 @if ($isEditing)
     <div class="mt-4">
         <x-input-label for="coordinator_id" :value="__('teams.form.coordinator')" />
-        <x-select-input id="coordinator_id" name="coordinator_id" class="mt-1 block w-full" :aria-describedby="$coordinators->isEmpty() ? 'coordinator_id_help' : null">
+        <x-select-input id="coordinator_id" name="coordinator_id" class="mt-1 block w-full" :aria-describedby="$coordinators->isEmpty() ? 'coordinator_id_hint coordinator_id_help' : 'coordinator_id_hint'">
             <option value="">{{ __('teams.form.no_coordinator') }}</option>
             @foreach ($coordinators as $coordinator)
                 <option value="{{ $coordinator->id }}" @selected((int) old('coordinator_id', $team->coordinator_id) === $coordinator->id)>{{ $coordinator->name }}</option>
             @endforeach
         </x-select-input>
-        <p class="mt-1 text-xs text-gray-600">{{ __('teams.form.coordinator_hint') }}</p>
+        <p id="coordinator_id_hint" class="mt-1 text-xs text-gray-600">{{ __('teams.form.coordinator_hint') }}</p>
         <x-input-error :messages="$coordinatorErrors" class="mt-2" />
 
         @if ($coordinators->isNotEmpty())
@@ -51,10 +53,10 @@
                 $selectedAdditional = array_map('intval', (array) old('additional_coordinator_ids', $team->additionalCoordinators->pluck('id')->all()));
                 $additionalErrors = array_merge($errors->get('additional_coordinator_ids'), $errors->get('additional_coordinator_ids.*'));
             @endphp
-            <fieldset class="mt-4">
+            <fieldset class="mt-4" aria-describedby="additional_coordinators_hint">
                 <legend class="text-sm font-medium text-gray-700">{{ __('teams.form.additional') }}</legend>
-                <p class="mt-1 text-xs text-gray-600">{{ __('teams.form.additional_hint') }}</p>
-                <div class="mt-2 grid gap-1 sm:grid-cols-2">
+                <p id="additional_coordinators_hint" class="mt-1 text-xs text-gray-600">{{ __('teams.form.additional_hint') }}</p>
+                <div class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                     @foreach ($coordinators as $coordinator)
                         <label class="flex min-h-[44px] items-center gap-2 rounded-lg border border-gray-300 px-3 text-sm">
                             <input type="checkbox" name="additional_coordinator_ids[]" value="{{ $coordinator->id }}" class="rounded border-gray-500 text-brand-green focus:ring-brand-teal" @checked(in_array($coordinator->id, $selectedAdditional, true))>

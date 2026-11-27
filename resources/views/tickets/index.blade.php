@@ -3,13 +3,13 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('tickets.title') }}</h1>
-            <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 @php
                     $sentOnly = (bool) ($filters['sent'] ?? false);
                     $withoutSent = array_filter(\Illuminate\Support\Arr::except($filters, ['sent', 'page']), fn ($value) => $value !== null && $value !== false && $value !== '');
                 @endphp
                 @if ($sentOnly)
-                    <x-primary-button :href="route('tickets.index', $withoutSent)" aria-current="true">{{ __('tickets.filters.sent') }} ✕</x-primary-button>
+                    <x-primary-button :href="route('tickets.index', $withoutSent)" aria-current="true">{{ __('tickets.filters.sent') }}<span aria-hidden="true" class="ms-1">✕</span><span class="sr-only">: {{ __('common.remove_filter') }}</span></x-primary-button>
                 @else
                     <x-secondary-button :href="route('tickets.index', [...$withoutSent, 'sent' => 1])">{{ __('tickets.filters.sent') }}</x-secondary-button>
                 @endif
@@ -38,7 +38,7 @@
 
 
     <x-card>
-        <form method="GET" action="{{ route('tickets.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <form method="GET" action="{{ route('tickets.index') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="sm:col-span-2">
                 <x-input-label for="q" :value="__('tickets.filters.search')" />
                 <x-text-input id="q" name="q" type="search" class="mt-1 block w-full" :value="$filters['q'] ?? ''" maxlength="100" />

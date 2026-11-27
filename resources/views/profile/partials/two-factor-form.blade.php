@@ -37,7 +37,7 @@
         <form method="post" action="{{ route('two-factor.recovery-codes') }}" class="mt-4 space-y-3">
             @csrf
             <div>
-                <x-input-label for="regen_password" :value="__('two_factor.settings.password')" />
+                <x-input-label for="regen_password" :value="__('two_factor.settings.password')" required />
                 <x-text-input id="regen_password" name="password" type="password" class="mt-1 block w-full sm:w-72" autocomplete="current-password" required />
             </div>
             <x-secondary-button type="submit">{{ __('two_factor.settings.regenerate') }}</x-secondary-button>
@@ -48,7 +48,7 @@
                 @csrf
                 @method('delete')
                 <div>
-                    <x-input-label for="disable_password" :value="__('two_factor.settings.password')" />
+                    <x-input-label for="disable_password" :value="__('two_factor.settings.password')" required />
                     <x-text-input id="disable_password" name="password" type="password" class="mt-1 block w-full sm:w-72" autocomplete="current-password" required />
                 </div>
                 <x-danger-button>{{ __('two_factor.settings.disable') }}</x-danger-button>

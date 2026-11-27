@@ -7,7 +7,7 @@
 
 {{-- Tarjeta de indicador (panel de seguimiento). El numero se comunica con texto; el color es solo un refuerzo. --}}
 <section {{ $attributes->merge(['class' => "rounded-xl border border-t-4 border-brand-green/10 bg-white p-4 shadow-sm {$accent}"]) }}>
-    <h3 class="text-sm font-semibold text-gray-700">{{ $label }}</h3>
+    <h2 class="text-sm font-semibold text-gray-700">{{ $label }}</h2>
     <p class="mt-2 text-3xl font-bold tabular-nums {{ $valueClass }}">{{ number_format((int) $value) }}</p>
 
     @if ($tickets !== null && $activities !== null)

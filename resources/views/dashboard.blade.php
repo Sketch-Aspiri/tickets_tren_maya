@@ -36,7 +36,7 @@
         <h2 id="quick-access" class="text-base font-semibold text-gray-900">{{ __('common.dashboard.quick_access') }}</h2>
         <p class="text-sm text-gray-700">{{ __('common.dashboard.coming_soon') }}</p>
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             @php
                 $links = [
                     ['route' => route('tickets.pending'), 'icon' => 'check', 'label' => __('common.nav.pending'), 'hint' => __('common.dashboard.hint_pending'), 'show' => true],

@@ -14,7 +14,7 @@
         @php($mailbox = $coordination->mailbox)
         @php($source = $coordination->spreadsheetSource)
         <x-card :title="$coordination->station->name.' › '.$coordination->name">
-            <div class="grid gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {{-- Buzón de correo (IMAP) --}}
                 <section aria-labelledby="mail-{{ $coordination->id }}" class="space-y-2">
                     <h3 id="mail-{{ $coordination->id }}" class="flex items-center gap-2 text-sm font-semibold text-gray-900"><x-icon name="mail" class="h-5 w-5 text-brand-teal" />{{ __('sheet_sources.mail_card') }}</h3>
@@ -28,15 +28,15 @@
                         <p class="text-xs text-gray-600">{{ __('sheet_sources.last_sync') }} @if ($mailbox->last_polled_at)<x-local-datetime :value="$mailbox->last_polled_at" />@else{{ __('sheet_sources.never') }}@endif</p>
                     @endif
                     <div class="flex flex-wrap items-center gap-1">
-                        <a href="{{ route('mailboxes.edit', $coordination) }}" class="{{ $link }}">{{ __('sheet_sources.configure') }}</a>
+                        <a href="{{ route('mailboxes.edit', $coordination) }}" class="{{ $link }}">{{ __('sheet_sources.configure') }}<span class="sr-only">: {{ __('sheet_sources.mail_card') }}, {{ $coordination->name }}</span></a>
                         @if ($mailbox)
                             <form method="POST" action="{{ route('mailboxes.sync', $coordination) }}">
                                 @csrf
-                                <button type="submit" class="{{ $link }}">{{ __('sheet_sources.sync') }}</button>
+                                <button type="submit" class="{{ $link }}">{{ __('sheet_sources.sync') }}<span class="sr-only">: {{ __('sheet_sources.mail_card') }}, {{ $coordination->name }}</span></button>
                             </form>
                             <form method="POST" action="{{ route('mailboxes.test', $coordination) }}">
                                 @csrf
-                                <button type="submit" class="{{ $link }}">{{ __('mailboxes.test') }}</button>
+                                <button type="submit" class="{{ $link }}">{{ __('mailboxes.test') }}<span class="sr-only">: {{ __('sheet_sources.mail_card') }}, {{ $coordination->name }}</span></button>
                             </form>
                         @endif
                     </div>
@@ -67,35 +67,39 @@
                     @if ($source)
                         <form method="POST" action="{{ route('sheet-sources.upload', $coordination) }}" enctype="multipart/form-data" class="space-y-1 rounded-lg border border-gray-200 bg-gray-50 p-3">
                             @csrf
-                            <label for="sheet-file-{{ $coordination->id }}" class="block text-xs font-semibold text-gray-900">{{ __('sheet_sources.upload_card') }}</label>
+                            <input type="hidden" name="upload_for" value="{{ $coordination->id }}">
+                            <label for="sheet-file-{{ $coordination->id }}" class="block text-xs font-semibold text-gray-900">{{ __('sheet_sources.upload_card') }} <span aria-hidden="true" class="text-red-700">*</span></label>
                             <input id="sheet-file-{{ $coordination->id }}" name="file" type="file" required accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-describedby="sheet-file-hint-{{ $coordination->id }}" class="block w-full text-sm text-gray-800 file:me-3 file:min-h-[44px] file:rounded-lg file:border-0 file:bg-brand-green file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-green/90">
                             <p id="sheet-file-hint-{{ $coordination->id }}" class="text-xs text-gray-600">{{ __('sheet_sources.upload_hint', ['max' => config('tickets.sheet_inbox.max_file_kb')]) }}</p>
-                            <button type="submit" class="{{ $link }}">{{ __('sheet_sources.upload_button') }}</button>
+                            @if ((int) old('upload_for') === $coordination->id)
+                                <x-input-error :messages="$errors->get('file')" />
+                            @endif
+                            <button type="submit" class="{{ $link }}">{{ __('sheet_sources.upload_button') }}<span class="sr-only">: {{ __('sheet_sources.sheet_card') }}, {{ $coordination->name }}</span></button>
                         </form>
                     @endif
                     <div class="flex flex-wrap items-center gap-1">
-                        <a href="{{ route('sheet-sources.edit', $coordination) }}" class="{{ $link }}">{{ __('sheet_sources.configure') }}</a>
+                        <a href="{{ route('sheet-sources.edit', $coordination) }}" class="{{ $link }}">{{ __('sheet_sources.configure') }}<span class="sr-only">: {{ __('sheet_sources.sheet_card') }}, {{ $coordination->name }}</span></a>
                         @if ($source && $sheetsConfigured)
                             <form method="POST" action="{{ route('sheet-sources.connect', $coordination) }}">
                                 @csrf
-                                <button type="submit" class="{{ $link }}">{{ $source->isConnected() ? __('sheet_sources.reconnect') : __('sheet_sources.connect') }}</button>
+                                <button type="submit" class="{{ $link }}">{{ $source->isConnected() ? __('sheet_sources.reconnect') : __('sheet_sources.connect') }}<span class="sr-only">: {{ __('sheet_sources.sheet_card') }}, {{ $coordination->name }}</span></button>
                             </form>
                         @endif
                         @if ($source?->isConnected())
                             <form method="POST" action="{{ route('sheet-sources.sync', $coordination) }}">
                                 @csrf
-                                <button type="submit" class="{{ $link }}">{{ __('sheet_sources.sync') }}</button>
+                                <button type="submit" class="{{ $link }}">{{ __('sheet_sources.sync') }}<span class="sr-only">: {{ __('sheet_sources.sheet_card') }}, {{ $coordination->name }}</span></button>
                             </form>
                             <form method="POST" action="{{ route('sheet-sources.disconnect', $coordination) }}">
                                 @csrf
-                                <button type="submit" class="{{ $link }}">{{ __('sheet_sources.disconnect') }}</button>
+                                <button type="submit" class="{{ $link }}">{{ __('sheet_sources.disconnect') }}<span class="sr-only">: {{ __('sheet_sources.sheet_card') }}, {{ $coordination->name }}</span></button>
                             </form>
                         @endif
                         @if ($source)
                             <form method="POST" action="{{ route('sheet-sources.destroy', $coordination) }}" x-data="confirmSubmit" data-confirm="{{ __('sheet_sources.delete_confirm') }}" x-on:submit="onSubmit">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}<span class="sr-only">: {{ __('sheet_sources.sheet_card') }}, {{ $coordination->name }}</span></button>
                             </form>
                         @endif
                     </div>

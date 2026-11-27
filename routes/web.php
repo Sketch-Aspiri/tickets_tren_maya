@@ -44,6 +44,7 @@ use App\Http\Controllers\Tickets\TicketTransitionController;
 use App\Http\Controllers\Users\UserApprovalController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Controllers\Users\UserStatusController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -55,7 +56,9 @@ Route::get('account/status', [AccountStatusController::class, 'show'])
 
 // Toda la aplicacion: sesion + cuenta activa con rol + 2FA (configurado y superado en la sesion).
 // Aviso de sesion por vencer (accesibilidad): cualquier peticion la renueva; esta no hace nada mas.
-Route::get('/sesion/viva', fn () => response()->noContent())->middleware('auth')->name('sesion.viva');
+Route::get('/sesion/viva', fn (Request $request) => response()->noContent(
+    hash_equals((string) $request->session()->token(), (string) $request->header('X-CSRF-TOKEN')) ? 204 : 409,
+))->middleware('auth')->name('sesion.viva');
 
 Route::middleware(['auth', 'account.active', 'two-factor'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');

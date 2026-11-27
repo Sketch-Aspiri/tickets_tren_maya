@@ -9,17 +9,19 @@
     $selectedCollaborators = array_map('intval', (array) old('collaborator_ids', $collaboratorIds));
     $maxKb = (int) config('tickets.attachments.max_kilobytes');
     $percent = $activity->progressPercent();
+    // Subtarea cuyo formulario de edicion se envio por ultima vez (0 = el de agregar).
+    $editedSubtask = (int) old('subtask_id');
 @endphp
 
 <x-app-layout>
-    <x-slot name="title">{{ $activity->folio }}</x-slot>
+    <x-slot name="title">{{ $activity->folio }} · {{ \Illuminate\Support\Str::limit($activity->title, 60) }}</x-slot>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div class="min-w-0">
                 <p class="font-mono text-xs text-gray-700">{{ $activity->folio }}</p>
                 <h1 class="truncate text-xl font-semibold leading-tight text-brand-green">{{ $activity->title }}</h1>
             </div>
-            <div class="flex shrink-0 items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 @can('update', $activity)
                     <x-primary-button :href="route('activities.edit', $activity)">{{ __('common.actions.edit') }}</x-primary-button>
                 @endcan
@@ -74,7 +76,7 @@
             </p>
         @endif
 
-        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('tickets.columns.category') }}</dt><dd class="font-medium">{{ $activity->category?->name ?? __('activities.form.no_category') }}</dd></div>
             <div><dt class="text-gray-600">{{ __('activities.columns.team') }}</dt><dd class="font-medium">{{ $activity->team->name }} <span class="block text-xs font-normal text-gray-600">{{ $activity->team->coordination->station->name }} › {{ $activity->team->coordination->name }}</span></dd></div>
             <div><dt class="text-gray-600">{{ __('activities.show.start_date') }}</dt><dd class="font-medium">{{ $activity->start_date?->format('d/m/Y') ?? __('activities.show.no_date') }}</dd></div>
@@ -123,7 +125,7 @@
 
         @can('assign', $activity)
             @if (! $isFinal)
-                <form method="POST" action="{{ route('activities.assignments.update', $activity) }}" class="mt-5 grid gap-4 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
+                <form method="POST" action="{{ route('activities.assignments.update', $activity) }}" class="mt-5 grid grid-cols-1 gap-4 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
                     @csrf
                     @method('PUT')
                     <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('activities.assign.responsible')" :select-responsible="__('activities.assign.select_responsible')" :collaborators-label="__('activities.assign.collaborators')" id-prefix="assign" />
@@ -168,7 +170,7 @@
                             <input type="hidden" name="done" value="{{ $subtask->done ? '0' : '1' }}">
                             <button type="submit" class="flex h-11 w-11 items-center justify-center rounded-lg border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2 motion-reduce:transition-none {{ $subtask->done ? 'border-brand-green bg-brand-green text-white hover:bg-brand-green-dark' : 'border-gray-500 bg-white text-transparent hover:border-brand-green hover:bg-brand-mist hover:text-brand-green/40' }}">
                                 <x-icon name="check" class="h-6 w-6" />
-                                <span class="sr-only">{{ $subtask->done ? __('activities.subtasks.mark_undone') : __('activities.subtasks.mark_done') }}</span>
+                                <span class="sr-only">{{ $subtask->done ? __('activities.subtasks.mark_undone') : __('activities.subtasks.mark_done') }}: {{ $subtask->title }}</span>
                             </button>
                         </form>
                     @else
@@ -194,32 +196,40 @@
                         <form method="POST" action="{{ route('activities.subtasks.destroy', [$activity, $subtask]) }}" class="shrink-0" x-data="confirmSubmit" data-confirm="{{ __('activities.subtasks.remove_confirm') }}" x-on:submit="onSubmit">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="inline-flex min-h-[44px] items-center px-2 text-sm font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('activities.subtasks.remove') }}</button>
+                            <button type="submit" class="inline-flex min-h-[44px] items-center px-2 text-sm font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('activities.subtasks.remove') }}<span class="sr-only">: {{ $subtask->title }}</span></button>
                         </form>
                     @endif
                 </div>
 
                 @if ($canEdit)
-                    <details class="ms-14 mt-1">
-                        <summary class="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-brand-teal underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('activities.subtasks.edit') }}</summary>
-                        <form method="POST" action="{{ route('activities.subtasks.update', [$activity, $subtask]) }}" class="mt-2 grid gap-3 sm:grid-cols-2">
+                    @php $failedEdit = $editedSubtask === $subtask->id && $errors->hasAny(['title', 'assigned_to']); @endphp
+                    <details class="ms-14 mt-1" @if ($failedEdit) open @endif>
+                        <summary class="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-brand-teal underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('activities.subtasks.edit') }}<span class="sr-only">: {{ $subtask->title }}</span></summary>
+                        <form method="POST" action="{{ route('activities.subtasks.update', [$activity, $subtask]) }}" class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             @csrf
                             @method('PUT')
+                            <input type="hidden" name="subtask_id" value="{{ $subtask->id }}">
                             <div>
-                                <x-input-label :for="'subtask_title_'.$subtask->id" :value="__('activities.subtasks.title_label')" />
-                                <x-text-input :id="'subtask_title_'.$subtask->id" name="title" type="text" class="mt-1 block w-full" :value="$subtask->title" maxlength="255" required />
+                                <x-input-label :for="'subtask_title_'.$subtask->id" :value="__('activities.subtasks.title_label')" required />
+                                <x-text-input :id="'subtask_title_'.$subtask->id" name="title" type="text" class="mt-1 block w-full" :value="$failedEdit ? old('title') : $subtask->title" maxlength="255" required />
+                                @if ($failedEdit)
+                                    <x-input-error :messages="$errors->get('title')" class="mt-2" />
+                                @endif
                             </div>
                             <div>
                                 <x-input-label :for="'subtask_assignee_'.$subtask->id" :value="__('activities.subtasks.assignee')" />
                                 <x-select-input :id="'subtask_assignee_'.$subtask->id" name="assigned_to" class="mt-1 block w-full">
                                     <option value="">{{ __('activities.subtasks.no_assignee') }}</option>
                                     @foreach ($assignableUsers as $candidate)
-                                        <option value="{{ $candidate->id }}" @selected((int) $subtask->assigned_to === $candidate->id)>{{ $candidate->name }}</option>
+                                        <option value="{{ $candidate->id }}" @selected((int) ($failedEdit ? old('assigned_to') : $subtask->assigned_to) === $candidate->id)>{{ $candidate->name }}</option>
                                     @endforeach
                                 </x-select-input>
+                                @if ($failedEdit)
+                                    <x-input-error :messages="$errors->get('assigned_to')" class="mt-2" />
+                                @endif
                             </div>
                             <div class="sm:col-span-2">
-                                <x-primary-button>{{ __('activities.subtasks.save') }}</x-primary-button>
+                                <x-primary-button>{{ __('activities.subtasks.save') }}<span class="sr-only">: {{ $subtask->title }}</span></x-primary-button>
                             </div>
                         </form>
                     </details>
@@ -230,22 +240,22 @@
         @endforelse
 
         @if (! $isFinal && $subtaskAbilities['manage'])
-            <form method="POST" action="{{ route('activities.subtasks.store', $activity) }}" class="mt-4 grid gap-3 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
+            <form method="POST" action="{{ route('activities.subtasks.store', $activity) }}" class="mt-4 grid grid-cols-1 gap-3 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
                 @csrf
                 <div>
-                    <x-input-label for="new_subtask_title" :value="__('activities.subtasks.add')" />
-                    <x-text-input id="new_subtask_title" name="title" type="text" class="mt-1 block w-full" :value="old('title')" maxlength="255" required />
-                    <x-input-error :messages="$errors->get('title')" class="mt-2" />
+                    <x-input-label for="new_subtask_title" :value="__('activities.subtasks.add')" required />
+                    <x-text-input id="new_subtask_title" name="title" type="text" class="mt-1 block w-full" :value="$editedSubtask ? '' : old('title')" maxlength="255" required />
+                    <x-input-error :messages="$editedSubtask ? [] : $errors->get('title')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="new_subtask_assignee" :value="__('activities.subtasks.assignee')" />
                     <x-select-input id="new_subtask_assignee" name="assigned_to" class="mt-1 block w-full">
                         <option value="">{{ __('activities.subtasks.no_assignee') }}</option>
                         @foreach ($assignableUsers as $candidate)
-                            <option value="{{ $candidate->id }}" @selected((int) old('assigned_to') === $candidate->id)>{{ $candidate->name }}</option>
+                            <option value="{{ $candidate->id }}" @selected(! $editedSubtask && (int) old('assigned_to') === $candidate->id)>{{ $candidate->name }}</option>
                         @endforeach
                     </x-select-input>
-                    <x-input-error :messages="$errors->get('assigned_to')" class="mt-2" />
+                    <x-input-error :messages="$editedSubtask ? [] : $errors->get('assigned_to')" class="mt-2" />
                 </div>
                 <div class="sm:col-span-2">
                     <x-primary-button>{{ __('activities.subtasks.submit') }}</x-primary-button>

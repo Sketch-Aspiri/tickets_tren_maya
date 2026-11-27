@@ -3,7 +3,7 @@
 {{-- Grafica accesible: el <canvas> lo dibuja Chart.js (resources/js/charts.js) a partir de `data-chart` (JSON plano,
      escapado con {{ }}); la MISMA informacion va en una tabla dentro de <details> como alternativa textual. Si el
      JavaScript falla, el texto dentro del <canvas> y la tabla siguen disponibles. --}}
-<x-card :title="$title">
+<x-card :title="$title" class="min-w-0">
     <figure>
         <div class="relative h-64 w-full">
             <canvas data-chart="{{ json_encode($config, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) }}" role="img" aria-label="{{ $title }}">
@@ -18,7 +18,7 @@
 
     <details class="mt-3">
         <summary class="flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-brand-teal focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">
-            {{ __('tracking.charts.show_data') }}
+            {{ __('tracking.charts.show_data') }}<span class="sr-only">: {{ $title }}</span>
         </summary>
 
         <div class="mt-2">

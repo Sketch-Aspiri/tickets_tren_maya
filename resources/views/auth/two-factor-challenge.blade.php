@@ -1,14 +1,14 @@
 <x-guest-layout>
     <div x-data="twoFactorChallenge" data-recovery="{{ $errors->has('recovery_code') ? '1' : '0' }}">
         <h1 class="mb-2 text-lg font-semibold text-brand-green">{{ __('two_factor.challenge.title') }}</h1>
-        <p class="mb-4 text-sm text-gray-600">{{ __('two_factor.challenge.intro') }}</p>
+        <p id="challenge_help" class="mb-4 text-sm text-gray-600">{{ __('two_factor.challenge.intro') }}</p>
 
         <form method="POST" action="{{ route('two-factor.verify') }}">
             @csrf
 
             <div x-show="usingCode">
                 <x-input-label for="code" :value="__('two_factor.challenge.code')" />
-                <x-text-input id="code" class="mt-1 block w-full tracking-widest" type="text" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" x-bind:disabled="recovery" autofocus />
+                <x-text-input id="code" class="mt-1 block w-full tracking-widest" type="text" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" x-bind:disabled="recovery" autofocus aria-describedby="challenge_help" />
                 <x-input-error :messages="$errors->get('code')" class="mt-2" />
             </div>
 

@@ -9,19 +9,20 @@
         </div>
     </x-slot>
 
-    <x-table>
+    <x-table :caption="__('stations.title')">
         <thead>
             <tr>
-                <th class="px-4 py-3">{{ __('stations.columns.name') }}</th>
-                <th class="px-4 py-3">{{ __('stations.columns.status') }}</th>
-                <th class="hidden px-4 py-3 sm:table-cell">{{ __('stations.columns.coordinations') }}</th>
-                <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
+                <th scope="col" class="px-4 py-3">{{ __('stations.columns.name') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('stations.columns.status') }}</th>
+                <th scope="col" class="hidden px-4 py-3 sm:table-cell">{{ __('stations.columns.coordinations') }}</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-brand-green/10">
             @forelse ($stations as $station)
                 <tr>
-                    <td class="px-4 py-3 font-medium"><a href="{{ route('stations.show', $station) }}" class="text-brand-green hover:underline">{{ $station->name }}</a></td>
+                    <td class="px-4 py-3 font-medium"><a href="{{ route('stations.show', $station) }}" class="text-brand-green hover:underline">{{ $station->name }}</a>
+                        <div class="text-xs font-normal text-gray-700"><span class="block sm:hidden"><span class="font-medium">{{ __('stations.columns.coordinations') }}:</span> {{ $station->coordinations_count }}</span></div></td>
                     <td class="px-4 py-3">
                         @if ($station->active)
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-mint/20 px-2.5 py-0.5 text-xs font-medium text-brand-green"><span class="h-1.5 w-1.5 rounded-full bg-brand-teal" aria-hidden="true"></span>{{ __('stations.active') }}</span>
@@ -32,13 +33,13 @@
                     <td class="hidden px-4 py-3 sm:table-cell">{{ $station->coordinations_count }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-right">
                         @can('update', $station)
-                            <a href="{{ route('stations.edit', $station) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}</a>
+                            <a href="{{ route('stations.edit', $station) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}<span class="sr-only">: {{ $station->name }}</span></a>
                         @endcan
                         @can('delete', $station)
                             <form method="POST" action="{{ route('stations.destroy', $station) }}" class="ms-3 inline" x-data="confirmSubmit" data-confirm="{{ __('stations.delete_confirm') }}" x-on:submit="onSubmit">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}<span class="sr-only">: {{ $station->name }}</span></button>
                             </form>
                         @endcan
                     </td>

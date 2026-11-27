@@ -9,16 +9,16 @@
         </div>
     </x-slot>
 
-    <x-table>
+    <x-table :caption="__('coordinations.title')">
         <thead>
             <tr>
-                <th class="px-4 py-3">{{ __('coordinations.columns.name') }}</th>
-                <th class="hidden px-4 py-3 sm:table-cell">{{ __('coordinations.columns.station') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('coordinations.columns.code') }}</th>
-                <th class="px-4 py-3">{{ __('coordinations.columns.status') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('coordinations.columns.teams') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('coordinations.columns.bosses') }}</th>
-                <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
+                <th scope="col" class="px-4 py-3">{{ __('coordinations.columns.name') }}</th>
+                <th scope="col" class="hidden px-4 py-3 sm:table-cell">{{ __('coordinations.columns.station') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('coordinations.columns.code') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('coordinations.columns.status') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('coordinations.columns.teams') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('coordinations.columns.bosses') }}</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-brand-green/10">
@@ -27,6 +27,11 @@
                     <td class="px-4 py-3 font-medium text-gray-900">
                         <a href="{{ route('coordinations.show', $coordination) }}" class="text-brand-green hover:underline">{{ $coordination->name }}</a>
                         <p class="text-xs font-normal text-gray-600 sm:hidden">{{ $coordination->station->name }}</p>
+                        <div class="text-xs font-normal text-gray-700">
+                            <span class="block md:hidden"><span class="font-medium">{{ __('coordinations.columns.code') }}:</span> {{ $coordination->code }}</span>
+                            <span class="block md:hidden"><span class="font-medium">{{ __('coordinations.columns.teams') }}:</span> {{ $coordination->teams_count }}</span>
+                            <span class="block md:hidden"><span class="font-medium">{{ __('coordinations.columns.bosses') }}:</span> {{ $coordination->bosses_count }}</span>
+                        </div>
                     </td>
                     <td class="hidden px-4 py-3 sm:table-cell">{{ $coordination->station->name }}</td>
                     <td class="hidden px-4 py-3 font-mono text-xs md:table-cell">{{ $coordination->code }}</td>
@@ -41,13 +46,13 @@
                     <td class="hidden px-4 py-3 md:table-cell">{{ $coordination->bosses_count }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-right">
                         @can('update', $coordination)
-                            <a href="{{ route('coordinations.edit', $coordination) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}</a>
+                            <a href="{{ route('coordinations.edit', $coordination) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}<span class="sr-only">: {{ $coordination->name }}</span></a>
                         @endcan
                         @can('delete', $coordination)
                             <form method="POST" action="{{ route('coordinations.destroy', $coordination) }}" class="ms-3 inline" x-data="confirmSubmit" data-confirm="{{ __('coordinations.delete_confirm') }}" x-on:submit="onSubmit">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}<span class="sr-only">: {{ $coordination->name }}</span></button>
                             </form>
                         @endcan
                     </td>

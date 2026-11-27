@@ -9,7 +9,7 @@
         @method('patch')
 
         <div>
-            <x-input-label for="name" :value="__('profile.info.name')" />
+            <x-input-label for="name" :value="__('profile.info.name')" required />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>

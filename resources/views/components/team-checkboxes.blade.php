@@ -18,10 +18,10 @@
     $othersSelected = $others->flatten()->contains(fn ($team): bool => in_array((int) $team->id, $selectedIds, true));
 @endphp
 
-<fieldset {{ $attributes }}>
+<fieldset {{ $attributes }} @if ($hint) aria-describedby="{{ $prefix }}_hint" @endif>
     <legend class="block text-sm font-medium text-gray-700">{{ $legend }}</legend>
     @if ($hint)
-        <p class="mt-1 text-xs text-gray-600">{{ $hint }}</p>
+        <p id="{{ $prefix }}_hint" class="mt-1 text-xs text-gray-600">{{ $hint }}</p>
     @endif
 
     <div class="mt-2 space-y-3">

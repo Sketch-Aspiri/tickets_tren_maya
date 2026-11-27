@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ __('mailboxes.edit') }}</x-slot>
+    <x-slot name="title">{{ __('mailboxes.edit') }} · {{ $coordination->name }}</x-slot>
     <x-slot name="header">
         <div>
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('mailboxes.edit') }}</h1>
@@ -12,20 +12,22 @@
             @csrf
             @method('PUT')
 
+            <x-required-note />
+
             <div>
-                <x-input-label for="host" :value="__('mailboxes.form.host')" />
+                <x-input-label for="host" :value="__('mailboxes.form.host')" required />
                 <x-text-input id="host" name="host" type="text" class="mt-1 block w-full" :value="old('host', $mailbox->host)" maxlength="253" required autofocus />
                 <x-input-error :messages="$errors->get('host')" class="mt-2" />
             </div>
 
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <x-input-label for="port" :value="__('mailboxes.form.port')" />
+                    <x-input-label for="port" :value="__('mailboxes.form.port')" required />
                     <x-text-input id="port" name="port" type="number" min="1" max="65535" class="mt-1 block w-full" :value="old('port', $mailbox->port)" required />
                     <x-input-error :messages="$errors->get('port')" class="mt-2" />
                 </div>
                 <div>
-                    <x-input-label for="encryption" :value="__('mailboxes.form.encryption')" />
+                    <x-input-label for="encryption" :value="__('mailboxes.form.encryption')" required />
                     <x-select-input id="encryption" name="encryption" class="mt-1 block w-full" required>
                         @foreach ($encryptions as $encryption)
                             <option value="{{ $encryption }}" @selected(old('encryption', $mailbox->encryption) === $encryption)>{{ __('mailboxes.encryptions.'.$encryption) }}</option>
@@ -36,21 +38,21 @@
             </div>
 
             <div class="mt-4">
-                <x-input-label for="username" :value="__('mailboxes.form.username')" />
+                <x-input-label for="username" :value="__('mailboxes.form.username')" required />
                 <x-text-input id="username" name="username" type="text" class="mt-1 block w-full" :value="old('username', $mailbox->username)" maxlength="255" required autocomplete="off" />
                 <x-input-error :messages="$errors->get('username')" class="mt-2" />
             </div>
 
             <div class="mt-4">
-                <x-input-label for="password" :value="__('mailboxes.form.password')" />
+                <x-input-label for="password" :value="__('mailboxes.form.password')" :required="! $mailbox->exists" />
                 {{-- La contrasena guardada NUNCA se vuelve a mostrar; vacio al editar conserva la actual. --}}
-                <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" maxlength="255" autocomplete="new-password" :required="! $mailbox->exists" />
-                <p class="mt-1 text-xs text-gray-600">{{ $mailbox->exists ? __('mailboxes.form.password_keep') : __('mailboxes.form.password_help') }}</p>
+                <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" maxlength="255" autocomplete="new-password" :required="! $mailbox->exists" aria-describedby="password_help" />
+                <p id="password_help" class="mt-1 text-xs text-gray-600">{{ $mailbox->exists ? __('mailboxes.form.password_keep') : __('mailboxes.form.password_help') }}</p>
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
             <div class="mt-4">
-                <x-input-label for="folder" :value="__('mailboxes.form.folder')" />
+                <x-input-label for="folder" :value="__('mailboxes.form.folder')" required />
                 <x-text-input id="folder" name="folder" type="text" class="mt-1 block w-full" :value="old('folder', $mailbox->folder)" maxlength="100" required />
                 <x-input-error :messages="$errors->get('folder')" class="mt-2" />
             </div>

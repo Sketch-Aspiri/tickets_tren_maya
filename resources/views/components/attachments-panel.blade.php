@@ -21,7 +21,7 @@
                 <form method="POST" action="{{ route('attachments.destroy', $attachment) }}" x-data="confirmSubmit" data-confirm="{{ __('tickets.show.remove_attachment_confirm') }}" x-on:submit="onSubmit">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('tickets.attachment.delete') }}</button>
+                    <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('tickets.attachment.delete') }}<span class="sr-only">: {{ $attachment->original_name }}</span></button>
                 </form>
             @endif
         </div>
@@ -32,7 +32,7 @@
     @can('attach', $item)
         <form method="POST" action="{{ $storeUrl }}" enctype="multipart/form-data" class="mt-4">
             @csrf
-            <x-input-label for="file" :value="__('tickets.attachment.label')" />
+            <x-input-label for="file" :value="__('tickets.attachment.label')" required />
             <input id="file" name="file" type="file" required aria-describedby="file_hint" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.txt" class="mt-1 block min-h-[44px] w-full text-sm text-gray-800 file:mr-3 file:min-h-[44px] file:cursor-pointer file:rounded-md file:border file:border-brand-teal file:bg-white file:px-4 file:text-sm file:font-semibold file:text-brand-green hover:file:bg-brand-mist">
             <p id="file_hint" class="mt-1 text-xs text-gray-600">{{ $hint }}</p>
             <x-input-error :messages="$errors->get('file')" class="mt-2" />

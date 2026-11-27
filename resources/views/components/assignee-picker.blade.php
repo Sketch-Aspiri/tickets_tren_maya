@@ -23,9 +23,9 @@
 {{-- Selector de responsable (lista desplegable) y de colaboradores (casillas con buscador local). Sin JavaScript las
      casillas funcionan igual y el servidor descarta al responsable si viniera repetido; con Alpine se agrega el
      filtro por nombre, el contador y la exclusion del responsable. La logica vive en Alpine.data('assigneePicker'). --}}
-<div x-data="assigneePicker" x-on:change="onChange" x-on:cascade-coordination.window="onCoordination" data-filter-by="{{ $filterBy === 'team' ? 'team' : 'coordination' }}" data-max="{{ $max }}" data-counter="{{ __('workflow.picker.counter', ['count' => '{count}', 'max' => '{max}']) }}" {{ $attributes->merge(['class' => 'grid gap-4 sm:col-span-2 sm:grid-cols-2']) }}>
+<div x-data="assigneePicker" x-on:change="onChange" x-on:cascade-coordination.window="onCoordination" data-filter-by="{{ $filterBy === 'team' ? 'team' : 'coordination' }}" data-max="{{ $max }}" data-counter="{{ __('workflow.picker.counter', ['count' => '{count}', 'max' => '{max}']) }}" {{ $attributes->merge(['class' => 'grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2']) }}>
     <div>
-        <x-input-label :for="$idPrefix.'_responsible'" :value="$responsibleLabel" />
+        <x-input-label :for="$idPrefix.'_responsible'" :value="$responsibleLabel" required />
         <x-select-input :id="$idPrefix.'_responsible'" name="responsible_id" class="mt-1 block w-full" required data-responsible>
             <option value="">{{ $selectResponsible }}</option>
             @foreach ($users as $candidate)
@@ -35,7 +35,7 @@
                     <x-input-error :messages="$errors->get('responsible_id')" class="mt-2" />
     </div>
 
-    <fieldset aria-describedby="{{ $idPrefix }}_collaborators_hint">
+    <fieldset class="min-w-0" aria-describedby="{{ $idPrefix }}_collaborators_hint">
         <legend class="block text-sm font-medium text-gray-800">{{ $collaboratorsLabel }}</legend>
         <p id="{{ $idPrefix }}_collaborators_hint" class="mt-0.5 text-xs text-gray-600">{{ __('workflow.picker.hint') }}</p>
 

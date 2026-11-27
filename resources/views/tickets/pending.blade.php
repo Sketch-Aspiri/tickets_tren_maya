@@ -10,7 +10,7 @@
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('tickets.pending_title') }}</h1>
             @if ($dueToday)
-                <x-primary-button :href="route('tickets.pending', $scopeQuery)" aria-current="true" :title="__('tickets.pending_due_today_clear')">{{ __('tickets.pending_due_today') }} ✕</x-primary-button>
+                <x-primary-button :href="route('tickets.pending', $scopeQuery)" aria-current="true" :title="__('tickets.pending_due_today_clear')">{{ __('tickets.pending_due_today') }}<span aria-hidden="true" class="ms-1">✕</span><span class="sr-only">: {{ __('common.remove_filter') }}</span></x-primary-button>
             @else
                 <x-secondary-button :href="route('tickets.pending', [...$scopeQuery, 'due_today' => 1])">{{ __('tickets.pending_due_today') }}</x-secondary-button>
             @endif
@@ -36,7 +36,7 @@
     <section aria-labelledby="pending-tickets" class="space-y-3">
         <h2 id="pending-tickets" class="text-lg font-semibold text-brand-green">{{ __('tickets.pending_tickets_heading') }}</h2>
 
-        <x-ticket-table :tickets="$tickets" :show-team="auth()->user()->mustChooseTeam()" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('tickets.pending_empty')" />
+        <x-ticket-table :tickets="$tickets" :caption="__('tickets.pending_tickets_heading')" :show-team="auth()->user()->mustChooseTeam()" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('tickets.pending_empty')" />
 
         {{ $tickets->links() }}
     </section>
@@ -44,7 +44,7 @@
     <section aria-labelledby="pending-activities" class="space-y-3">
         <h2 id="pending-activities" class="text-lg font-semibold text-brand-green">{{ __('tickets.pending_activities_heading') }}</h2>
 
-        <x-activity-table :activities="$activities" :show-team="auth()->user()->mustChooseTeam()" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('activities.pending_empty')" />
+        <x-activity-table :activities="$activities" :caption="__('tickets.pending_activities_heading')" :show-team="auth()->user()->mustChooseTeam()" :empty-message="$isTeam ? __('tickets.pending_empty_team') : __('activities.pending_empty')" />
 
         {{ $activities->links() }}
     </section>

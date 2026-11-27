@@ -47,7 +47,7 @@
 <div x-data="teamCascade"
      data-labels="{{ json_encode($labels, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}"
      data-auto-team="{{ $optional ? '0' : '1' }}"
-     {{ $attributes->class(['grid gap-3 sm:grid-cols-3']) }}>
+     {{ $attributes->class(['grid grid-cols-1 gap-3 sm:grid-cols-3']) }}>
     <div data-cascade-wrap="station" @class(['hidden' => $stations->count() <= 1])>
         <x-input-label :for="$id.'_station'" :value="__('cascade.station')" />
         <x-select-input :id="$id.'_station'" :name="$stationName" data-cascade="station" x-on:change="onStation" class="mt-1 block w-full">
@@ -69,7 +69,7 @@
     </div>
 
     <div data-cascade-wrap="team">
-        <x-input-label :for="$id" :value="$label ?? __('cascade.team')" />
+        <x-input-label :for="$id" :value="$label ?? __('cascade.team')" :required="$required" />
         <x-select-input :id="$id" :name="$name" data-cascade="team" x-on:change="onTeam" class="mt-1 block w-full" :required="$required" :aria-describedby="$hint ? $id.'_hint' : null">
             <option value="">{{ $labels['team'] }}</option>
             @foreach ($sorted->groupBy('coordination_id') as $group)

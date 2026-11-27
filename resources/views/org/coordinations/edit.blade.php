@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ __('coordinations.edit') }}</x-slot>
+    <x-slot name="title">{{ __('coordinations.edit') }} · {{ $coordination->name }}</x-slot>
     <x-slot name="header">
         <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('coordinations.edit') }}</h1>
     </x-slot>

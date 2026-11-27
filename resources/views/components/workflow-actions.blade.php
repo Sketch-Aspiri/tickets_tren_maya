@@ -40,11 +40,19 @@
 
     $summaryClasses = 'inline-flex min-h-[44px] w-full cursor-pointer list-none items-center justify-center gap-2 rounded-lg border px-5 py-2 text-sm font-semibold shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto [&::-webkit-details-marker]:hidden';
     $textareaClasses = 'mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal';
+    // Si el servidor rechazo el cambio, se reabre el bloque que se envio (`old('status')`) con su mensaje y su texto.
     $hasCommentError = $errors->has('comment');
+    $attempted = $hasCommentError ? old('status') : null;
+    $failed = $attempted === null ? null : TicketStatus::tryFrom((string) $attempted);
+    $failedHere = $failed !== null && in_array($failed, array_filter([$reject, $reopen, $cancel]), true);
+    // Sin bloque donde mostrarlo (otro destino o ya no disponible), el mensaje va arriba de las acciones.
+    $generalErrors = array_merge($errors->get('status'), $hasCommentError && ! $failedHere ? $errors->get('comment') : []);
     $transitionUrl = route($routePrefix.'.transition', $item);
 @endphp
 
 <div {{ $attributes->merge(['class' => 'space-y-4']) }}>
+    <x-input-error :messages="$generalErrors" />
+
     {{-- Bolsa: la accion mas visible cuando el ticket esta sin asignar y este usuario puede tomarlo. --}}
     @if ($canTake)
         <form method="POST" action="{{ route('tickets.take', $item) }}" class="rounded-xl border-2 border-brand-green bg-brand-mist p-4">
@@ -96,9 +104,9 @@
             <p class="border-t border-brand-green/10 pt-4 text-xs font-semibold uppercase tracking-wide text-gray-700">{{ __('workflow.other_actions') }}</p>
         @endif
 
-        <div class="grid items-start gap-3 sm:grid-cols-2">
+        <div class="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
             @if ($reject)
-                <details class="rounded-lg" @if ($hasCommentError) open @endif>
+                <details class="rounded-lg" @if ($failed === $reject && $failed !== null) open @endif>
                     <summary class="{{ $summaryClasses }} border-amber-600 bg-white text-amber-950 hover:bg-amber-50 focus-visible:ring-amber-600">
                         <x-icon name="repeat" class="h-5 w-5" />
                         {{ __($group.'.actions.transition.reject') }}
@@ -107,15 +115,18 @@
                         @csrf
                         <input type="hidden" name="status" value="{{ $reject->value }}">
                         <x-input-label for="transition_reject_comment" :value="__($group.'.actions.comment_label').' ('.__('workflow.required').')'" />
-                        <textarea id="transition_reject_comment" name="comment" rows="3" maxlength="{{ $maxComment }}" required aria-describedby="transition_reject_hint" class="{{ $textareaClasses }}"></textarea>
+                        <textarea id="transition_reject_comment" name="comment" rows="3" maxlength="{{ $maxComment }}" required aria-describedby="transition_reject_hint" class="{{ $textareaClasses }}">{{ $failed === $reject && $failed !== null ? old('comment') : '' }}</textarea>
                         <p id="transition_reject_hint" class="mb-3 mt-1 text-xs text-gray-700">{{ __('workflow.reject_hint') }}</p>
+                        @if ($failed === $reject && $failed !== null)
+                            <x-input-error :messages="$errors->get('comment')" class="mb-3" />
+                        @endif
                         <x-danger-button class="w-full sm:w-auto">{{ __($group.'.actions.transition.reject') }}</x-danger-button>
                     </form>
                 </details>
             @endif
 
             @if ($reopen)
-                <details class="rounded-lg sm:col-span-2" @if ($hasCommentError) open @endif>
+                <details class="rounded-lg sm:col-span-2" @if ($failed === $reopen && $failed !== null) open @endif>
                     <summary class="{{ $summaryClasses }} border-brand-teal bg-white text-brand-green hover:bg-brand-mist focus-visible:ring-brand-teal">
                         <x-icon name="repeat" class="h-5 w-5" />
                         {{ __($group.'.actions.transition.pending') }}
@@ -124,15 +135,18 @@
                         @csrf
                         <input type="hidden" name="status" value="{{ $reopen->value }}">
                         <x-input-label for="transition_reopen_comment" :value="__($group.'.actions.comment_label').' ('.__('workflow.required').')'" />
-                        <textarea id="transition_reopen_comment" name="comment" rows="3" maxlength="{{ $maxComment }}" required aria-describedby="transition_reopen_hint" class="{{ $textareaClasses }}"></textarea>
+                        <textarea id="transition_reopen_comment" name="comment" rows="3" maxlength="{{ $maxComment }}" required aria-describedby="transition_reopen_hint" class="{{ $textareaClasses }}">{{ $failed === $reopen && $failed !== null ? old('comment') : '' }}</textarea>
                         <p id="transition_reopen_hint" class="mb-3 mt-1 text-xs text-gray-700">{{ __('workflow.reopen_hint') }}</p>
+                        @if ($failed === $reopen && $failed !== null)
+                            <x-input-error :messages="$errors->get('comment')" class="mb-3" />
+                        @endif
                         <x-primary-button class="w-full sm:w-auto">{{ __($group.'.actions.transition.pending') }}</x-primary-button>
                     </form>
                 </details>
             @endif
 
             @if ($cancel)
-                <details class="rounded-lg">
+                <details class="rounded-lg" @if ($failed === $cancel && $failed !== null) open @endif>
                     <summary class="{{ $summaryClasses }} border-red-700 bg-white text-red-800 hover:bg-red-50 focus-visible:ring-red-700">
                         <x-icon name="close" class="h-5 w-5" />
                         {{ __($group.'.actions.transition.cancelled') }}
@@ -141,8 +155,11 @@
                         @csrf
                         <input type="hidden" name="status" value="{{ $cancel->value }}">
                         <x-input-label for="transition_cancel_comment" :value="__($group.'.actions.comment_label').' ('.__('workflow.optional').')'" />
-                        <textarea id="transition_cancel_comment" name="comment" rows="2" maxlength="{{ $maxComment }}" aria-describedby="transition_cancel_hint" class="{{ $textareaClasses }}"></textarea>
+                        <textarea id="transition_cancel_comment" name="comment" rows="2" maxlength="{{ $maxComment }}" aria-describedby="transition_cancel_hint" class="{{ $textareaClasses }}">{{ $failed === $cancel && $failed !== null ? old('comment') : '' }}</textarea>
                         <p id="transition_cancel_hint" class="mb-3 mt-1 text-xs text-gray-700">{{ __('workflow.cancel_hint') }}</p>
+                        @if ($failed === $cancel && $failed !== null)
+                            <x-input-error :messages="$errors->get('comment')" class="mb-3" />
+                        @endif
                         <x-danger-button class="w-full sm:w-auto">{{ __($group.'.actions.transition.cancelled') }}</x-danger-button>
                     </form>
                 </details>

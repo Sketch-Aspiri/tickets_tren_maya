@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ $station->name }}</x-slot>
+    <x-slot name="title">{{ $station->name }} · {{ __('stations.title') }}</x-slot>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ $station->name }}</h1>
@@ -22,5 +22,5 @@
     </x-card>
 
     <h2 class="mt-6 text-base font-semibold text-brand-green">{{ __('stations.users') }}</h2>
-    @include('org.partials.users-table', ['users' => $users])
+    @include('org.partials.users-table', ['users' => $users, 'caption' => __('stations.users')])
 </x-app-layout>

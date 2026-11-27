@@ -1,7 +1,9 @@
 @csrf
 
+<x-required-note />
+
 <div>
-    <x-input-label for="coordination_id" :value="__('categories.form.coordination')" />
+    <x-input-label for="coordination_id" :value="__('categories.form.coordination')" :required="! auth()->user()->seesAllTeams()" />
     <x-select-input id="coordination_id" name="coordination_id" class="mt-1 block w-full" :required="! auth()->user()->seesAllTeams()">
         @if (auth()->user()->seesAllTeams())
             <option value="">{{ __('categories.form.global') }}</option>
@@ -18,7 +20,7 @@
 </div>
 
 <div class="mt-4">
-    <x-input-label for="name" :value="__('categories.form.name')" />
+    <x-input-label for="name" :value="__('categories.form.name')" required />
     <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $category->name)" maxlength="255" required autofocus />
     <x-input-error :messages="$errors->get('name')" class="mt-2" />
 </div>

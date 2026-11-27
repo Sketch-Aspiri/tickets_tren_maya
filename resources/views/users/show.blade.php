@@ -17,7 +17,7 @@
     </x-slot>
 
     <x-card :title="__('users.show.details')">
-        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-500">{{ __('users.index.columns.email') }}</dt><dd class="break-all font-medium">{{ $managedUser->email }}</dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.status') }}</dt><dd><x-status-badge :status="$managedUser->status" /></dd></div>
             <div><dt class="text-gray-500">{{ __('users.index.columns.role') }}</dt><dd><x-role-badge :role="$currentRole" /></dd></div>
@@ -35,10 +35,10 @@
         @can('approve', $managedUser)
             <x-card :title="__('users.show.approve_title')">
                 <p class="mb-4 text-sm text-gray-600">{{ __('users.show.approve_intro') }}</p>
-                <form method="POST" action="{{ route('users.approve', $managedUser) }}" class="grid gap-4 sm:grid-cols-2">
+                <form method="POST" action="{{ route('users.approve', $managedUser) }}" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     @csrf
                     <div>
-                        <x-input-label for="approve_role" :value="__('users.show.role')" />
+                        <x-input-label for="approve_role" :value="__('users.show.role')" required />
                         <x-select-input id="approve_role" name="role" class="mt-1 block w-full" required>
                             <option value="">{{ __('users.show.select_role') }}</option>
                             @foreach ($roles as $role)
@@ -72,12 +72,13 @@
             <x-card :title="__('users.show.reject_title')">
                 <x-danger-button type="button" x-data="modalTrigger" data-modal="reject-user" x-on:click.prevent="open">{{ __('users.show.reject_submit') }}</x-danger-button>
 
-                <x-modal name="reject-user" :label="__('users.show.reject_submit')" maxWidth="md" focusable>
+                <x-modal name="reject-user" :label="__('users.show.reject_submit')" :show="$errors->has('reason')" maxWidth="md" focusable>
                     <form method="POST" action="{{ route('users.reject', $managedUser) }}" class="p-6">
                         @csrf
-                        <p class="text-sm text-gray-700">{{ __('users.show.reject_confirm') }}</p>
+                        <p id="reject_reason_help" class="text-sm text-gray-700">{{ __('users.show.reject_confirm') }}</p>
                         <x-input-label for="reject_reason" class="mt-4" :value="__('users.show.reason')" />
-                        <x-text-input id="reject_reason" name="reason" type="text" class="mt-1 block w-full" maxlength="500" />
+                        <x-text-input id="reject_reason" name="reason" type="text" class="mt-1 block w-full" maxlength="500" :value="old('reason')" aria-describedby="reject_reason_help" />
+                        <x-input-error :messages="$errors->get('reason')" class="mt-2" />
                         <div class="mt-6 flex justify-end gap-3">
                             <x-secondary-button x-on:click="close">{{ __('common.actions.cancel') }}</x-secondary-button>
                             <x-danger-button>{{ __('users.show.reject_submit') }}</x-danger-button>
@@ -92,11 +93,11 @@
     @if ($managedUser->isActive())
         @can('update', $managedUser)
             <x-card :title="__('users.show.role_team_title')">
-                <form method="POST" action="{{ route('users.update', $managedUser) }}" class="grid gap-4 sm:grid-cols-2">
+                <form method="POST" action="{{ route('users.update', $managedUser) }}" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     @csrf
                     @method('PUT')
                     <div>
-                        <x-input-label for="update_role" :value="__('users.show.role')" />
+                        <x-input-label for="update_role" :value="__('users.show.role')" required />
                         <x-select-input id="update_role" name="role" class="mt-1 block w-full" required>
                             @foreach ($roles as $role)
                                 <option value="{{ $role->value }}" @selected(old('role', $currentRole?->value) === $role->value)>{{ $role->label() }}</option>
@@ -143,12 +144,13 @@
             @can('deactivate', $managedUser)
                 <x-danger-button type="button" x-data="modalTrigger" data-modal="deactivate-user" x-on:click.prevent="open">{{ __('users.show.deactivate') }}</x-danger-button>
 
-                <x-modal name="deactivate-user" :label="__('users.show.deactivate')" maxWidth="md" focusable>
+                <x-modal name="deactivate-user" :label="__('users.show.deactivate')" :show="$errors->has('reason')" maxWidth="md" focusable>
                     <form method="POST" action="{{ route('users.deactivate', $managedUser) }}" class="p-6">
                         @csrf
-                        <p class="text-sm text-gray-700">{{ __('users.show.deactivate_confirm') }}</p>
+                        <p id="deactivate_reason_help" class="text-sm text-gray-700">{{ __('users.show.deactivate_confirm') }}</p>
                         <x-input-label for="deactivate_reason" class="mt-4" :value="__('users.show.reason')" />
-                        <x-text-input id="deactivate_reason" name="reason" type="text" class="mt-1 block w-full" maxlength="500" />
+                        <x-text-input id="deactivate_reason" name="reason" type="text" class="mt-1 block w-full" maxlength="500" :value="old('reason')" aria-describedby="deactivate_reason_help" />
+                        <x-input-error :messages="$errors->get('reason')" class="mt-2" />
                         <div class="mt-6 flex justify-end gap-3">
                             <x-secondary-button x-on:click="close">{{ __('common.actions.cancel') }}</x-secondary-button>
                             <x-danger-button>{{ __('users.show.deactivate') }}</x-danger-button>

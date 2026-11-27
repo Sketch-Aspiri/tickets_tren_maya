@@ -7,6 +7,7 @@ return [
         'title' => 'Configura la verificación en dos pasos',
         'required_notice' => 'Tu rol exige verificación en dos pasos. Debes configurarla para continuar.',
         'step_scan' => 'Escanea este código QR con tu aplicación autenticadora (Google Authenticator, Microsoft Authenticator, Authy…).',
+        'qr_label' => 'Código QR para configurar la aplicación autenticadora. Si no puedes escanearlo, usa la clave que aparece abajo.',
         'step_manual' => 'Si no puedes escanearlo, escribe esta clave manualmente:',
         'step_confirm' => 'Escribe el código de 6 dígitos que muestra la aplicación para confirmar.',
         'code' => 'Código de 6 dígitos',

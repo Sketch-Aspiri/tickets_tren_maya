@@ -1,7 +1,9 @@
 @csrf
 
+<x-required-note />
+
 <div>
-    <x-input-label for="station_id" :value="__('coordinations.form.station')" />
+    <x-input-label for="station_id" :value="__('coordinations.form.station')" required />
     <x-select-input id="station_id" name="station_id" class="mt-1 block w-full" required>
         <option value="">{{ __('coordinations.form.choose_station') }}</option>
         @foreach ($stations as $station)
@@ -12,15 +14,15 @@
 </div>
 
 <div class="mt-4">
-    <x-input-label for="name" :value="__('coordinations.form.name')" />
+    <x-input-label for="name" :value="__('coordinations.form.name')" required />
     <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $coordination->name)" maxlength="255" required />
     <x-input-error :messages="$errors->get('name')" class="mt-2" />
 </div>
 
 <div class="mt-4">
-    <x-input-label for="code" :value="__('coordinations.form.code')" />
-    <x-text-input id="code" name="code" type="text" class="mt-1 block w-full uppercase" :value="old('code', $coordination->code)" maxlength="30" required />
-    <p class="mt-1 text-xs text-gray-600">{{ __('coordinations.form.code_help') }}</p>
+    <x-input-label for="code" :value="__('coordinations.form.code')" required />
+    <x-text-input id="code" name="code" type="text" class="mt-1 block w-full uppercase" :value="old('code', $coordination->code)" maxlength="30" required aria-describedby="code_help" />
+    <p id="code_help" class="mt-1 text-xs text-gray-600">{{ __('coordinations.form.code_help') }}</p>
     <x-input-error :messages="$errors->get('code')" class="mt-2" />
 </div>
 

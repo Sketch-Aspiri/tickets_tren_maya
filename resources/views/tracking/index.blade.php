@@ -23,7 +23,7 @@
     </x-slot>
 
     <x-card>
-        <form method="GET" action="{{ route('tracking.index') }}" aria-label="{{ __('tracking.filters.legend') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <form method="GET" action="{{ route('tracking.index') }}" aria-label="{{ __('tracking.filters.legend') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <div class="lg:col-span-1">
                 <x-input-label for="from" :value="__('tracking.filters.from')" />
                 <x-text-input id="from" name="from" type="date" class="mt-1 block w-full" :value="$filters->from" max="{{ \App\Support\LocalTime::today() }}" />
@@ -65,15 +65,15 @@
         </form>
     </x-card>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <x-kpi-card :label="__('tracking.cards.open')" :value="$cards['open']['total']" :tickets="$cards['open']['tickets']" :activities="$cards['open']['activities']" :note="__('tracking.cards.snapshot_note')" />
         <x-kpi-card :label="__('tracking.cards.in_review')" :value="$cards['in_review']['total']" :tickets="$cards['in_review']['tickets']" :activities="$cards['in_review']['activities']" :note="__('tracking.cards.snapshot_note')" />
         <x-kpi-card :label="__('tracking.cards.overdue')" :value="$cards['overdue']['total']" :tickets="$cards['overdue']['tickets']" :activities="$cards['overdue']['activities']" :note="__('tracking.cards.snapshot_note')" tone="danger" />
         <x-kpi-card :label="__('tracking.cards.completed')" :value="$cards['completed']['total']" :tickets="$cards['completed']['tickets']" :activities="$cards['completed']['activities']" :note="__('tracking.cards.period_note')" />
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-2">
-        <div class="lg:col-span-2">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div class="min-w-0 lg:col-span-2">
             <x-chart-card :title="__('tracking.charts.trend')" :caption="$trendCaption" :config="$charts['trend']" />
         </div>
         <x-chart-card :title="__('tracking.charts.status')" :caption="__('tracking.charts.status_caption')" :config="$charts['status']" />
@@ -86,7 +86,7 @@
         @if ($workload['rows'] === [])
             <p class="text-sm text-gray-700">{{ __('tracking.workload.empty') }}</p>
         @else
-            <x-table>
+            <x-table :caption="__('tracking.sections.workload')">
                 <thead>
                     <tr>
                         <th scope="col" class="px-3 py-2">{{ __('tracking.workload.person') }}</th>
@@ -101,7 +101,10 @@
                 <tbody class="divide-y divide-brand-green/10">
                     @foreach ($workload['rows'] as $row)
                         <tr>
-                            <th scope="row" class="px-3 py-2 text-left font-medium">{{ $row['name'] }}</th>
+                            <th scope="row" class="px-3 py-2 text-left font-medium">{{ $row['name'] }}
+                                <span class="block text-xs font-normal text-gray-700 sm:hidden">{{ __('tracking.workload.tickets') }}: {{ $row['tickets_open'] }} · {{ __('tracking.workload.activities') }}: {{ $row['activities_open'] }}</span>
+                                <span class="block text-xs font-normal text-gray-700 md:hidden">{{ __('tracking.workload.load') }}: {{ intdiv($row['open'] * 100, $maxOpen) }} %</span>
+                            </th>
                             <td class="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{{ $row['tickets_open'] }}</td>
                             <td class="hidden px-3 py-2 text-right tabular-nums sm:table-cell">{{ $row['activities_open'] }}</td>
                             <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ $row['open'] }}</td>
@@ -133,10 +136,10 @@
                 ({{ __('tracking.closing.closed') }}: {{ $closing['closed'] }})
             </p>
 
-            <div class="grid gap-4 md:grid-cols-2">
-                <div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="min-w-0">
                     <h3 class="mb-2 text-sm font-semibold text-gray-800">{{ __('tracking.closing.by_category') }}</h3>
-                    <x-table>
+                    <x-table :caption="__('tracking.closing.by_category')">
                         <thead>
                             <tr>
                                 <th scope="col" class="px-3 py-2">{{ __('tracking.closing.category') }}</th>
@@ -156,9 +159,9 @@
                     </x-table>
                 </div>
 
-                <div>
+                <div class="min-w-0">
                     <h3 class="mb-2 text-sm font-semibold text-gray-800">{{ __('tracking.closing.by_team') }}</h3>
-                    <x-table>
+                    <x-table :caption="__('tracking.closing.by_team')">
                         <thead>
                             <tr>
                                 <th scope="col" class="px-3 py-2">{{ __('tracking.closing.team') }}</th>
@@ -188,18 +191,21 @@
         <x-card :title="__('tracking.by_coordination.title')">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
+                    <caption class="sr-only">{{ __('tracking.by_coordination.title') }}</caption>
                     <thead>
                         <tr class="text-left text-gray-700">
-                            <th class="py-2 pe-4 font-medium">{{ __('tracking.by_coordination.coordination') }}</th>
-                            <th class="hidden py-2 pe-4 font-medium sm:table-cell">{{ __('tracking.by_coordination.station') }}</th>
-                            <th class="py-2 pe-4 text-right font-medium">{{ __('tracking.by_coordination.open') }}</th>
-                            <th class="py-2 text-right font-medium">{{ __('tracking.by_coordination.overdue') }}</th>
+                            <th scope="col" class="py-2 pe-4 font-medium">{{ __('tracking.by_coordination.coordination') }}</th>
+                            <th scope="col" class="hidden py-2 pe-4 font-medium sm:table-cell">{{ __('tracking.by_coordination.station') }}</th>
+                            <th scope="col" class="py-2 pe-4 text-right font-medium">{{ __('tracking.by_coordination.open') }}</th>
+                            <th scope="col" class="py-2 text-right font-medium">{{ __('tracking.by_coordination.overdue') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-green/10">
                         @foreach ($report['by_coordination'] as $row)
                             <tr>
-                                <td class="py-2 pe-4 font-medium text-gray-900">{{ $row['name'] }}</td>
+                                <th scope="row" class="py-2 pe-4 text-left font-medium text-gray-900">{{ $row['name'] }}
+                                    <span class="block text-xs font-normal text-gray-700 sm:hidden">{{ $row['station'] }}</span>
+                                </th>
                                 <td class="hidden py-2 pe-4 sm:table-cell">{{ $row['station'] }}</td>
                                 <td class="py-2 pe-4 text-right tabular-nums">{{ $row['open'] }}</td>
                                 <td class="py-2 text-right tabular-nums {{ $row['overdue'] > 0 ? 'font-semibold text-red-700' : '' }}">{{ $row['overdue'] }}</td>

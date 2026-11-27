@@ -20,12 +20,12 @@
             <x-status-badge :status="$email->status" />
         </div>
 
-        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('emails.show.sender') }}</dt><dd class="break-words font-medium">{{ $senderLine }}</dd></div>
             <div><dt class="text-gray-600">{{ __('emails.show.received_at') }}</dt><dd><x-local-datetime :value="$email->received_at" /></dd></div>
         </dl>
 
-        <h3 class="mb-1 mt-5 text-sm font-semibold text-gray-800">{{ __('emails.show.body') }}</h3>
+        <h2 class="mb-1 mt-5 text-sm font-semibold text-gray-800">{{ __('emails.show.body') }}</h2>
         {{-- Contenido de un correo externo: dato no confiable, siempre escapado; whitespace-pre-line conserva los
              saltos de linea sin interpretar HTML (mismo criterio que comentarios/descripciones). --}}
         <p class="whitespace-pre-line break-words text-sm text-gray-900">{{ $email->body }}</p>
@@ -53,7 +53,7 @@
                     {{ $email->activity?->folio }}
                 @endcan
             </p>
-            <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+            <dl class="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                 <div><dt class="text-gray-600">{{ __('emails.show.reviewed_by') }}</dt><dd class="font-medium">{{ $email->reviewer?->name }}</dd></div>
                 <div><dt class="text-gray-600">{{ __('emails.show.reviewed_at') }}</dt><dd><x-local-datetime :value="$email->reviewed_at" /></dd></div>
             </dl>
@@ -61,7 +61,7 @@
     @elseif ($email->status === \App\Enums\IncomingEmailStatus::Discarded)
         <x-card :title="__('emails.show.discard_reason')">
             <p class="whitespace-pre-line break-words text-sm text-gray-900">{{ $email->discard_reason }}</p>
-            <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+            <dl class="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                 <div><dt class="text-gray-600">{{ __('emails.show.reviewed_by') }}</dt><dd class="font-medium">{{ $email->reviewer?->name }}</dd></div>
                 <div><dt class="text-gray-600">{{ __('emails.show.reviewed_at') }}</dt><dd><x-local-datetime :value="$email->reviewed_at" /></dd></div>
             </dl>
@@ -81,12 +81,12 @@
                 @can('discard', $email)
                     <x-danger-button type="button" x-data="modalTrigger" data-modal="discard-email" x-on:click.prevent="open">{{ __('emails.show.discard_button') }}</x-danger-button>
 
-                    <x-modal name="discard-email" :label="__('emails.show.discard_button')" maxWidth="md" focusable>
+                    <x-modal name="discard-email" :label="__('emails.show.discard_button')" :show="$errors->has('reason')" maxWidth="md" focusable>
                         <form method="POST" action="{{ route('incoming-emails.discard', $email) }}" class="p-6">
                             @csrf
-                            <p class="text-sm text-gray-700">{{ __('emails.show.discard_confirm') }}</p>
-                            <x-input-label for="discard_reason" class="mt-4" :value="__('emails.show.discard_reason_label')" />
-                            <textarea id="discard_reason" name="reason" rows="4" maxlength="1000" required class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('reason') }}</textarea>
+                            <p id="discard_reason_help" class="text-sm text-gray-700">{{ __('emails.show.discard_confirm') }}</p>
+                            <x-input-label for="discard_reason" class="mt-4" :value="__('emails.show.discard_reason_label')" required />
+                            <textarea id="discard_reason" name="reason" rows="4" maxlength="1000" required aria-describedby="discard_reason_help" class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 text-sm shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('reason') }}</textarea>
                             <x-input-error :messages="$errors->get('reason')" class="mt-2" />
                             <div class="mt-6 flex justify-end gap-3">
                                 <x-secondary-button x-on:click="close">{{ __('common.actions.cancel') }}</x-secondary-button>

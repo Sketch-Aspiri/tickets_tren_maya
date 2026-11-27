@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ __('sheet_sources.title') }}</x-slot>
+    <x-slot name="title">{{ __('sheet_sources.title') }} · {{ $coordination->name }}</x-slot>
     <x-slot name="header">
         <div>
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('sheet_sources.title') }}</h1>
@@ -14,8 +14,10 @@
             @csrf
             @method('PUT')
 
+            <x-required-note class="!mb-0" />
+
             <div>
-                <x-input-label for="name" :value="__('sheet_sources.form.name')" />
+                <x-input-label for="name" :value="__('sheet_sources.form.name')" required />
                 <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $source->name)" maxlength="100" required />
                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
             </div>
@@ -27,7 +29,7 @@
                 <x-input-error :messages="$errors->get('share_url')" class="mt-2" />
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <x-input-label for="worksheet" :value="__('sheet_sources.form.worksheet')" />
                     <x-text-input id="worksheet" name="worksheet" type="text" class="mt-1 block w-full" :value="old('worksheet', $source->worksheet)" maxlength="100" aria-describedby="worksheet_hint" />
@@ -35,14 +37,14 @@
                     <x-input-error :messages="$errors->get('worksheet')" class="mt-2" />
                 </div>
                 <div>
-                    <x-input-label for="header_row" :value="__('sheet_sources.form.header_row')" />
+                    <x-input-label for="header_row" :value="__('sheet_sources.form.header_row')" required />
                     <x-text-input id="header_row" name="header_row" type="number" min="1" max="50" class="mt-1 block w-full" :value="old('header_row', $source->header_row ?? 1)" required />
                     <x-input-error :messages="$errors->get('header_row')" class="mt-2" />
                 </div>
             </div>
 
             <div>
-                <x-input-label for="subject_column" :value="__('sheet_sources.form.subject_column')" />
+                <x-input-label for="subject_column" :value="__('sheet_sources.form.subject_column')" required />
                 <x-text-input id="subject_column" name="subject_column" type="text" class="mt-1 block w-full" :value="old('subject_column', $source->subject_column)" maxlength="100" required />
                 <x-input-error :messages="$errors->get('subject_column')" class="mt-2" />
             </div>
@@ -55,7 +57,7 @@
                 <x-input-error :messages="$errors->get('body_columns.*')" class="mt-2" />
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <x-input-label for="requester_name_column" :value="__('sheet_sources.form.requester_name_column')" />
                     <x-text-input id="requester_name_column" name="requester_name_column" type="text" class="mt-1 block w-full" :value="old('requester_name_column', $source->requester_name_column)" maxlength="100" />

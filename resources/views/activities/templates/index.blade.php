@@ -24,16 +24,16 @@
         </a>
     </nav>
 
-    <x-table>
+    <x-table :caption="$trashed ? __('activities.templates.trash') : __('activities.templates.title')">
         <thead>
             <tr>
-                <th class="px-4 py-3">{{ __('activities.columns.folio') }}</th>
-                <th class="px-4 py-3">{{ __('activities.columns.title') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('activities.show.recurrence_rule') }}</th>
-                <th class="px-4 py-3">{{ __('activities.columns.status') }}</th>
-                <th class="hidden px-4 py-3 lg:table-cell">{{ __('tickets.columns.category') }}</th>
-                <th class="hidden px-4 py-3 xl:table-cell">{{ __('activities.columns.team') }}</th>
-                <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
+                <th scope="col" class="px-4 py-3">{{ __('activities.columns.folio') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('activities.columns.title') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('activities.show.recurrence_rule') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('activities.columns.status') }}</th>
+                <th scope="col" class="hidden px-4 py-3 lg:table-cell">{{ __('tickets.columns.category') }}</th>
+                <th scope="col" class="hidden px-4 py-3 xl:table-cell">{{ __('activities.columns.team') }}</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-brand-green/10">
@@ -45,8 +45,10 @@
                     <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-700">{{ $template->folio }}</td>
                     <td class="px-4 py-3">
                         <span class="line-clamp-2 font-medium text-gray-900">{{ $template->title }}</span>
-                        <div class="mt-1 flex flex-wrap items-center gap-1.5 md:hidden">
-                            <span class="text-xs text-gray-700">{{ __('activities.recurrence.summary.'.$rule->frequency->value, ['interval' => $rule->interval]) }}</span>
+                        <div class="mt-1 space-y-0.5 text-xs text-gray-700">
+                            <span class="block md:hidden"><span class="font-medium">{{ __('activities.show.recurrence_rule') }}:</span> {{ __('activities.recurrence.summary.'.$rule->frequency->value, ['interval' => $rule->interval]) }}</span>
+                            <span class="block lg:hidden"><span class="font-medium">{{ __('tickets.columns.category') }}:</span> {{ $template->category?->name ?? __('activities.form.no_category') }}</span>
+                            <span class="block xl:hidden"><span class="font-medium">{{ __('activities.columns.team') }}:</span> {{ $template->team->name }}</span>
                         </div>
                     </td>
                     <td class="hidden px-4 py-3 text-sm text-gray-800 md:table-cell">{{ __('activities.recurrence.summary.'.$rule->frequency->value, ['interval' => $rule->interval]) }}</td>
@@ -56,22 +58,22 @@
                     <td class="px-2 py-3 text-right sm:px-4">
                         <div class="flex flex-wrap items-center justify-end gap-2">
                             @unless ($trashed)
-                                <a href="{{ route('activities.show', $template) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}</a>
+                                <a href="{{ route('activities.show', $template) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}<span class="sr-only">: {{ $template->folio }}</span></a>
                                 @can('update', $template)
-                                    <a href="{{ route('activities.edit', $template) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}</a>
+                                    <a href="{{ route('activities.edit', $template) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}<span class="sr-only">: {{ $template->folio }}</span></a>
                                 @endcan
                                 @can('delete', $template)
                                     <form method="POST" action="{{ route('activities.destroy', $template) }}" x-data="confirmSubmit" data-confirm="{{ __('activities.show.delete_confirm') }}" x-on:submit="onSubmit">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>
+                                        <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}<span class="sr-only">: {{ $template->folio }}</span></button>
                                     </form>
                                 @endcan
                             @else
                                 @can('restore', $template)
                                     <form method="POST" action="{{ route('activities.templates.restore', $template) }}" x-data="confirmSubmit" data-confirm="{{ __('activities.templates.restore_confirm') }}" x-on:submit="onSubmit">
                                         @csrf
-                                        <x-secondary-button type="submit">{{ __('activities.templates.restore') }}</x-secondary-button>
+                                        <x-secondary-button type="submit">{{ __('activities.templates.restore') }}<span class="sr-only">: {{ $template->folio }}</span></x-secondary-button>
                                     </form>
                                 @endcan
                             @endunless

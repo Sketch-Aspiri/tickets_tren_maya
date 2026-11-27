@@ -11,7 +11,7 @@
     </x-slot>
 
     <x-card class="max-w-3xl" :title="__('emails.convert.source_summary')">
-        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('emails.convert.sender') }}</dt><dd class="break-words font-medium">{{ $senderLine }}</dd></div>
             <div><dt class="text-gray-600">{{ __('emails.convert.received_at') }}</dt><dd><x-local-datetime :value="$email->received_at" /></dd></div>
         </dl>

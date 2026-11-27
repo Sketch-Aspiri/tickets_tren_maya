@@ -8,7 +8,7 @@
     </x-slot>
 
     <x-card>
-        <form method="GET" action="{{ route('audit.index') }}" aria-label="{{ __('audit.filters.legend') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <form method="GET" action="{{ route('audit.index') }}" aria-label="{{ __('audit.filters.legend') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="sm:col-span-2">
                 <x-input-label for="q" :value="__('audit.filters.search')" />
                 <x-text-input id="q" name="q" type="search" class="mt-1 block w-full" :value="$filters['q'] ?? ''" maxlength="100" />
@@ -72,7 +72,7 @@
             <p class="text-sm text-gray-700">{{ __('audit.empty') }}</p>
         </x-card>
     @else
-        <x-table>
+        <x-table :caption="__('audit.title')">
             <thead>
                 <tr>
                     <th scope="col" class="px-3 py-2">{{ __('audit.columns.when') }}</th>
@@ -101,7 +101,7 @@
                         <td class="px-3 py-2">
                             <details>
                                 <summary class="flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-brand-teal focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">
-                                    {{ __('audit.details.toggle') }}
+                                    {{ __('audit.details.toggle') }}<span class="sr-only">: {{ $row['event_label'] }} {{ $row['subject'] ?? '' }}</span>
                                 </summary>
 
                                 <div class="mt-1 space-y-3 text-xs">

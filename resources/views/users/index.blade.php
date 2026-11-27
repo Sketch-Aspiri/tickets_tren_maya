@@ -5,7 +5,7 @@
     </x-slot>
 
     <x-card>
-        <form method="GET" action="{{ route('users.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <form method="GET" action="{{ route('users.index') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div class="sm:col-span-2 lg:col-span-2">
                 <x-input-label for="q" :value="__('users.index.search')" />
                 <x-text-input id="q" name="q" type="search" class="mt-1 block w-full" :value="$filters['q'] ?? ''" maxlength="100" />
@@ -40,17 +40,17 @@
         </form>
     </x-card>
 
-    <x-table>
+    <x-table :caption="__('users.title')">
         <thead>
             <tr>
-                <th class="px-4 py-3">{{ __('users.index.columns.name') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.role') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.station') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.coordination') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.teams') }}</th>
-                <th class="px-4 py-3">{{ __('users.index.columns.status') }}</th>
-                <th class="hidden px-4 py-3 lg:table-cell">{{ __('users.index.columns.registered') }}</th>
-                <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
+                <th scope="col" class="px-4 py-3">{{ __('users.index.columns.name') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.role') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.station') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.coordination') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('users.index.columns.teams') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('users.index.columns.status') }}</th>
+                <th scope="col" class="hidden px-4 py-3 lg:table-cell">{{ __('users.index.columns.registered') }}</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.view') }}</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-brand-green/10">
@@ -68,16 +68,23 @@
                     <td class="px-4 py-3">
                         <p class="font-medium text-gray-900">{{ $listedUser->name }}</p>
                         <p class="max-w-[6.5rem] truncate text-xs text-gray-500 sm:max-w-xs">{{ $listedUser->email }}</p>
+                        @php $places = $listedUser->workplaces(); @endphp
+                        <div class="mt-1 space-y-0.5 text-xs text-gray-700">
+                            <span class="block md:hidden"><span class="font-medium">{{ __('users.index.columns.role') }}:</span> <x-role-badge :role="$listedUser->roleEnum()" /></span>
+                            <span class="block md:hidden"><span class="font-medium">{{ __('users.index.columns.station') }}:</span> {{ $listedUser->seesAllTeams() ? __('common.all') : ($places->pluck('station.name')->unique()->implode(', ') ?: '—') }}</span>
+                            <span class="block md:hidden"><span class="font-medium">{{ __('users.index.columns.coordination') }}:</span> {{ $listedUser->seesAllTeams() ? __('common.all') : ($places->pluck('name')->implode(', ') ?: '—') }}</span>
+                            <span class="block md:hidden"><span class="font-medium">{{ __('users.index.columns.teams') }}:</span> {{ $listedUser->teams->isEmpty() ? __('users.index.no_team') : $listedUser->teams->pluck('name')->sort()->implode(', ') }}</span>
+                            <span class="block lg:hidden"><span class="font-medium">{{ __('users.index.columns.registered') }}:</span> <x-local-datetime :value="$listedUser->created_at" /></span>
+                        </div>
                     </td>
                     <td class="hidden px-4 py-3 md:table-cell"><x-role-badge :role="$listedUser->roleEnum()" /></td>
-                    @php $places = $listedUser->workplaces(); @endphp
                     <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->seesAllTeams() ? __('common.all') : ($places->pluck('station.name')->unique()->implode(', ') ?: '—') }}</td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->seesAllTeams() ? __('common.all') : ($places->pluck('name')->implode(', ') ?: '—') }}</td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $listedUser->teams->isEmpty() ? __('users.index.no_team') : $listedUser->teams->pluck('name')->sort()->implode(', ') }}</td>
                     <td class="px-4 py-3"><x-status-badge :status="$listedUser->status" /></td>
                     <td class="hidden px-4 py-3 lg:table-cell"><x-local-datetime :value="$listedUser->created_at" /></td>
                     <td class="px-2 py-3 text-right sm:px-4">
-                        <a href="{{ route('users.show', $listedUser) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}</a>
+                        <a href="{{ route('users.show', $listedUser) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.view') }}<span class="sr-only">: {{ $listedUser->name }}</span></a>
                     </td>
                 </tr>
             @empty

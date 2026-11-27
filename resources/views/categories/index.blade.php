@@ -9,14 +9,14 @@
         </div>
     </x-slot>
 
-    <x-table>
+    <x-table :caption="__('categories.title')">
         <thead>
             <tr>
-                <th class="px-4 py-3">{{ __('categories.columns.name') }}</th>
-                <th class="hidden px-4 py-3 md:table-cell">{{ __('categories.columns.coordination') }}</th>
-                <th class="px-4 py-3">{{ __('categories.columns.status') }}</th>
-                <th class="hidden px-4 py-3 sm:table-cell">{{ __('categories.columns.tickets') }}</th>
-                <th class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
+                <th scope="col" class="px-4 py-3">{{ __('categories.columns.name') }}</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">{{ __('categories.columns.coordination') }}</th>
+                <th scope="col" class="px-4 py-3">{{ __('categories.columns.status') }}</th>
+                <th scope="col" class="hidden px-4 py-3 sm:table-cell">{{ __('categories.columns.tickets') }}</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('common.actions.edit') }}</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-brand-green/10">
@@ -31,7 +31,12 @@
                     </tr>
                 @endif
                 <tr>
-                    <td class="px-4 py-3 font-medium text-gray-900">{{ $category->name }}</td>
+                    <td class="px-4 py-3 font-medium text-gray-900">{{ $category->name }}
+                        <div class="text-xs font-normal text-gray-700">
+                            <span class="block md:hidden"><span class="font-medium">{{ __('categories.columns.coordination') }}:</span> {{ $category->coordination?->name ?? __('categories.global') }}</span>
+                            <span class="block sm:hidden"><span class="font-medium">{{ __('categories.columns.tickets') }}:</span> {{ $category->tickets_count }}</span>
+                        </div>
+                    </td>
                     <td class="hidden px-4 py-3 md:table-cell">{{ $category->coordination?->name ?? __('categories.global') }}</td>
                     <td class="px-4 py-3">
                         @if ($category->active)
@@ -43,13 +48,13 @@
                     <td class="hidden px-4 py-3 sm:table-cell">{{ $category->tickets_count }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-right">
                         @can('update', $category)
-                            <a href="{{ route('categories.edit', $category) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}</a>
+                            <a href="{{ route('categories.edit', $category) }}" class="inline-flex min-h-[44px] items-center px-2 font-medium text-brand-teal hover:text-brand-green hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal">{{ __('common.actions.edit') }}<span class="sr-only">: {{ $category->name }}</span></a>
                         @endcan
                         @can('delete', $category)
                             <form method="POST" action="{{ route('categories.destroy', $category) }}" class="ms-3 inline" x-data="confirmSubmit" data-confirm="{{ __('categories.delete_confirm') }}" x-on:submit="onSubmit">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}</button>
+                                <button type="submit" class="inline-flex min-h-[44px] items-center px-2 font-medium text-red-700 hover:text-red-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">{{ __('common.actions.delete') }}<span class="sr-only">: {{ $category->name }}</span></button>
                             </form>
                         @endcan
                     </td>

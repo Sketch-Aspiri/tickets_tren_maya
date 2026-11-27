@@ -3,7 +3,7 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('activities.title') }}</h1>
-            <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <x-overdue-purge-button />
                 {{-- Alterna el filtro "vencen hoy" conservando el resto de filtros. Activo = boton resaltado que lo quita. --}}
                 @php
@@ -11,7 +11,7 @@
                     $otherFilters = array_filter(\Illuminate\Support\Arr::except($filters, ['due_today']), fn ($value) => $value !== null && $value !== false && $value !== '');
                 @endphp
                 @if ($dueToday)
-                    <x-primary-button :href="route('activities.index', $otherFilters)" aria-current="true" :title="__('activities.filters.due_today_clear')">{{ __('activities.filters.due_today') }} ✕</x-primary-button>
+                    <x-primary-button :href="route('activities.index', $otherFilters)" aria-current="true" :title="__('activities.filters.due_today_clear')">{{ __('activities.filters.due_today') }}<span aria-hidden="true" class="ms-1">✕</span><span class="sr-only">: {{ __('common.remove_filter') }}</span></x-primary-button>
                 @else
                     <x-secondary-button :href="route('activities.index', [...$otherFilters, 'due_today' => 1])">{{ __('activities.filters.due_today') }}</x-secondary-button>
                 @endif
@@ -39,7 +39,7 @@
     </nav>
 
     <x-card>
-        <form method="GET" action="{{ route('activities.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <form method="GET" action="{{ route('activities.index') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             @if ($dueToday)
                 <input type="hidden" name="due_today" value="1">
             @endif

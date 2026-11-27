@@ -8,14 +8,14 @@
 @endphp
 
 <x-app-layout>
-    <x-slot name="title">{{ $ticket->folio }}</x-slot>
+    <x-slot name="title">{{ $ticket->folio }} · {{ \Illuminate\Support\Str::limit($ticket->title, 60) }}</x-slot>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div class="min-w-0">
                 <p class="font-mono text-xs text-gray-700">{{ $ticket->folio }}</p>
                 <h1 class="truncate text-xl font-semibold leading-tight text-brand-green">{{ $ticket->title }}</h1>
             </div>
-            <div class="flex shrink-0 items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 @can('update', $ticket)
                     <x-primary-button :href="route('tickets.edit', $ticket)">{{ __('common.actions.edit') }}</x-primary-button>
                 @endcan
@@ -49,7 +49,7 @@
 
     {{-- Datos --}}
     <x-card :title="__('tickets.show.details')">
-        <dl class="grid gap-3 text-sm sm:grid-cols-2">
+        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-600">{{ __('tickets.columns.category') }}</dt><dd class="font-medium">{{ $ticket->category?->name ?? __('tickets.form.no_category') }}</dd></div>
             <div><dt class="text-gray-600">{{ __('tickets.columns.team') }}</dt><dd class="font-medium">{{ $ticket->team->name }} <span class="block text-xs font-normal text-gray-600">{{ $ticket->team->coordination->station->name }} › {{ $ticket->team->coordination->name }}</span></dd></div>
             <div><dt class="text-gray-600">{{ __('tickets.columns.due_date') }}</dt><dd class="font-medium">{{ $ticket->due_date?->format('d/m/Y') ?? __('tickets.show.no_due_date') }}</dd></div>
@@ -83,7 +83,7 @@
 
         @can('assign', $ticket)
             @if (! $ticket->status->isFinal())
-                <form method="POST" action="{{ route('tickets.assignments.update', $ticket) }}" class="mt-5 grid gap-4 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
+                <form method="POST" action="{{ route('tickets.assignments.update', $ticket) }}" class="mt-5 grid grid-cols-1 gap-4 border-t border-brand-green/10 pt-4 sm:grid-cols-2">
                     @csrf
                     @method('PUT')
                     <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('tickets.assign.responsible')" :select-responsible="__('tickets.assign.select_responsible')" :collaborators-label="__('tickets.assign.collaborators')" id-prefix="assign" />

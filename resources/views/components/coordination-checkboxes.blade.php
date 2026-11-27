@@ -6,13 +6,13 @@
     $selectedIds = array_map('intval', (array) $selected);
 @endphp
 
-<fieldset {{ $attributes }}>
+<fieldset {{ $attributes }} @if ($hint) aria-describedby="{{ $prefix }}_hint" @endif>
     <legend class="block text-sm font-medium text-gray-700">{{ $legend }}</legend>
     @if ($hint)
-        <p class="mt-1 text-xs text-gray-600">{{ $hint }}</p>
+        <p id="{{ $prefix }}_hint" class="mt-1 text-xs text-gray-600">{{ $hint }}</p>
     @endif
 
-    <div class="mt-2 grid gap-1 sm:grid-cols-2">
+    <div class="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
         @forelse ($coordinations as $coordination)
             <label for="{{ $prefix }}_{{ $coordination->id }}" class="flex min-h-[44px] items-center gap-2 rounded-md px-2 text-sm text-gray-800 hover:bg-brand-teal/5">
                 <input

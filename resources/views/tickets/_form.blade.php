@@ -8,26 +8,28 @@
     $selectedTeam = old('team_id', $defaultTeamId ?? null);
 @endphp
 
+<x-required-note />
+
 <div class="space-y-4">
     @if ($teams->isNotEmpty())
         <x-team-cascade :teams="$teams" :selected="$selectedTeam" :selected-coordination="old('team_id') ? null : ($defaultCoordinationId ?? null)" id="team_id" name="team_id" :label="__('tickets.form.team')" :hint="__('tickets.form.team_hint')" required :messages="$errors->get('team_id')" />
     @endif
 
     <div>
-        <x-input-label for="title" :value="__('tickets.form.title')" />
+        <x-input-label for="title" :value="__('tickets.form.title')" required />
         <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old('title', $ticket->title)" maxlength="255" required autofocus />
         <x-input-error :messages="$errors->get('title')" class="mt-2" />
     </div>
 
     <div>
-        <x-input-label for="description" :value="__('tickets.form.description')" />
+        <x-input-label for="description" :value="__('tickets.form.description')" required />
         <textarea id="description" name="description" rows="6" maxlength="5000" required class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('description', $ticket->description) }}</textarea>
         <x-input-error :messages="$errors->get('description')" class="mt-2" />
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-            <x-input-label for="priority" :value="__('tickets.form.priority')" />
+            <x-input-label for="priority" :value="__('tickets.form.priority')" required />
             <x-select-input id="priority" name="priority" class="mt-1 block w-full" required>
                 @foreach ($priorities as $priority)
                     <option value="{{ $priority->value }}" @selected($selectedPriority === $priority->value)>{{ $priority->label() }}</option>

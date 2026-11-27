@@ -21,26 +21,28 @@
     $selectedCollaborators = array_map('intval', (array) old('collaborator_ids', []));
 @endphp
 
+<x-required-note />
+
 <div class="space-y-4">
     @if ($teams->isNotEmpty())
         <x-team-cascade :teams="$teams" :selected="old('team_id')" id="team_id" name="team_id" :label="__('activities.form.team')" :hint="__('activities.form.team_hint')" required :messages="$errors->get('team_id')" />
     @endif
 
     <div>
-        <x-input-label for="title" :value="__('activities.form.title')" />
+        <x-input-label for="title" :value="__('activities.form.title')" required />
         <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" :value="old('title', $activity->title)" maxlength="255" required autofocus />
         <x-input-error :messages="$errors->get('title')" class="mt-2" />
     </div>
 
     <div>
-        <x-input-label for="description" :value="__('activities.form.description')" />
+        <x-input-label for="description" :value="__('activities.form.description')" required />
         <textarea id="description" name="description" rows="6" maxlength="5000" required class="mt-1 block min-h-[44px] w-full rounded-lg border-gray-500 shadow-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal">{{ old('description', $activity->description) }}</textarea>
         <x-input-error :messages="$errors->get('description')" class="mt-2" />
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-            <x-input-label for="priority" :value="__('activities.form.priority')" />
+            <x-input-label for="priority" :value="__('activities.form.priority')" required />
             <x-select-input id="priority" name="priority" class="mt-1 block w-full" required>
                 @foreach ($priorities as $priority)
                     <option value="{{ $priority->value }}" @selected($selectedPriority === $priority->value)>{{ $priority->label() }}</option>
@@ -52,7 +54,7 @@
         <x-category-select :categories="$categories" :selected="$selectedCategory" :label="__('activities.form.category')" :placeholder="__('activities.form.no_category')" :inactive-label="__('activities.form.inactive_category')" :messages="$errors->get('category_id')" />
 
         <div>
-            <x-input-label for="start_date" :value="__('activities.form.start_date')" />
+            <x-input-label for="start_date" :value="__('activities.form.start_date')" :required="$isTemplate" />
             <x-text-input id="start_date" name="start_date" type="date" class="mt-1 block w-full" :value="$startDate" aria-describedby="start_date_hint" :required="$isTemplate" />
             <p id="start_date_hint" class="mt-1 text-xs text-gray-600">{{ __('activities.form.start_date_hint') }}</p>
             <x-input-error :messages="$errors->get('start_date')" class="mt-2" />
@@ -68,7 +70,7 @@
 
     {{-- Asignacion inicial (solo al crear; despues se cambia desde el detalle). --}}
     @if (! $isEditing)
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <x-assignee-picker :users="$assignableUsers" :selected-responsible="$selectedResponsible" :selected-collaborators="$selectedCollaborators" :responsible-label="__('activities.form.responsible')" :select-responsible="__('activities.form.select_responsible')" :collaborators-label="__('activities.form.collaborators')" id-prefix="new" filter-by="team" />
         </div>
     @else
@@ -96,7 +98,7 @@
             <fieldset x-show="isRecurring" class="space-y-4">
                 <legend class="text-sm font-semibold text-brand-green">{{ __('activities.recurrence.legend') }}</legend>
 
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <x-input-label for="recurrence_frequency" :value="__('activities.recurrence.frequency')" />
                         <x-select-input id="recurrence_frequency" name="recurrence[frequency]" class="mt-1 block w-full" x-on:change="onFrequency">
@@ -115,7 +117,7 @@
                     </div>
                 </div>
 
-                <fieldset x-show="isWeekly" class="space-y-1">
+                <fieldset x-show="isWeekly" class="space-y-1" aria-describedby="recurrence_days_hint">
                     <legend class="text-sm font-medium text-gray-800">{{ __('activities.recurrence.days_of_week') }}</legend>
                     <div class="flex flex-wrap gap-x-4">
                         @foreach (range(1, 7) as $day)
@@ -125,7 +127,7 @@
                             </label>
                         @endforeach
                     </div>
-                    <p class="text-xs text-gray-600">{{ __('activities.recurrence.days_of_week_hint') }}</p>
+                    <p id="recurrence_days_hint" class="text-xs text-gray-600">{{ __('activities.recurrence.days_of_week_hint') }}</p>
                     <x-input-error :messages="$errors->get('recurrence.days_of_week')" class="mt-2" />
                     <x-input-error :messages="$errors->get('recurrence.days_of_week.*')" class="mt-2" />
                 </fieldset>

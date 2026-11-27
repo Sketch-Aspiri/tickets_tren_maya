@@ -34,21 +34,43 @@ Chart.register(
     Tooltip,
 );
 
-const SERIES = ['#1F7460', '#D97706'];
+// Cada color de serie contrasta al menos 3:1 con la superficie de su tema (WCAG 1.4.11; lo revisa
+// tests/Feature/AccessibilityTest.php). La misma informacion va ademas en una tabla.
+const SERIES = {
+    light: ['#1F7460', '#B45309'],
+    dark: ['#3FA88E', '#F59E0B'],
+};
 
 const PALETTES = {
-    status: {
-        pending: '#9CA3AF',
-        in_progress: '#1F7460',
-        in_review: '#D97706',
-        completed: '#06534D',
-        cancelled: '#B91C1C',
+    light: {
+        status: {
+            pending: '#6B7280',
+            in_progress: '#1F7460',
+            in_review: '#B45309',
+            completed: '#06534D',
+            cancelled: '#B91C1C',
+        },
+        priority: {
+            low: '#6B7280',
+            medium: '#2A8C76',
+            high: '#B45309',
+            urgent: '#B91C1C',
+        },
     },
-    priority: {
-        low: '#9CA3AF',
-        medium: '#70C2AD',
-        high: '#D97706',
-        urgent: '#B91C1C',
+    dark: {
+        status: {
+            pending: '#9CA3AF',
+            in_progress: '#3FA88E',
+            in_review: '#F59E0B',
+            completed: '#A7E8D6',
+            cancelled: '#F87171',
+        },
+        priority: {
+            low: '#9CA3AF',
+            medium: '#70C2AD',
+            high: '#F59E0B',
+            urgent: '#F87171',
+        },
     },
 };
 
@@ -68,9 +90,12 @@ function applyThemeDefaults() {
 function repaintCharts() {
     applyThemeDefaults();
     Object.values(Chart.instances).forEach((chart) => {
-        if (chart.config.type === 'doughnut') {
-            chart.data.datasets.forEach((dataset) => {
-                dataset.borderColor = surfaceColor();
+        const config = parse(chart.canvas);
+
+        if (config !== null) {
+            buildDatasets(config).forEach((fresh, index) => {
+                const { data, ...style } = fresh;
+                Object.assign(chart.data.datasets[index], style);
             });
         }
         chart.options.color = Chart.defaults.color;
@@ -82,14 +107,18 @@ function repaintCharts() {
     });
 }
 
+function themeName() {
+    return isDarkTheme() ? 'dark' : 'light';
+}
+
 function colorsFor(config) {
-    const palette = PALETTES[config.palette];
+    const palette = PALETTES[themeName()][config.palette];
 
     if (!palette || !Array.isArray(config.keys)) {
-        return SERIES;
+        return SERIES[themeName()];
     }
 
-    return config.keys.map((key) => palette[key] ?? '#6B7280');
+    return config.keys.map((key) => palette[key] ?? SERIES[themeName()][0]);
 }
 
 function buildDatasets(config) {
@@ -97,7 +126,7 @@ function buildDatasets(config) {
 
     return config.datasets.map((dataset, index) => {
         if (config.type === 'line') {
-            const color = SERIES[index % SERIES.length];
+            const color = SERIES[themeName()][index % SERIES[themeName()].length];
 
             return {
                 label: String(dataset.label),

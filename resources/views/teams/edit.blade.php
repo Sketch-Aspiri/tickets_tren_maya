@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="title">{{ __('teams.edit') }}</x-slot>
+    <x-slot name="title">{{ __('teams.edit') }} · {{ $team->name }}</x-slot>
     <x-slot name="header">
         <h1 class="text-xl font-semibold leading-tight text-brand-green">{{ __('teams.edit') }}</h1>
     </x-slot>

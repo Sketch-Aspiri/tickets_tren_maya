@@ -86,9 +86,18 @@ Alpine.data('modal', () => ({
         this.name = this.$el.dataset.name ?? '';
         this.focusable = this.$el.dataset.focusable === '1';
         this.show = this.$el.dataset.show === '1';
+        // Reabierta por el servidor tras un error: al cerrarla, el foco vuelve al boton que la abre.
+        let reopened = this.show;
+        document.body.classList.toggle('overflow-y-hidden', this.show);
 
         this.$watch('show', (value) => {
             document.body.classList.toggle('overflow-y-hidden', value);
+
+            if (!value && reopened) {
+                reopened = false;
+                const trigger = `[data-modal="${CSS.escape(this.name)}"]`;
+                setTimeout(() => document.querySelector(trigger)?.focus(), 50);
+            }
 
             if (value && this.focusable) {
                 setTimeout(() => this.firstFocusable()?.focus(), 100);
